@@ -1,0 +1,72 @@
+/* Custom color overrides with #104c8d as primary and #454d59 as secondary */
+
+:root {
+    --background: #ffffff;
+    --foreground: #333333;
+    --card: #f8f9fa;
+    --card-foreground: #333333;
+    --popover: #ffffff;
+    --popover-foreground: #333333;
+    --primary: #104c8d;
+    --primary-foreground: #ffffff;
+    --secondary: #454d59;
+    --secondary-foreground: #ffffff;
+    --muted: #e9edf2;
+    --muted-foreground: #505a66;
+    --accent: #2d5da8;
+    --accent-foreground: #ffffff;
+    --destructive: #e11d48;
+    --destructive-foreground: #ffffff;
+    --border: #d1d5db;
+    --input: #d1d5db;
+    --ring: #104c8d;
+    --chart-1: #104c8d;
+    --chart-2: #2d5da8;
+    --chart-3: #454d59;
+    --chart-4: #5a7ab8;
+    --chart-5: #7694c9;
+    --radius: 0.625rem;
+    --sidebar: #104c8d;
+    --sidebar-foreground: #ffffff;
+    --sidebar-primary: #ffffff;
+    --sidebar-primary-foreground: #104c8d;
+    --sidebar-accent: #2d5da8;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #2d5da8;
+    --sidebar-ring: #ffffff;
+}
+
+.dark {
+    --background: #1a202c;
+    --foreground: #f8fafc;
+    --card: #2d3748;
+    --card-foreground: #f8fafc;
+    --popover: #2d3748;
+    --popover-foreground: #f8fafc;
+    --primary: #104c8d;
+    --primary-foreground: #ffffff;
+    --secondary: #454d59;
+    --secondary-foreground: #ffffff;
+    --muted: #374151;
+    --muted-foreground: #94a3b8;
+    --accent: #2d5da8;
+    --accent-foreground: #ffffff;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #4b5563;
+    --input: #4b5563;
+    --ring: #104c8d;
+    --chart-1: #104c8d;
+    --chart-2: #2d5da8;
+    --chart-3: #454d59;
+    --chart-4: #5a7ab8;
+    --chart-5: #7694c9;
+    --sidebar: #104c8d;
+    --sidebar-foreground: #ffffff;
+    --sidebar-primary: #ffffff;
+    --sidebar-primary-foreground: #104c8d;
+    --sidebar-accent: #2d5da8;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #2d5da8;
+    --sidebar-ring: #ffffff;
+}
