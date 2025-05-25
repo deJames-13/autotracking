@@ -11,12 +11,32 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('departments', function (Blueprint $table) {
+            $table->id('department_id');
+            $table->string('department_name');
+            $table->timestamps();
+        });
+        Schema::create('locations', function (Blueprint $table) {
+            $table->id('location_id');
+            $table->string('location_name');
+            $table->foreignId('department_id')->constrained('departments', 'department_id');
+            $table->timestamps();
+        });
+        Schema::create('roles', function (Blueprint $table) {
+            $table->id('role_id');
+            $table->string('role_name');
+            $table->timestamps();
+        });
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
+            $table->id('employee_id');
+            $table->string('first_name');
+            $table->string('last_name');
+            $table->string('middle_name')->nullable();
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->foreignId('role_id')->constrained('roles', 'role_id');
+            $table->timestamp('email_verified_at')->nullable(); // Changed from date to timestamp
+            $table->foreignId('department_id')->nullable()->constrained('departments', 'department_id');
             $table->rememberToken();
             $table->timestamps();
         });
@@ -42,6 +62,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('departments');
+        Schema::dropIfExists('locations');
+        Schema::dropIfExists('roles');
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
