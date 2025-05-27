@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// Sanctum user route
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
@@ -21,8 +22,8 @@ Route::prefix('v1')->group(function () {
     Route::get('roles/{role}', [RoleController::class, 'show']);
 });
 
-// Protected API routes
-Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
+// Protected API routes - Remove auth:sanctum for now and use web middleware
+Route::middleware(['auth', 'web'])->prefix('v1')->group(function () {
     
     // Users
     Route::apiResource('users', UserController::class)->parameters([
@@ -77,4 +78,9 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
         Route::get('overdue', [TrackingRecordController::class, 'overdue'])->name('tracking-records.overdue');
         Route::get('due-soon', [TrackingRecordController::class, 'dueSoon'])->name('tracking-records.due-soon');
     });
+});
+
+// Add this at the top for testing
+Route::middleware(['auth', 'web'])->get('/v1/test', function() {
+    return response()->json(['message' => 'API is working', 'user' => auth()->user()]);
 });

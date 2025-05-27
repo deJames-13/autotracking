@@ -23,7 +23,7 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
     const handleDelete = (user: User) => {
-        router.delete(`/api/v1/users/${user.employee_id}`, {
+        router.delete(route('admin.users.destroy', user.employee_id), {
             onSuccess: () => {
                 setDeletingUser(null);
                 onRefresh();

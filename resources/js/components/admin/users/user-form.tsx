@@ -43,18 +43,22 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
             delete submitData.password_confirmation;
         }
 
-        const options = {
-            onSuccess: () => {
-                reset();
-                onSuccess?.();
-            },
-            preserveScroll: true,
-        };
-
         if (isEditing) {
-            put(`/api/v1/users/${user.employee_id}`, options);
+            put(route('admin.users.update', user.employee_id), {
+                onSuccess: () => {
+                    reset();
+                    onSuccess?.();
+                },
+                preserveScroll: true,
+            });
         } else {
-            post('/api/v1/users', options);
+            post(route('admin.users.store'), {
+                onSuccess: () => {
+                    reset();
+                    onSuccess?.();
+                },
+                preserveScroll: true,
+            });
         }
     };
 

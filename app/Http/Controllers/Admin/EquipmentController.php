@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\EquipmentRequest;
 use App\Models\Equipment;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -45,5 +47,61 @@ class EquipmentController extends Controller
             'users' => $users,
             'filters' => $request->only(['search', 'employee_id', 'manufacturer']),
         ]);
+    }
+
+    public function create(): Response
+    {
+        $users = User::with(['role', 'department'])
+            ->orderBy('first_name')
+            ->get();
+
+        return Inertia::render('admin/equipment/create', [
+            'users' => $users,
+        ]);
+    }
+
+    public function store(EquipmentRequest $request): RedirectResponse
+    {
+        Equipment::create($request->validated());
+
+        return redirect()->route('admin.equipment.index')
+            ->with('success', 'Equipment created successfully.');
+    }
+
+    public function show(Equipment $equipment): Response
+    {
+        $equipment->load(['user.role', 'user.department', 'trackingRecords']);
+        
+        return Inertia::render('admin/equipment/show', [
+            'equipment' => $equipment,
+        ]);
+    }
+
+    public function edit(Equipment $equipment): Response
+    {
+        $users = User::with(['role', 'department'])
+            ->orderBy('first_name')
+            ->get();
+
+        return Inertia::render('admin/equipment/edit', [
+            'equipment' => $equipment,
+            'users' => $users,
+        ]);
+    }
+
+    public function update(EquipmentRequest $request, Equipment $equipment): RedirectResponse
+    {
+        $equipment->update($request->validated());
+
+        return redirect()->route('admin.equipment.index')
+            ->with('success', 'Equipment updated successfully.');
+    }
+
+    public function destroy(Equipment $equipment): RedirectResponse
+    {
+        $equipment->delete();
+
+        return redirect()->route('admin.equipment.index')
+            ->with('success', 'Equipment deleted successfully.');
     }
 }
