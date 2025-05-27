@@ -4,16 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Role extends Model
+class Plant extends Model
 {
-    protected $primaryKey = 'role_id';
+    protected $primaryKey = 'plant_id';
     
     protected $fillable = [
-        'role_name'
+        'plant_name'
     ];
     
     public function users()
     {
-        return $this->hasMany(User::class, 'role_id', 'role_id');
+        return $this->hasMany(User::class, 'plant_id', 'plant_id');
     }
 }

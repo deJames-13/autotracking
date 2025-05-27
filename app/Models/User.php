@@ -53,4 +53,39 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+    
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id', 'role_id');
+    }
+    
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'department_id');
+    }
+    
+    public function plant()
+    {
+        return $this->belongsTo(Plant::class, 'plant_id', 'plant_id');
+    }
+    
+    public function equipments()
+    {
+        return $this->hasMany(Equipment::class, 'employee_id', 'employee_id');
+    }
+    
+    public function trackingRecordsAsTechnician()
+    {
+        return $this->hasMany(TrackingRecord::class, 'technician_id', 'employee_id');
+    }
+    
+    public function trackingRecordsAsEmployeeIn()
+    {
+        return $this->hasMany(TrackingRecord::class, 'employee_id_in', 'employee_id');
+    }
+    
+    public function trackingRecordsAsEmployeeOut()
+    {
+        return $this->hasMany(TrackingRecord::class, 'employee_id_out', 'employee_id');
+    }
 }
