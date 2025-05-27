@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\DepartmentController as AdminDepartmentController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -15,9 +17,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Add web-based CRUD routes for Inertia.js pages
     Route::prefix('admin')->name('admin.')->group(function () {
         // Users management
-        Route::get('users', function () {
-            return Inertia::render('admin/users/index');
-        })->name('users.index');
+        Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
         
         Route::get('users/create', function () {
             return Inertia::render('admin/users/create');
@@ -28,9 +28,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         })->name('users.edit');
         
         // Equipment management
-        Route::get('equipment', function () {
-            return Inertia::render('admin/equipment/index');
-        })->name('equipment.index');
+        Route::get('equipment', [\App\Http\Controllers\Admin\EquipmentController::class, 'index'])->name('equipment.index');
         
         Route::get('equipment/create', function () {
             return Inertia::render('admin/equipment/create');
@@ -54,9 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         })->name('tracking-records.edit');
         
         // Departments management
-        Route::get('departments', function () {
-            return Inertia::render('admin/departments/index');
-        })->name('departments.index');
+        Route::get('departments', [AdminDepartmentController::class, 'index'])->name('departments.index');
         
         Route::get('departments/create', function () {
             return Inertia::render('admin/departments/create');
@@ -80,9 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         })->name('plants.edit');
         
         // Locations management
-        Route::get('locations', function () {
-            return Inertia::render('admin/locations/index');
-        })->name('locations.index');
+        Route::get('locations', [\App\Http\Controllers\Admin\LocationController::class, 'index'])->name('locations.index');
         
         Route::get('locations/create', function () {
             return Inertia::render('admin/locations/create');

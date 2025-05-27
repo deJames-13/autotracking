@@ -1,0 +1,71 @@
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { type Department } from '@/types';
+import { useForm } from '@inertiajs/react';
+import { FormEventHandler } from 'react';
+
+interface DepartmentFormData {
+    department_name: string;
+    [key: string]: any;
+}
+
+interface DepartmentFormProps {
+    department?: Department;
+    onSuccess?: () => void;
+    onCancel?: () => void;
+}
+
+export function DepartmentForm({ department, onSuccess, onCancel }: DepartmentFormProps) {
+    const isEditing = !!department;
+
+    const { data, setData, post, put, processing, errors, reset } = useForm<DepartmentFormData>({
+        department_name: department?.department_name || '',
+    });
+
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+
+        const options = {
+            onSuccess: () => {
+                reset();
+                onSuccess?.();
+            },
+            preserveScroll: true,
+        };
+
+        if (isEditing) {
+            put(`/api/v1/departments/${department.department_id}`, options);
+        } else {
+            post('/api/v1/departments', options);
+        }
+    };
+
+    return (
+        <form onSubmit={submit} className="space-y-6">
+            <div className="space-y-2">
+                <Label htmlFor="department_name">Department Name *</Label>
+                <Input
+                    id="department_name"
+                    value={data.department_name}
+                    onChange={(e) => setData('department_name', e.target.value)}
+                    required
+                    placeholder="Enter department name"
+                />
+                <InputError message={errors.department_name} />
+            </div>
+
+            <div className="flex justify-end gap-3">
+                {onCancel && (
+                    <Button type="button" variant="outline" onClick={onCancel}>
+                        Cancel
+                    </Button>
+                )}
+                <Button type="submit" disabled={processing}>
+                    {processing ? 'Saving...' : isEditing ? 'Update Department' : 'Create Department'}
+                </Button>
+            </div>
+        </form>
+    );
+}

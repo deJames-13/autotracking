@@ -36,9 +36,10 @@ export interface User {
     first_name: string;
     last_name: string;
     middle_name?: string | null;
+    full_name?: string;
     avatar?: string | undefined;
     email: string;
-    password: string;
+    password?: string;
     role_id: number;
     department_id?: number | null;
     plant_id?: number | null;
@@ -64,6 +65,8 @@ export interface Department {
     department_name: string;
     created_at: string;
     updated_at: string;
+    users?: User[];
+    locations?: Location[];
 }
 
 export interface Plant {
@@ -71,6 +74,7 @@ export interface Plant {
     plant_name: string;
     created_at: string;
     updated_at: string;
+    users?: User[];
 }
 
 export interface Location {
@@ -80,6 +84,7 @@ export interface Location {
     created_at: string;
     updated_at: string;
     department?: Department;
+    tracking_records?: TrackingRecord[];
 }
 
 export interface Equipment {
@@ -91,6 +96,7 @@ export interface Equipment {
     created_at: string;
     updated_at: string;
     user?: User;
+    tracking_records?: TrackingRecord[];
 }
 
 export interface TrackingRecord {
@@ -115,4 +121,29 @@ export interface TrackingRecord {
     location?: Location;
     employeeIn?: User;
     employeeOut?: User;
+}
+
+// Pagination types
+export interface PaginationData<T> {
+    data: T[];
+    current_page: number;
+    from: number;
+    last_page: number;
+    per_page: number;
+    to: number;
+    total: number;
+}
+
+// Form types
+export interface UserFormData {
+    first_name: string;
+    last_name: string;
+    middle_name?: string;
+    email?: string;
+    password?: string;
+    password_confirmation?: string;
+    role_id: number;
+    department_id?: number;
+    plant_id?: number;
+    avatar?: string;
 }
