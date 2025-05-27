@@ -15,15 +15,17 @@ return new class extends Migration
             $table->id('tracking_id');
             $table->boolean('recall')->default(false);
             $table->text('description');
-            $table->foreignId('location_id')->constrained('locations', 'location_id');
-            $table->dateTime('date_in');
-            $table->dateTime('date_out')->nullable();
-            $table->date('cal_due_date');
-            $table->integer('cycle_time');
-            $table->foreignId('employee_id_in')->constrained('users', 'employee_id');
-            $table->foreignId('employee_id_out')->nullable()->constrained('users', 'employee_id');
             $table->foreignId('equipment_id')->constrained('equipments', 'equipment_id');
-            $table->foreignId('schedule_id')->constrained('schedules', 'schedule_id');
+            $table->foreignId('technician_id')->constrained('users', 'employee_id');
+            $table->foreignId('location_id')->constrained('locations', 'location_id');
+            $table->dateTime('due_date')->useCurrent();
+            $table->dateTime('date_in');
+            $table->foreignId('employee_id_in')->constrained('users', 'employee_id');
+            $table->date('cal_date');
+            $table->date('cal_due_date');
+            $table->dateTime('date_out')->nullable();
+            $table->foreignId('employee_id_out')->nullable()->constrained('users', 'employee_id');
+            $table->integer('cycle_time');
             $table->timestamps();
         });
     }

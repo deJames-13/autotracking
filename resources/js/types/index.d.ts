@@ -32,12 +32,87 @@ export interface SharedData {
 }
 
 export interface User {
-    id: number;
-    name: string;
+    employee_id: number;
+    first_name: string;
+    last_name: string;
+    middle_name?: string | null;
+    avatar?: string | undefined;
     email: string;
-    avatar?: string;
+    password: string;
+    role_id: number;
+    department_id?: number | null;
+    plant_id?: number | null;
     email_verified_at: string | null;
+    remember_token?: string | null;
     created_at: string;
     updated_at: string;
-    [key: string]: unknown; // This allows for additional properties...
+    role?: Role;
+    department?: Department;
+    plant?: Plant;
+    equipments?: Equipment[];
+}
+
+export interface Role {
+    role_id: number;
+    role_name: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Department {
+    department_id: number;
+    department_name: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Plant {
+    plant_id: number;
+    plant_name: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Location {
+    location_id: number;
+    location_name: string;
+    department_id?: number | null;
+    created_at: string;
+    updated_at: string;
+    department?: Department;
+}
+
+export interface Equipment {
+    equipment_id: number;
+    employee_id?: number | null;
+    serial_number: string;
+    description: string;
+    manufacturer: string;
+    created_at: string;
+    updated_at: string;
+    user?: User;
+}
+
+export interface TrackingRecord {
+    tracking_id: number;
+    recall: boolean;
+    description: string;
+    equipment_id: number;
+    technician_id: number;
+    location_id: number;
+    due_date: string;
+    date_in: string;
+    employee_id_in: number;
+    cal_date: string;
+    cal_due_date: string;
+    date_out?: string | null;
+    employee_id_out?: number | null;
+    cycle_time: number;
+    created_at: string;
+    updated_at: string;
+    equipment?: Equipment;
+    technician?: User;
+    location?: Location;
+    employeeIn?: User;
+    employeeOut?: User;
 }
