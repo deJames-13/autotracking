@@ -69,26 +69,10 @@ export default function Register() {
                             placeholder="Last name"
                         />
                         <InputError message={errors.last_name} className="mt-2" />
-                    </div >
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="last_name">Last Name</Label>
-                        <Input
-                            id="last_name"
-                            type="text"
-                            required
-                            tabIndex={2}
-                            autoComplete="family-name"
-                            value={data.last_name}
-                            onChange={(e) => setData('last_name', e.target.value)}
-                            disabled={processing}
-                            placeholder="Last name"
-                        />
-                        <InputError message={errors.last_name} className="mt-2" />
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email address (optional)</Label>
+                        <Label htmlFor="email">Email address</Label>
                         <Input
                             id="email"
                             type="email"
@@ -104,7 +88,7 @@ export default function Register() {
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="password">Personal Identification Number (PIN)</Label>
+                        <Label htmlFor="password">Password</Label>
                         <Input
                             id="password"
                             type="password"
@@ -114,13 +98,13 @@ export default function Register() {
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
                             disabled={processing}
-                            placeholder="PIN"
+                            placeholder="Password"
                         />
                         <InputError message={errors.password} />
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="password_confirmation">Confirm PIN</Label>
+                        <Label htmlFor="password_confirmation">Confirm password</Label>
                         <Input
                             id="password_confirmation"
                             type="password"
@@ -130,7 +114,7 @@ export default function Register() {
                             value={data.password_confirmation}
                             onChange={(e) => setData('password_confirmation', e.target.value)}
                             disabled={processing}
-                            placeholder="Confirm PIN"
+                            placeholder="Confirm password"
                         />
                         <InputError message={errors.password_confirmation} />
                     </div>
@@ -139,15 +123,15 @@ export default function Register() {
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                         Create account
                     </Button>
-                </div >
+                </div>
 
-        <div className="text-muted-foreground text-center text-sm">
-            Already have an account?{' '}
-            <TextLink href={route('login')} tabIndex={7}>
-                Log in
-            </TextLink>
-        </div>
-            </form >
-        </AuthLayout >
+                <div className="text-muted-foreground text-center text-sm">
+                    Already have an account?{' '}
+                    <TextLink href={route('login')} tabIndex={7}>
+                        Log in
+                    </TextLink>
+                </div>
+            </form>
+        </AuthLayout>
     );
 }
