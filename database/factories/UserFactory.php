@@ -29,9 +29,9 @@ class UserFactory extends Factory
             'middle_name' => fake()->boolean(30) ? fake()->firstName() : null,
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'role_id' => 1, // Default to Employee role
-            'department_id' => null, // Nullable department
+            'password' => static::$password ??= Hash::make('9342'),
+            'role_id' => 1, 
+            'department_id' => null, 
             'remember_token' => Str::random(10),
         ];
     }
