@@ -1,29 +1,29 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { type Equipment } from '@/types';
+import { type Plant } from '@/types';
 import { router } from '@inertiajs/react';
 
-interface EquipmentDeleteDialogProps {
-    equipment: Equipment | null;
+interface PlantDeleteDialogProps {
+    plant: Plant | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess: () => void;
 }
 
-export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess }: EquipmentDeleteDialogProps) {
+export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: PlantDeleteDialogProps) {
     const handleDelete = () => {
-        if (!equipment) return;
+        if (!plant) return;
 
-        console.log('EquipmentDeleteDialog: Deleting equipment', equipment.equipment_id);
+        console.log('PlantDeleteDialog: Deleting plant', plant.plant_id);
         
-        router.delete(route('admin.equipment.destroy', equipment.equipment_id), {
+        router.delete(route('admin.plants.destroy', plant.plant_id), {
             onSuccess: () => {
-                console.log('EquipmentDeleteDialog: Delete successful, calling onSuccess');
+                console.log('PlantDeleteDialog: Delete successful, calling onSuccess');
                 onOpenChange(false);
                 onSuccess();
             },
             onError: (errors) => {
-                console.error('Error deleting equipment:', errors);
+                console.error('Error deleting plant:', errors);
             }
         });
     };
@@ -32,30 +32,27 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
         onOpenChange(false);
     };
 
-    if (!equipment) return null;
+    if (!plant) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Delete Equipment</DialogTitle>
+                    <DialogTitle>Delete Plant</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to delete this equipment? This action cannot be undone.
+                        Are you sure you want to delete this plant? This action cannot be undone.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                     <div className="p-4 border rounded-lg bg-muted/50">
                         <div className="font-medium">
-                            {equipment.serial_number}
+                            {plant.plant_name}
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
-                            <div>ID: {equipment.equipment_id}</div>
-                            <div>Manufacturer: {equipment.manufacturer}</div>
-                            <div>Assigned to: {equipment.user ?
-                                (equipment.user.full_name || `${equipment.user.first_name} ${equipment.user.last_name}`) :
-                                'Unassigned'
-                            }</div>
-                            <div>Records: {equipment.tracking_records?.length || 0}</div>
+                            <div>ID: {plant.plant_id}</div>
+                            {plant.address && <div>Address: {plant.address}</div>}
+                            {plant.telephone && <div>Telephone: {plant.telephone}</div>}
+                            <div>Users: {plant.users?.length || 0}</div>
                         </div>
                     </div>
                     <div className="flex justify-end gap-3">
@@ -63,7 +60,7 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
                             Cancel
                         </Button>
                         <Button variant="destructive" onClick={handleDelete}>
-                            Delete Equipment
+                            Delete Plant
                         </Button>
                     </div>
                 </div>

@@ -43,16 +43,20 @@ export function EquipmentForm({ equipment, users, onSuccess, onCancel }: Equipme
 
         const options = {
             onSuccess: () => {
+                console.log('EquipmentForm: Operation successful, calling onSuccess');
                 reset();
                 onSuccess?.();
+            },
+            onError: (errors: any) => {
+                console.error('EquipmentForm: Operation failed:', errors);
             },
             preserveScroll: true,
         };
 
         if (isEditing) {
-            put(`/api/v1/equipment/${equipment.equipment_id}`, options);
+            put(route('admin.equipment.update', equipment.equipment_id), options);
         } else {
-            post('/api/v1/equipment', options);
+            post(route('admin.equipment.store'), options);
         }
     };
 

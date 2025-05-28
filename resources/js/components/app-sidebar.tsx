@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { useRole } from '@/hooks/use-role';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Building2, HardDrive, LayoutGrid, MapPin, Users } from 'lucide-react';
+import { BookOpen, Building2, Factory, HardDrive, LayoutGrid, MapPin, Users, Wrench } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const footerNavItems: NavItem[] = [
@@ -17,7 +17,7 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { canManageUsers, canManageEquipment } = useRole();
+    const { canManageUsers, canManageEquipment, canManagePlants } = useRole();
 
     const mainNavItems: NavItem[] = [
         {
@@ -25,6 +25,13 @@ export function AppSidebar() {
             href: '/dashboard',
             icon: LayoutGrid,
         },
+        ...(canManageEquipment() ? [
+            {
+                title: 'Equipment',
+                href: '/admin/equipment',
+                icon: Wrench,
+            }
+        ] : []),
         ...(canManageUsers() ? [
             {
                 title: 'User',
@@ -42,11 +49,11 @@ export function AppSidebar() {
                 icon: MapPin,
             }
         ] : []),
-        ...(canManageEquipment() ? [
+        ...(canManagePlants() ? [
             {
-                title: 'Equipment',
-                href: '/admin/equipment',
-                icon: HardDrive,
+                title: 'Plant',
+                href: '/admin/plants',
+                icon: Factory,
             }
         ] : []),
     ];

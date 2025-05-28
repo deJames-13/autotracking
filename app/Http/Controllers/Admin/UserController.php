@@ -10,15 +10,15 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class UserController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
-        // Get initial data for the page
         $users = User::with(['role', 'department', 'plant'])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -39,6 +39,16 @@ class UserController extends Controller
         $roles = Role::all();
         $departments = Department::all();
         $plants = Plant::all();
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'data' => $users,
+                'roles' => $roles,
+                'departments' => $departments,
+                'plants' => $plants
+            ]);
+        }
 
         return Inertia::render('admin/users/index', [
             'users' => $users,
@@ -62,7 +72,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function store(UserRequest $request): RedirectResponse
+    public function store(UserRequest $request): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
         
@@ -70,15 +80,30 @@ class UserController extends Controller
             $data['password'] = Hash::make($data['password']);
         }
 
-        User::create($data);
+        $user = User::create($data);
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'User created successfully.',
+                'data' => $user
+            ]);
+        }
 
         return redirect()->route('admin.users.index')
             ->with('success', 'User created successfully.');
     }
 
-    public function show(User $user): Response
+    public function show(User $user, Request $request): Response|JsonResponse
     {
         $user->load(['role', 'department', 'plant', 'equipments']);
+        
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'data' => $user
+            ]);
+        }
         
         return Inertia::render('admin/users/show', [
             'user' => $user,
@@ -99,7 +124,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function update(UserRequest $request, User $user): RedirectResponse
+    public function update(UserRequest $request, User $user): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
         
@@ -111,13 +136,28 @@ class UserController extends Controller
 
         $user->update($data);
 
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'User updated successfully.',
+                'data' => $user
+            ]);
+        }
+
         return redirect()->route('admin.users.index')
             ->with('success', 'User updated successfully.');
     }
 
-    public function destroy(User $user): RedirectResponse
+    public function destroy(User $user, Request $request): RedirectResponse|JsonResponse
     {
         $user->delete();
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'User deleted successfully.'
+            ]);
+        }
 
         return redirect()->route('admin.users.index')
             ->with('success', 'User deleted successfully.');

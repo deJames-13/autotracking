@@ -72,6 +72,8 @@ export interface Department {
 export interface Plant {
     plant_id: number;
     plant_name: string;
+    address: string | null;
+    telephone: string | null;
     created_at: string;
     updated_at: string;
     users?: User[];

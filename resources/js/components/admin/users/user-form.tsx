@@ -43,22 +43,22 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
             delete submitData.password_confirmation;
         }
 
+        const options = {
+            onSuccess: () => {
+                console.log('UserForm: Operation successful, calling onSuccess');
+                reset();
+                onSuccess?.();
+            },
+            onError: (errors: any) => {
+                console.error('UserForm: Operation failed:', errors);
+            },
+            preserveScroll: true,
+        };
+
         if (isEditing) {
-            put(route('admin.users.update', user.employee_id), {
-                onSuccess: () => {
-                    reset();
-                    onSuccess?.();
-                },
-                preserveScroll: true,
-            });
+            put(route('admin.users.update', user.employee_id), options);
         } else {
-            post(route('admin.users.store'), {
-                onSuccess: () => {
-                    reset();
-                    onSuccess?.();
-                },
-                preserveScroll: true,
-            });
+            post(route('admin.users.store'), options);
         }
     };
 

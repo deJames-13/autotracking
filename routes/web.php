@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\DepartmentController as AdminDepartmentController;
 use App\Http\Controllers\Admin\LocationController as AdminLocationController;
 use App\Http\Controllers\Admin\EquipmentController as AdminEquipmentController;
+use App\Http\Controllers\Admin\PlantController as AdminPlantController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -39,15 +40,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'equipment' => 'equipment:equipment_id'
         ]);
         
+        // Plants management
+        Route::resource('plants', AdminPlantController::class)->parameters([
+            'plants' => 'plant:plant_id'
+        ]);
+        
         // Tracking Records management
         Route::get('tracking-records', function () {
             return Inertia::render('admin/tracking-records/index');
         })->name('tracking-records.index');
-        
-        // Plants management
-        Route::get('plants', function () {
-            return Inertia::render('admin/plants/index');
-        })->name('plants.index');
     });
 });
 

@@ -46,6 +46,10 @@ export function useRole() {
         return hasRole(['admin', 'personnel_in_charge']);
     };
 
+    const canManagePlants = (): boolean => {
+        return hasRole(['admin']); // Only admin can manage plants
+    };
+
     const canManageEquipment = (): boolean => {
         return hasRole(['admin', 'personnel_in_charge', 'technician']);
     };
@@ -62,6 +66,7 @@ export function useRole() {
         isTechnician,
         isEmployee,
         canManageUsers,
+        canManagePlants,
         canManageEquipment,
         canViewReports,
     };

@@ -4,19 +4,32 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { type Department, type PaginationData } from '@/types';
 import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { router } from '@inertiajs/react';
 import { DepartmentViewDialog } from './department-view-dialog';
 import { DepartmentEditDialog } from './department-edit-dialog';
 import { DepartmentDeleteDialog } from './department-delete-dialog';
 
 interface DepartmentTableProps {
     departments: PaginationData<Department>;
-    onRefresh: () => void;
+    onRefresh?: () => void;
 }
 
 export function DepartmentTable({ departments, onRefresh }: DepartmentTableProps) {
     const [viewingDepartment, setViewingDepartment] = useState<Department | null>(null);
     const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
     const [deletingDepartment, setDeletingDepartment] = useState<Department | null>(null);
+
+    const handleEditSuccess = () => {
+        console.log('DepartmentTable: Edit success triggered');
+        setEditingDepartment(null);
+        router.reload({ only: ['departments'] });
+    };
+
+    const handleDeleteSuccess = () => {
+        console.log('DepartmentTable: Delete success triggered');
+        setDeletingDepartment(null);
+        router.reload({ only: ['departments'] });
+    };
 
     return (
         <>
@@ -110,14 +123,14 @@ export function DepartmentTable({ departments, onRefresh }: DepartmentTableProps
                 department={editingDepartment}
                 open={!!editingDepartment}
                 onOpenChange={(open) => !open && setEditingDepartment(null)}
-                onSuccess={onRefresh}
+                onSuccess={handleEditSuccess}
             />
 
             <DepartmentDeleteDialog
                 department={deletingDepartment}
                 open={!!deletingDepartment}
                 onOpenChange={(open) => !open && setDeletingDepartment(null)}
-                onSuccess={onRefresh}
+                onSuccess={handleDeleteSuccess}
             />
         </>
     );

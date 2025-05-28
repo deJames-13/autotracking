@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            PlantSeeder::class,
             RoleSeeder::class,
         ]);
 
@@ -21,7 +22,8 @@ class DatabaseSeeder extends Seeder
             'first_name' => 'Test',
             'last_name' => 'User',
             'email' => 'test@example.com',
-            'role_id' => 1
+            'role_id' => 1,
+            'plant_id' => 1  
         ]);
     }
 }

@@ -14,11 +14,17 @@ export function DepartmentDeleteDialog({ department, open, onOpenChange, onSucce
     const handleDelete = () => {
         if (!department) return;
 
-        router.delete(`/api/v1/departments/${department.department_id}`, {
+        console.log('DepartmentDeleteDialog: Deleting department', department.department_id);
+        
+        router.delete(route('admin.departments.destroy', department.department_id), {
             onSuccess: () => {
+                console.log('DepartmentDeleteDialog: Delete successful, calling onSuccess');
                 onOpenChange(false);
                 onSuccess();
             },
+            onError: (errors) => {
+                console.error('Error deleting department:', errors);
+            }
         });
     };
 

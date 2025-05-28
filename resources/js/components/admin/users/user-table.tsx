@@ -14,7 +14,7 @@ interface UserTableProps {
     roles: Role[];
     departments: Department[];
     plants: Plant[];
-    onRefresh: () => void;
+    onRefresh?: () => void;
 }
 
 export function UserTable({ users, roles, departments, plants, onRefresh }: UserTableProps) {
@@ -22,12 +22,24 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
     const [viewingUser, setViewingUser] = useState<User | null>(null);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
+    const handleEditSuccess = () => {
+        console.log('UserTable: Edit success triggered');
+        setEditingUser(null);
+        router.reload({ only: ['users'] });
+    };
+
     const handleDelete = (user: User) => {
+        console.log('UserTable: Deleting user', user.employee_id);
+        
         router.delete(route('admin.users.destroy', user.employee_id), {
             onSuccess: () => {
+                console.log('UserTable: Delete success triggered');
                 setDeletingUser(null);
-                onRefresh();
+                router.reload({ only: ['users'] });
             },
+            onError: (errors) => {
+                console.error('Error deleting user:', errors);
+            }
         });
     };
 
@@ -168,10 +180,7 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
                             roles={roles}
                             departments={departments}
                             plants={plants}
-                            onSuccess={() => {
-                                setEditingUser(null);
-                                onRefresh();
-                            }}
+                            onSuccess={handleEditSuccess}
                             onCancel={() => setEditingUser(null)}
                         />
                     )}

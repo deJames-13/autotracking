@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { type Equipment, type User, type PaginationData } from '@/types';
 import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { router } from '@inertiajs/react';
 import { EquipmentViewDialog } from './equipment-view-dialog';
 import { EquipmentEditDialog } from './equipment-edit-dialog';
 import { EquipmentDeleteDialog } from './equipment-delete-dialog';
@@ -12,13 +13,25 @@ import { EquipmentDeleteDialog } from './equipment-delete-dialog';
 interface EquipmentTableProps {
     equipment: PaginationData<Equipment>;
     users: User[];
-    onRefresh: () => void;
+    onRefresh?: () => void;
 }
 
 export function EquipmentTable({ equipment, users, onRefresh }: EquipmentTableProps) {
     const [viewingEquipment, setViewingEquipment] = useState<Equipment | null>(null);
     const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
     const [deletingEquipment, setDeletingEquipment] = useState<Equipment | null>(null);
+
+    const handleEditSuccess = () => {
+        console.log('EquipmentTable: Edit success triggered');
+        setEditingEquipment(null);
+        router.reload({ only: ['equipment'] });
+    };
+
+    const handleDeleteSuccess = () => {
+        console.log('EquipmentTable: Delete success triggered');
+        setDeletingEquipment(null);
+        router.reload({ only: ['equipment'] });
+    };
 
     return (
         <>
@@ -139,14 +152,14 @@ export function EquipmentTable({ equipment, users, onRefresh }: EquipmentTablePr
                 users={users}
                 open={!!editingEquipment}
                 onOpenChange={(open) => !open && setEditingEquipment(null)}
-                onSuccess={onRefresh}
+                onSuccess={handleEditSuccess}
             />
 
             <EquipmentDeleteDialog
                 equipment={deletingEquipment}
                 open={!!deletingEquipment}
                 onOpenChange={(open) => !open && setDeletingEquipment(null)}
-                onSuccess={onRefresh}
+                onSuccess={handleDeleteSuccess}
             />
         </>
     );

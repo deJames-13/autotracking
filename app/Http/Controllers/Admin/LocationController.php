@@ -8,14 +8,14 @@ use App\Models\Department;
 use App\Models\Location;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class LocationController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
-        // Get initial data for the page
         $locations = Location::with(['department'])
             ->when($request->search, function ($query, $search) {
                 $query->where('location_name', 'like', "%{$search}%");
@@ -27,6 +27,14 @@ class LocationController extends Controller
             ->withQueryString();
 
         $departments = Department::all();
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'data' => $locations,
+                'departments' => $departments
+            ]);
+        }
 
         return Inertia::render('admin/locations/index', [
             'locations' => $locations,
@@ -44,17 +52,32 @@ class LocationController extends Controller
         ]);
     }
 
-    public function store(LocationRequest $request): RedirectResponse
+    public function store(LocationRequest $request): RedirectResponse|JsonResponse
     {
-        Location::create($request->validated());
+        $location = Location::create($request->validated());
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'Location created successfully.',
+                'data' => $location
+            ]);
+        }
 
         return redirect()->route('admin.locations.index')
             ->with('success', 'Location created successfully.');
     }
 
-    public function show(Location $location): Response
+    public function show(Location $location, Request $request): Response|JsonResponse
     {
         $location->load(['department', 'equipments']);
+        
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'data' => $location
+            ]);
+        }
         
         return Inertia::render('admin/locations/show', [
             'location' => $location,
@@ -71,17 +94,32 @@ class LocationController extends Controller
         ]);
     }
 
-    public function update(LocationRequest $request, Location $location): RedirectResponse
+    public function update(LocationRequest $request, Location $location): RedirectResponse|JsonResponse
     {
         $location->update($request->validated());
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'Location updated successfully.',
+                'data' => $location
+            ]);
+        }
 
         return redirect()->route('admin.locations.index')
             ->with('success', 'Location updated successfully.');
     }
 
-    public function destroy(Location $location): RedirectResponse
+    public function destroy(Location $location, Request $request): RedirectResponse|JsonResponse
     {
         $location->delete();
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'Location deleted successfully.'
+            ]);
+        }
 
         return redirect()->route('admin.locations.index')
             ->with('success', 'Location deleted successfully.');

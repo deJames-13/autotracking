@@ -13,7 +13,11 @@ return new class extends Migration
     {
         Schema::create('plants', function (Blueprint $table) {
             $table->id('plant_id');
-            $table->string('plant_name');
+            $table->string('plant_name')->unique();
+            $table->string('address')->nullable();
+            $table->string('telephone')->nullable();
+
+
             $table->timestamps();
         });
         
@@ -75,6 +79,7 @@ return new class extends Migration
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('locations');
+        Schema::dropIfExists('equipments');
         Schema::dropIfExists('users');
         Schema::dropIfExists('roles');
         Schema::dropIfExists('departments');

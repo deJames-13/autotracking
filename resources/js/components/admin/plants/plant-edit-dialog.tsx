@@ -1,25 +1,23 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { type Equipment, type User } from '@/types';
-import { EquipmentForm } from './equipment-form';
+import { type Plant } from '@/types';
+import { PlantForm } from './plant-form';
 
-interface EquipmentEditDialogProps {
-    equipment: Equipment | null;
-    users: User[];
+interface PlantEditDialogProps {
+    plant: Plant | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess: () => void;
 }
 
-export function EquipmentEditDialog({ 
-    equipment, 
-    users,
-    open, 
-    onOpenChange, 
-    onSuccess 
-}: EquipmentEditDialogProps) {
+export function PlantEditDialog({
+    plant,
+    open,
+    onOpenChange,
+    onSuccess
+}: PlantEditDialogProps) {
     const handleSuccess = () => {
-        console.log('EquipmentEditDialog: Edit successful, calling onSuccess');
+        console.log('PlantEditDialog: Edit successful, calling onSuccess');
         onOpenChange(false);
         onSuccess();
     };
@@ -28,21 +26,20 @@ export function EquipmentEditDialog({
         onOpenChange(false);
     };
 
-    if (!equipment) return null;
+    if (!plant) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[85vh]">
+            <DialogContent className="max-w-md max-h-[85vh]">
                 <DialogHeader>
-                    <DialogTitle>Edit Equipment</DialogTitle>
+                    <DialogTitle>Edit Plant</DialogTitle>
                     <DialogDescription>
-                        Update equipment information.
+                        Update plant information.
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] pr-4">
-                    <EquipmentForm
-                        equipment={equipment}
-                        users={users}
+                    <PlantForm
+                        plant={plant}
                         onSuccess={handleSuccess}
                         onCancel={handleCancel}
                     />

@@ -17,6 +17,7 @@ export function DepartmentEditDialog({
     onSuccess
 }: DepartmentEditDialogProps) {
     const handleSuccess = () => {
+        console.log('DepartmentEditDialog: Edit successful, calling onSuccess');
         onOpenChange(false);
         onSuccess();
     };

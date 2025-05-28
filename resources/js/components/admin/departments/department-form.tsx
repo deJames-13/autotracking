@@ -29,16 +29,20 @@ export function DepartmentForm({ department, onSuccess, onCancel }: DepartmentFo
 
         const options = {
             onSuccess: () => {
+                console.log('DepartmentForm: Operation successful, calling onSuccess');
                 reset();
                 onSuccess?.();
+            },
+            onError: (errors: any) => {
+                console.error('DepartmentForm: Operation failed:', errors);
             },
             preserveScroll: true,
         };
 
         if (isEditing) {
-            put(`/api/v1/departments/${department.department_id}`, options);
+            put(route('admin.departments.update', department.department_id), options);
         } else {
-            post('/api/v1/departments', options);
+            post(route('admin.departments.store'), options);
         }
     };
 
