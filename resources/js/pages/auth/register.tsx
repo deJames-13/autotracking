@@ -53,8 +53,6 @@ export default function Register() {
                             placeholder="First name"
                         />
                         <InputError message={errors.first_name} className="mt-2" />
-<<<<<<< HEAD
-=======
                     </div>
 
                     <div className="grid gap-2">
@@ -71,7 +69,6 @@ export default function Register() {
                             placeholder="Last name"
                         />
                         <InputError message={errors.last_name} className="mt-2" />
->>>>>>> 7b99086 (a)
                     </div >
 
                     <div className="grid gap-2">
