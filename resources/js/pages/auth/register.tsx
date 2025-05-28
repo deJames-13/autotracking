@@ -53,7 +53,26 @@ export default function Register() {
                             placeholder="First name"
                         />
                         <InputError message={errors.first_name} className="mt-2" />
+<<<<<<< HEAD
+=======
                     </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="last_name">Last Name</Label>
+                        <Input
+                            id="last_name"
+                            type="text"
+                            required
+                            tabIndex={2}
+                            autoComplete="family-name"
+                            value={data.last_name}
+                            onChange={(e) => setData('last_name', e.target.value)}
+                            disabled={processing}
+                            placeholder="Last name"
+                        />
+                        <InputError message={errors.last_name} className="mt-2" />
+>>>>>>> 7b99086 (a)
+                    </div >
 
                     <div className="grid gap-2">
                         <Label htmlFor="last_name">Last Name</Label>
@@ -76,6 +95,7 @@ export default function Register() {
                         <Input
                             id="email"
                             type="email"
+                            required
                             tabIndex={3}
                             autoComplete="email"
                             value={data.email}
@@ -122,15 +142,15 @@ export default function Register() {
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                         Create account
                     </Button>
-                </div>
+                </div >
 
-                <div className="text-muted-foreground text-center text-sm">
-                    Already have an account?{' '}
-                    <TextLink href={route('login')} tabIndex={7}>
-                        Log in
-                    </TextLink>
-                </div>
-            </form>
-        </AuthLayout>
+        <div className="text-muted-foreground text-center text-sm">
+            Already have an account?{' '}
+            <TextLink href={route('login')} tabIndex={7}>
+                Log in
+            </TextLink>
+        </div>
+            </form >
+        </AuthLayout >
     );
 }
