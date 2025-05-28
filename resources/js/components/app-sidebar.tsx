@@ -2,6 +2,7 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
 import { useRole } from '@/hooks/use-role';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
@@ -19,12 +20,15 @@ const footerNavItems: NavItem[] = [
 export function AppSidebar() {
     const { canManageUsers, canManageEquipment, canManagePlants } = useRole();
 
-    const mainNavItems: NavItem[] = [
+    const dashboardItems: NavItem[] = [
         {
             title: 'Dashboard',
             href: '/dashboard',
             icon: LayoutGrid,
         },
+    ];
+
+    const manageItems: NavItem[] = [
         ...(canManageEquipment() ? [
             {
                 title: 'Equipment',
@@ -55,8 +59,10 @@ export function AppSidebar() {
                 href: '/admin/plants',
                 icon: Factory,
             }
-        ] : []),
+        ] : [])
+    
     ];
+
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -69,14 +75,16 @@ export function AppSidebar() {
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
-                </SidebarMenu>
+                </SidebarMenu>  
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={dashboardItems} label="Main"/>
+                <NavMain items={manageItems} label="Manage"/>
             </SidebarContent>
 
             <SidebarFooter>
+                <Separator />
                 <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
