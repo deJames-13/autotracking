@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('employee_id')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
             $table->string('serial_number')->unique();
             $table->text('description');
+            $table->string('model');
             $table->string('manufacturer');
             $table->timestamps();
         });

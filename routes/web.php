@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DepartmentController as AdminDepartmentController
 use App\Http\Controllers\Admin\LocationController as AdminLocationController;
 use App\Http\Controllers\Admin\EquipmentController as AdminEquipmentController;
 use App\Http\Controllers\Admin\PlantController as AdminPlantController;
+use App\Http\Controllers\Admin\TrackingController as AdminTrackingController;
 use App\Models\User;
 use App\Models\Location;
 use App\Models\TrackingRecord;
@@ -48,6 +49,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'plants' => 'plant:plant_id'
         ]);
         
+        // Tracking management
+        Route::get('tracking', [AdminTrackingController::class, 'index'])->name('tracking.index');
+        Route::get('tracking/request', [AdminTrackingController::class, 'requestIndex'])->name('tracking.request.index');
     });
 
 });
