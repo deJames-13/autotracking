@@ -44,31 +44,6 @@ export function AppSidebar() {
 
     const trackingItems: NavItem[] = [
         ...(canManageTracking() ? [
-            {
-                title: 'Incoming',
-                href: '/tracking/incoming',
-                icon: ArrowDownToLine,
-            },
-            {
-                title: 'Outgoing',
-                href: '/tracking/outgoing',
-                icon: ArrowUpFromLine,
-            },
-            // {
-            //     title: 'Active Records',
-            //     href: '/tracking/active',
-            //     icon: Activity,
-            // },
-            // {
-            //     title: 'Overdue Items',
-            //     href: '/tracking/overdue',
-            //     icon: AlertTriangle,
-            // },
-            // {
-            //     title: 'Due Soon',
-            //     href: '/tracking/due-soon',
-            //     icon: Clock,
-            // }
         ] : [])
     ];
 
