@@ -17,7 +17,7 @@ export function useRole() {
         return user.role?.role_name === 'admin';
     };
 
-    const canManageTracking = () => {
+    const canManageRequestIncoming = () => {
         return ['admin', 'personnel_in_charge'].includes(user.role?.role_name || '');
     };
 
@@ -41,7 +41,7 @@ export function useRole() {
         canManageUsers,
         canManageEquipment,
         canManagePlants,
-        canManageTracking,
+        canManageRequestIncoming,
         isAdmin,
         isEmployee,
         isPersonnelInCharge,

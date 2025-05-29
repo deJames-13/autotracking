@@ -32,7 +32,7 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { canManageUsers, canManageEquipment, canManagePlants, canManageTracking } = useRole();
+    const { canManageUsers, canManageEquipment, canManagePlants, canManageRequestIncoming } = useRole();
 
     const dashboardItems: NavItem[] = [
         // {
@@ -43,7 +43,7 @@ export function AppSidebar() {
     ];
 
     const trackingItems: NavItem[] = [
-        ...(canManageTracking() ? [
+        ...(canManageRequestIncoming() ? [
             {
                 title: 'Incoming',
                 href: '/admin/tracking',
