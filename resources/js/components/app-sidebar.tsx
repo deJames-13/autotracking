@@ -35,17 +35,17 @@ export function AppSidebar() {
     const { canManageUsers, canManageEquipment, canManagePlants, canManageTracking } = useRole();
 
     const dashboardItems: NavItem[] = [
-        {
-            title: 'Dashboard',
-            href: '/dashboard',
-            icon: LayoutGrid,
-        },
+        // {
+        //     title: 'Dashboard',
+        //     href: '/dashboard',
+        //     icon: LayoutGrid,
+        // },
     ];
 
     const trackingItems: NavItem[] = [
         ...(canManageTracking() ? [
             {
-                title: 'Requests',
+                title: 'Incoming',
                 href: '/admin/tracking',
                 icon: ArrowDownToLine,
             },

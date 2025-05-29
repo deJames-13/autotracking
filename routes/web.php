@@ -40,6 +40,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
         
         // Locations management
+        Route::get('locations/api/search-locations', [AdminLocationController::class, 'searchLocations'])
+            ->name('locations.search-locations');
+            
         Route::resource('locations', AdminLocationController::class)->parameters([
             'locations' => 'location:location_id'
         ]);
@@ -62,6 +65,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Tracking management
         Route::get('tracking', [AdminTrackingController::class, 'index'])->name('tracking.index');
         Route::get('tracking/request', [AdminTrackingController::class, 'requestIndex'])->name('tracking.request.index');
+        
     });
 
 });

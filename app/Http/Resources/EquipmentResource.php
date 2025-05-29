@@ -12,6 +12,7 @@ class EquipmentResource extends JsonResource
         return [
             'equipment_id' => $this->equipment_id,
             'employee_id' => $this->employee_id,
+            'recall_number' => $this->recall_number,
             'serial_number' => $this->serial_number,
             'description' => $this->description,
             'model' => $this->model,

@@ -32,14 +32,14 @@ export function EquipmentEditDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[85vh]">
+            <DialogContent className="w-full max-w-[90vw] lg:max-w-[80vw] xl:max-w-[72rem] max-h-[85vh] overflow-hidden flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Edit Equipment</DialogTitle>
                     <DialogDescription>
                         Update equipment information.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[70vh] pr-4">
+                <ScrollArea className="max-h-[70vh] pr-6 py-2">
                     <EquipmentForm
                         equipment={equipment}
                         users={users}

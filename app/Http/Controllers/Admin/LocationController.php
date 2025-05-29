@@ -16,6 +16,8 @@ class LocationController extends Controller
 {
     public function index(Request $request): Response|JsonResponse
     {
+        $limit = $request->input('limit', 15); // Default to 15 if not provided
+        
         $locations = Location::with(['department'])
             ->when($request->search, function ($query, $search) {
                 $query->where('location_name', 'like', "%{$search}%");
@@ -23,7 +25,7 @@ class LocationController extends Controller
             ->when($request->department_id, function ($query, $departmentId) {
                 $query->where('department_id', $departmentId);
             })
-            ->paginate(15)
+            ->paginate($limit)
             ->withQueryString();
 
         $departments = Department::all();
@@ -54,7 +56,15 @@ class LocationController extends Controller
 
     public function store(LocationRequest $request): RedirectResponse|JsonResponse
     {
-        $location = Location::create($request->validated());
+        // Make department_id optional in the request
+        $data = $request->validated();
+        
+        // If department_id is empty string, set it to null
+        if (isset($data['department_id']) && $data['department_id'] === '') {
+            $data['department_id'] = null;
+        }
+        
+        $location = Location::create($data);
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
@@ -123,5 +133,38 @@ class LocationController extends Controller
 
         return redirect()->route('admin.locations.index')
             ->with('success', 'Location deleted successfully.');
+    }
+
+    /**
+     * Search locations for smart select
+     */
+    public function searchLocations(Request $request): JsonResponse
+    {
+        $search = $request->input('search', '');
+        $departmentId = $request->input('department_id');
+        $limit = $request->input('limit', 10); // Default to 10 if not provided
+        
+        $query = Location::query();
+        
+        // Filter by search term if provided
+        if (!empty($search)) {
+            $query->where('location_name', 'like', "%{$search}%");
+        }
+        
+        // Filter by department if provided
+        if (!empty($departmentId)) {
+            $query->where('department_id', $departmentId);
+        }
+        
+        $locations = $query->limit($limit)
+            ->get()
+            ->map(function ($location) {
+                return [
+                    'label' => $location->location_name,
+                    'value' => (int)$location->location_id // Cast to integer to ensure numeric value
+                ];
+            });
+            
+        return response()->json($locations);
     }
 }

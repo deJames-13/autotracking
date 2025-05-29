@@ -19,6 +19,8 @@ class UserController extends Controller
 {
     public function index(Request $request): Response|JsonResponse
     {
+        $limit = $request->get('limit', 15);
+        
         $users = User::with(['role', 'department', 'plant'])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -33,7 +35,7 @@ class UserController extends Controller
             ->when($request->department_id, function ($query, $departmentId) {
                 $query->where('department_id', $departmentId);
             })
-            ->paginate(15)
+            ->paginate($limit)
             ->withQueryString();
 
         $roles = Role::all();

@@ -8,15 +8,26 @@ export const technicianSchema = z.object({
     specialization: z.string().min(1, "Specialization is required"),
 });
 
-// Equipment details schema
+// Equipment details schema - updated to match actual usage
 export const equipmentSchema = z.object({
-    plant: z.string().min(1, "Plant is required"),
-    department: z.string().min(1, "Department is required"),
-    location: z.string().min(1, "Location is required"),
-    description: z.string().min(1, "Equipment description is required"),
-    serialNumber: z.string().min(1, "Department is required"),
-    model: z.string().optional(),
-    manufacturer: z.string().optional(),
+    plant: z.union([z.string(), z.number()]).refine(val => val !== "" && val !== null, {
+        message: "Plant is required"
+    }),
+    department: z.union([z.string(), z.number()]).refine(val => val !== "" && val !== null, {
+        message: "Department is required"
+    }),
+    location: z.union([z.string(), z.number()]).refine(val => val !== "" && val !== null, {
+        message: "Location is required"
+    }),
+    description: z.string().min(1, "Description is required"),
+    serialNumber: z.string().min(1, "Serial number is required"),
+    recallNumber: z.string().optional().default(''),
+    model: z.string().optional().default(''),
+    manufacturer: z.string().optional().default(''),
+    dueDate: z.string().optional().nullable(),
+    receivedBy: z.union([z.string(), z.number()]).optional().default(''),
+    equipment_id: z.number().nullable().default(null),
+    existing: z.boolean().default(false),
 });
 
 // Calibration schema

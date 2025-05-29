@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\EquipmentRequest;
 use App\Models\Equipment;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,13 +14,14 @@ use Inertia\Response;
 
 class EquipmentController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         // Get initial data for the page
         $equipments = Equipment::with(['user.role', 'user.department'])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
-                    $q->where('serial_number', 'like', "%{$search}%")
+                    $q->where('recall_number', 'like', "%{$search}%")
+                      ->orWhere('serial_number', 'like', "%{$search}%")
                       ->orWhere('description', 'like', "%{$search}%")
                       ->orWhere('manufacturer', 'like', "%{$search}%");
                 });
@@ -34,13 +36,24 @@ class EquipmentController extends Controller
             ->when($request->manufacturer, function ($query, $manufacturer) {
                 $query->where('manufacturer', 'like', "%{$manufacturer}%");
             })
+            ->when($request->limit, function ($query, $limit) {
+                $query->limit($limit);
+            })
             ->orderBy('created_at', 'desc')
-            ->paginate(15)
+            ->paginate($request->limit ?? 15)
             ->withQueryString();
 
         $users = User::with(['role', 'department'])
             ->orderBy('first_name')
             ->get();
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'data' => $equipments,
+                'users' => $users,
+            ]);
+        }
 
         return Inertia::render('admin/equipment/index', [
             'equipment' => $equipments,
@@ -68,9 +81,16 @@ class EquipmentController extends Controller
             ->with('success', 'Equipment created successfully.');
     }
 
-    public function show(Equipment $equipment): Response
+    public function show(Equipment $equipment, Request $request): Response|JsonResponse
     {
         $equipment->load(['user.role', 'user.department', 'trackingRecords']);
+        
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'data' => $equipment
+            ]);
+        }
         
         return Inertia::render('admin/equipment/show', [
             'equipment' => $equipment,

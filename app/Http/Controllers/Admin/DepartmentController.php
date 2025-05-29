@@ -116,9 +116,10 @@ class DepartmentController extends Controller
     public function searchDepartments(Request $request): JsonResponse
     {
         $search = $request->input('search', '');
+        $limit = $request->input('limit', 10); // Default to 10 if not provided
         
         $departments = Department::where('department_name', 'like', "%{$search}%")
-            ->limit(10)
+            ->limit($limit)
             ->get()
             ->map(function ($department) {
                 return [

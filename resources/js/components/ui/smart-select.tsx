@@ -42,6 +42,8 @@ interface SmartSelectProps {
     defaultOptions?: SelectOption[] | boolean;
     name?: string;
     error?: string;
+    initialOption?: SelectOption | null;
+    minSearchLength?: number; // Add minimum search length parameter
 }
 
 // Store selected option labels globally to prevent losing them on re-renders
@@ -59,17 +61,21 @@ export const InertiaSmartSelect = ({
     noNoneOption = false,
     loading = false,
     isMulti = false,
+    initialOption = null,
+    minSearchLength = 2, // Default minimum search length is 2
     ...props
 }: {
     name: string;
     value: string | number | null | (string | number | null)[];
     onChange: (value: string | number | null | (string | number | null)[]) => void;
     error?: string;
-} & Omit<SmartSelectProps, 'onSelect' | 'value'>) => {
+    initialOption?: SelectOption | null;
+    minSearchLength?: number;
+} & Omit<SmartSelectProps, 'onSelect' | 'value' | 'initialOption' | 'minSearchLength'>) => {
     // Ref to track if we've initialized the component
     const initialized = useRef(false);
     // Internal selectedOption state - ONLY updated by our controlled logic
-    const [selectedOption, setSelectedOption] = useState<SelectOption | SelectOption[] | null>(null);
+    const [selectedOption, setSelectedOption] = useState<SelectOption | SelectOption[] | null>(initialOption);
     // Track if we're loading a label for a value
     const [loadingLabel, setLoadingLabel] = useState(false);
 
@@ -101,7 +107,19 @@ export const InertiaSmartSelect = ({
 
     // Simple async load options without any side effects
     const handleAsyncLoadOptions = async (inputValue: string): Promise<SelectOption[]> => {
-        if (inputValue.length < 2) return []; // Require at least 2 chars to search
+        // Only require minimum characters if minSearchLength is greater than 0
+        if (minSearchLength > 0 && inputValue.length < minSearchLength) {
+            // Return initial options on empty search if minSearchLength is 0
+            if (inputValue.length === 0) {
+                try {
+                    return await loadOptions('');
+                } catch (error) {
+                    console.error('Error loading initial options:', error);
+                    return [];
+                }
+            }
+            return [];
+        }
 
         try {
             const options = await loadOptions(inputValue);
@@ -223,14 +241,23 @@ export const InertiaSmartSelect = ({
         }
     };
 
-    // Initialize selected option based on value prop
+    // Initialize selected option based on value prop or initialOption
     useEffect(() => {
-        const initializeOption = async () => {
-            // For simple cases when option is already selected, just return
-            if (selectedOption && value !== null && String(selectedOption.value) === String(value)) {
-                return;
-            }
+        // Skip if value hasn't changed
+        if (value === null && selectedOption === null) return;
+        if (selectedOption && value !== null && String(selectedOption.value) === String(value)) return;
 
+        // Use a ref to track if this is the first run with an initialOption
+        const isFirstRun = !initialized.current && initialOption;
+
+        // If we have an initialOption and it's the first run, use it directly
+        if (isFirstRun) {
+            setSelectedOption(initialOption);
+            initialized.current = true;
+            return;
+        }
+
+        const initializeOption = async () => {
             // For multi-select
             if (isMulti && Array.isArray(value)) {
                 // Handle multi-select initialization
@@ -262,8 +289,9 @@ export const InertiaSmartSelect = ({
             }
         };
 
+        // Only run initialization if the value has changed
         initializeOption();
-    }, [value, isMulti, noNoneOption]);
+    }, [value]); // Only depend on value, not isMulti, noNoneOption
 
     if (loading) {
         return (
@@ -295,7 +323,7 @@ export const InertiaSmartSelect = ({
                 onCreateOption={onCreateOption ? handleCreateOption : undefined}
                 isLoading={loading || loadingLabel}
                 cacheOptions={props.cacheOptions ?? true}
-                defaultOptions={props.defaultOptions ?? false}
+                defaultOptions={props.defaultOptions ?? true} // Set default to true
                 isSearchable
                 isMulti={isMulti}
                 placeholder={props.placeholder}
@@ -303,8 +331,8 @@ export const InertiaSmartSelect = ({
                 className={props.className}
                 formatCreateLabel={(inputValue) => `Create "${inputValue}"`}
                 noOptionsMessage={({ inputValue }) =>
-                    !inputValue || inputValue.length < 2
-                        ? 'Type at least 2 characters to search...'
+                    !inputValue || (minSearchLength > 0 && inputValue.length < minSearchLength)
+                        ? minSearchLength > 0 ? `Type at least ${minSearchLength} characters to search...` : 'No options available'
                         : `No options found for "${inputValue}"`
                 }
                 getOptionValue={(option) => String(option.value)}

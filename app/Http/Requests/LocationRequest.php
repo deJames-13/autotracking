@@ -33,7 +33,7 @@ class LocationRequest extends FormRequest
                     }
                 }
             ],
-            'department_id' => 'required|exists:departments,department_id',
+            'department_id' => ['nullable', 'exists:departments,department_id'], // Make department_id nullable
         ];
     }
 

@@ -26,8 +26,12 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
                                 <p className="text-sm">{equipment.equipment_id}</p>
                             </div>
                             <div className="space-y-1">
+                                <label className="text-sm font-medium text-muted-foreground">Recall Number</label>
+                                <p className="text-sm">{equipment.recall_number}</p>
+                            </div>
+                            <div className="space-y-1">
                                 <label className="text-sm font-medium text-muted-foreground">Serial Number</label>
-                                <p className="text-sm">{equipment.serial_number}</p>
+                                <p className="text-sm">{equipment.serial_number || 'N/A'}</p>
                             </div>
                             <div className="space-y-1 col-span-2">
                                 <label className="text-sm font-medium text-muted-foreground">Description</label>

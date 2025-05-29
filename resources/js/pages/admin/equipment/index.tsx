@@ -97,7 +97,7 @@ export default function EquipmentIndex({ equipment: initialEquipment, users, fil
                                 Add Equipment
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+                        <DialogContent className="w-full max-w-[90vw] lg:max-w-[80vw] xl:max-w-[72rem] max-h-[85vh] overflow-hidden flex flex-col">
                             <DialogHeader className="flex-shrink-0">
                                 <DialogTitle>Add New Equipment</DialogTitle>
                                 <DialogDescription>

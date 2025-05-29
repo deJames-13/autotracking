@@ -13,6 +13,21 @@ import { StepIndicator, type Step } from '@/components/ui/step-indicator';
 import { UserCircle2, Wrench, CalendarClock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAppDispatch, useAppSelector } from '@/store/hooks'
+import {
+    setRequestType,
+    setTechnician,
+    updateEquipment,
+    updateCalibration,
+    updateConfirmation,
+    setCurrentStep,
+    addCompletedStep,
+    resetForm,
+    markFormClean
+} from '@/store/slices/trackingRequestSlice'
+import { Provider } from 'react-redux'
+import { PersistGate } from 'redux-persist/integration/react'
+import { store, persistor } from '@/store'
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -30,44 +45,39 @@ interface TrackingRequestIndexProps {
     errors?: Record<string, string>;
 }
 
-const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: serverErrors = {} }) => {
+const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: serverErrors = {} }) => {
     const { canManageUsers } = useRole();
+    const dispatch = useAppDispatch()
+
+    // Get state from Redux
+    const {
+        requestType,
+        technician,
+        equipment,
+        calibration,
+        confirmation,
+        currentStep,
+        completedSteps,
+        isFormDirty
+    } = useAppSelector(state => state.trackingRequest)
+
+    // Form state with Inertia useForm - use Redux data as initial values
+    const { post, processing, errors, clearErrors, setError } = useForm({
+        requestType,
+        technician,
+        equipment,
+        calibration,
+        confirmation
+    })
+
+    const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
     // Define the steps
     const steps: Step[] = [
         { id: 'technician', name: 'Technician', icon: <UserCircle2 className="h-5 w-5" /> },
         { id: 'details', name: 'Equipment Details', icon: <Wrench className="h-5 w-5" /> },
-        { id: 'calibration', name: 'Calibration', icon: <CalendarClock className="h-5 w-5" /> },
         { id: 'confirmation', name: 'Confirmation', icon: <CheckCircle2 className="h-5 w-5" /> },
     ];
-
-    // Form state with Inertia useForm
-    const { data, setData, post, processing, errors, clearErrors, setError, hasErrors } = useForm({
-        requestType: 'new', // Add requestType with 'new' as default
-        technician: null,
-        equipment: {
-            plant: '',
-            department: '',
-            location: '',
-            description: '',
-            serialNumber: '',
-            model: '',
-            manufacturer: ''
-        },
-        calibration: {
-            calibrationDate: '',
-            expectedDueDate: '',
-            dateOut: ''
-        },
-        confirmation: {
-            employee: null,
-            pin: ''
-        }
-    });
-
-    const [currentStep, setCurrentStep] = useState('technician');
-    const [completedSteps, setCompletedSteps] = useState<string[]>([]);
-    const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
     // Merge server errors with client-side errors if needed
     useEffect(() => {
@@ -83,14 +93,18 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
         clearErrors();
         setValidationMessage(null);
 
+        // Add debugging
+        console.log('Validating step:', currentStep);
+        console.log('Current equipment state:', equipment);
+
         if (currentStep === 'technician') {
-            if (!data.requestType) {
+            if (!requestType) {
                 setError('requestType', 'Please select a request type.');
                 setValidationMessage('Please select a request type.');
                 return false;
             }
 
-            if (!data.technician) {
+            if (!technician) {
                 setError('technician', 'Please select a technician to continue.');
                 setValidationMessage('Please select a technician to continue.');
                 return false;
@@ -101,7 +115,12 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
             let isValid = true;
 
             requiredFields.forEach(field => {
-                if (!data.equipment[field]) {
+                const value = equipment[field];
+                // Check for empty string, null, undefined, or 0 for ID fields
+                const isEmpty = value === '' || value === null || value === undefined ||
+                    (field === 'plant' || field === 'department' || field === 'location') && value === 0;
+
+                if (isEmpty) {
                     setError(`equipment.${field}`, `${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1').trim()} is required.`);
                     isValid = false;
                 }
@@ -117,7 +136,7 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
             let isValid = true;
 
             requiredFields.forEach(field => {
-                if (!data.calibration[field]) {
+                if (!calibration[field]) {
                     setError(`calibration.${field}`, `${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')} is required.`);
                     isValid = false;
                 }
@@ -129,8 +148,8 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
             }
 
             // Validate date relationships
-            const calibrationDate = new Date(data.calibration.calibrationDate);
-            const expectedDueDate = new Date(data.calibration.expectedDueDate);
+            const calibrationDate = new Date(calibration.calibrationDate);
+            const expectedDueDate = new Date(calibration.expectedDueDate);
 
             if (expectedDueDate <= calibrationDate) {
                 setError('calibration.expectedDueDate', 'Expected due date must be after calibration date.');
@@ -146,13 +165,13 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
             }
         }
         else if (currentStep === 'confirmation') {
-            if (!data.confirmation.employee) {
+            if (!confirmation.employee) {
                 setError('confirmation.employee', 'Please select an employee for confirmation.');
                 setValidationMessage('Please select an employee for confirmation.');
                 return false;
             }
 
-            if (!data.confirmation.pin || data.confirmation.pin.length < 4) {
+            if (!confirmation.pin || confirmation.pin.length < 4) {
                 setError('confirmation.pin', 'PIN must be at least 4 digits.');
                 setValidationMessage('PIN must be at least 4 digits.');
                 return false;
@@ -166,15 +185,13 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
     const handleNext = () => {
         if (!validateCurrentStep()) return;
 
-        // Mark current step as completed
-        if (!completedSteps.includes(currentStep)) {
-            setCompletedSteps([...completedSteps, currentStep]);
-        }
+        // Mark current step as completed in Redux
+        dispatch(addCompletedStep(currentStep))
 
         // Move to next step
         const currentIndex = steps.findIndex(step => step.id === currentStep);
         if (currentIndex < steps.length - 1) {
-            setCurrentStep(steps[currentIndex + 1].id);
+            dispatch(setCurrentStep(steps[currentIndex + 1].id))
         }
     };
 
@@ -182,7 +199,7 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
     const handleBack = () => {
         const currentIndex = steps.findIndex(step => step.id === currentStep);
         if (currentIndex > 0) {
-            setCurrentStep(steps[currentIndex - 1].id);
+            dispatch(setCurrentStep(steps[currentIndex - 1].id))
         }
     };
 
@@ -190,21 +207,34 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
     const handleSubmit = () => {
         if (!validateCurrentStep()) return;
 
-        // Submit the form with Inertia
+        // Get current Redux state for submission
+        const currentState = store.getState().trackingRequest
+
+        // Submit the form with current Redux data
         post(route('admin.tracking.request.store'), {
+            data: {
+                requestType: currentState.requestType,
+                technician: currentState.technician,
+                equipment: currentState.equipment,
+                calibration: currentState.calibration,
+                confirmation: currentState.confirmation
+            },
             onSuccess: () => {
+                // Reset Redux state on successful submission
+                dispatch(resetForm())
+                dispatch(markFormClean())
                 router.visit(route('admin.tracking.index'));
             },
             onError: (errors) => {
                 // Find the first step with errors
                 if (errors.technician) {
-                    setCurrentStep('technician');
+                    dispatch(setCurrentStep('technician'));
                 } else if (errors.equipment || Object.keys(errors).some(key => key.startsWith('equipment.'))) {
-                    setCurrentStep('details');
+                    dispatch(setCurrentStep('details'));
                 } else if (errors.calibration || Object.keys(errors).some(key => key.startsWith('calibration.'))) {
-                    setCurrentStep('calibration');
+                    dispatch(setCurrentStep('calibration'));
                 } else if (errors.confirmation || Object.keys(errors).some(key => key.startsWith('confirmation.'))) {
-                    setCurrentStep('confirmation');
+                    dispatch(setCurrentStep('confirmation'));
                 }
 
                 // Set a validation message for the general error
@@ -231,6 +261,67 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
             }, {} as Record<string, string>);
     };
 
+    // Modified function to handle nested data updates properly with better date handling
+    const updateNestedData = (key: string, value: any) => {
+        if (key === 'equipment') {
+            // Use updateEquipment to properly merge values
+            dispatch(updateEquipment(value))
+        } else if (key === 'calibration') {
+            // Handle dates in calibration data
+            dispatch(updateCalibration(value))
+        } else if (key === 'confirmation') {
+            dispatch(updateConfirmation(value))
+        } else {
+            // Handle non-nested data
+            dispatch(setTechnician(value));
+        }
+    };
+
+    // Add cleanup effect when component unmounts or user navigates away
+    useEffect(() => {
+        // Cleanup function that runs when component unmounts
+        return () => {
+            // Only reset if form is not dirty or if user is navigating away from tracking pages
+            const currentPath = window.location.pathname;
+            if (!currentPath.includes('/admin/tracking/request')) {
+                dispatch(resetForm());
+            }
+        };
+    }, [dispatch]);
+
+    // Add beforeunload event to reset form when user refreshes or closes tab
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            // Reset form on page unload if not submitted
+            if (isFormDirty) {
+                dispatch(resetForm());
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [isFormDirty, dispatch]);
+
+    // Add Inertia navigation listener to reset form when navigating away
+    useEffect(() => {
+        const handleInertiaStart = (event: any) => {
+            const { url } = event.detail;
+            // If navigating away from tracking request pages, reset form
+            if (!url.includes('/admin/tracking/request')) {
+                dispatch(resetForm());
+            }
+        };
+
+        document.addEventListener('inertia:start', handleInertiaStart);
+
+        return () => {
+            document.removeEventListener('inertia:start', handleInertiaStart);
+        };
+    }, [dispatch]);
+
     // Redirect if user doesn't have permission
     if (!canManageUsers()) {
         router.visit('/dashboard');
@@ -250,8 +341,8 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
                 {/* Request Type Selection */}
                 <Tabs
                     defaultValue="new"
-                    value={data.requestType}
-                    onValueChange={(value) => setData('requestType', value)}
+                    value={requestType}
+                    onValueChange={(value) => dispatch(setRequestType(value as 'new' | 'routine'))}
                     className="w-full"
                 >
                     <TabsList className="grid w-full grid-cols-2 bg-muted">
@@ -280,46 +371,44 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
                     completedSteps={completedSteps}
                 />
 
-                {/* Validation Message */}
-                {/* {validationMessage && (
-                    <Alert variant="destructive" className="mb-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{validationMessage}</AlertDescription>
-                    </Alert>
-                )} */}
-
                 <div>
                     {/* Step Content */}
                     <div className="py-4">
                         {currentStep === 'technician' && (
                             <TechnicianTab
-                                data={data.technician}
-                                onChange={(technician) => setData('technician', technician)}
+                                data={technician}
+                                onChange={(tech) => dispatch(setTechnician(tech))}
                                 errors={{ technician: getError('technician') }}
                             />
                         )}
 
                         {currentStep === 'details' && (
                             <DetailTab
-                                data={data.equipment}
-                                onChange={(equipment) => setData('equipment', equipment)}
+                                data={equipment}
+                                onChange={(equipmentUpdate) => dispatch(updateEquipment(equipmentUpdate))}
                                 errors={getStepErrors('equipment')}
+                                technician={technician}
                             />
                         )}
 
                         {currentStep === 'calibration' && (
                             <CalibrationTab
-                                data={{ ...data.calibration, ...data.equipment }}
-                                technician={data.technician}
-                                onChange={(calibration) => setData('calibration', calibration)}
+                                data={{ ...calibration, ...equipment }}
+                                technician={technician}
+                                onChange={(cal) => dispatch(updateCalibration(cal))}
                                 errors={getStepErrors('calibration')}
                             />
                         )}
 
                         {currentStep === 'confirmation' && (
                             <ConfirmEmployeeTab
-                                data={data}
-                                onChange={(confirmation) => setData('confirmation', confirmation)}
+                                data={{
+                                    technician,
+                                    equipment,
+                                    calibration,
+                                    confirmation
+                                }}
+                                onChange={(conf) => dispatch(updateConfirmation(conf))}
                                 errors={getStepErrors('confirmation')}
                             />
                         )}
@@ -348,6 +437,17 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
                 </div>
             </div>
         </AppLayout>
+    );
+};
+
+// Main component wrapped with Redux providers
+const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = (props) => {
+    return (
+        <Provider store={store}>
+            <PersistGate loading={<div>Loading...</div>} persistor={persistor}>
+                <TrackingRequestContent {...props} />
+            </PersistGate>
+        </Provider>
     );
 };
 

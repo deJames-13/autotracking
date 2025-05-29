@@ -40,6 +40,7 @@ export function EquipmentTable({ equipment, users, onRefresh }: EquipmentTablePr
                     <TableHeader>
                         <TableRow>
                             <TableHead className="w-[100px]">ID</TableHead>
+                            <TableHead className="w-[150px]">Recall Number</TableHead>
                             <TableHead className="w-[150px]">Serial Number</TableHead>
                             <TableHead className="w-[200px]">Description</TableHead>
                             <TableHead className="w-[150px]">Manufacturer</TableHead>
@@ -52,7 +53,7 @@ export function EquipmentTable({ equipment, users, onRefresh }: EquipmentTablePr
                     <TableBody>
                         {equipment.data.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-24 text-center">
+                                <TableCell colSpan={9} className="h-24 text-center">
                                     No equipment found.
                                 </TableCell>
                             </TableRow>
@@ -64,7 +65,12 @@ export function EquipmentTable({ equipment, users, onRefresh }: EquipmentTablePr
                                     </TableCell>
                                     <TableCell>
                                         <div className="font-medium">
-                                            {item.serial_number}
+                                            {item.recall_number}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="text-sm">
+                                            {item.serial_number || 'N/A'}
                                         </div>
                                     </TableCell>
                                     <TableCell>

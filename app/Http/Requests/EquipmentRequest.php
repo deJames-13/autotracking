@@ -15,7 +15,8 @@ class EquipmentRequest extends FormRequest
     {
         return [
             'employee_id' => ['nullable', 'exists:users,employee_id'],
-            'serial_number' => ['required', 'string', 'max:255', 'unique:equipments,serial_number,' . ($this->route('equipment') ? $this->route('equipment')->equipment_id : 'NULL') . ',equipment_id'],
+            'recall_number' => ['required', 'string', 'max:255', 'unique:equipments,recall_number,' . ($this->route('equipment') ? $this->route('equipment')->equipment_id : 'NULL') . ',equipment_id'],
+            'serial_number' => ['nullable', 'string', 'max:255'],
             'description' => ['required', 'string'],
             'model' => ['required', 'string', 'max:255'],
             'manufacturer' => ['required', 'string', 'max:255'],

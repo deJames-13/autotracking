@@ -46,10 +46,11 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
                 <div className="space-y-4">
                     <div className="p-4 border rounded-lg bg-muted/50">
                         <div className="font-medium">
-                            {equipment.serial_number}
+                            Recall #: {equipment.recall_number}
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
                             <div>ID: {equipment.equipment_id}</div>
+                            <div>Serial #: {equipment.serial_number || 'N/A'}</div>
                             <div>Manufacturer: {equipment.manufacturer}</div>
                             <div>Assigned to: {equipment.user ?
                                 (equipment.user.full_name || `${equipment.user.first_name} ${equipment.user.last_name}`) :

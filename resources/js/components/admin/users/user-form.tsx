@@ -103,7 +103,7 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
             setLoadingPlants(false);
         }
     }, [plants]);
-    
+
     // Create plant option
     const createPlantOption = useCallback(async (inputValue: string): Promise<SelectOption> => {
         try {

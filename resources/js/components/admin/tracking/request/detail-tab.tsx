@@ -4,57 +4,321 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EquipmentSchema } from '@/validation/tracking-request-schema';
 import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
+import axios from 'axios';
+import { User } from '@/types';
+import { toast } from 'react-hot-toast';
+import { CalendarIcon } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface DetailTabProps {
     data: EquipmentSchema;
     onChange: (data: EquipmentSchema) => void;
     errors?: Record<string, string>;
+    technician?: User | null;
 }
 
-// Mock service to load options (would be replaced with actual API calls)
-const loadPlantOptions = async (inputValue: string): Promise<SelectOption[]> => {
-    // This would be an API call to your backend
-    const plants = ['Plant A', 'Plant B', 'Plant C'];
-    return plants
-        .filter(plant => plant.toLowerCase().includes(inputValue.toLowerCase()))
-        .map(plant => ({ label: plant, value: plant }));
-};
+const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, technician }) => {
+    const [departments, setDepartments] = useState<SelectOption[]>([]);
+    const [locations, setLocations] = useState<SelectOption[]>([]);
+    const [plants, setPlants] = useState<SelectOption[]>([]);
+    const [loadingInitialData, setLoadingInitialData] = useState(true);
+    const [loadingLocations, setLoadingLocations] = useState(false);
+    const [localDueDate, setLocalDueDate] = useState<string | null>(data.dueDate || null);
 
-const loadDepartmentOptions = async (inputValue: string): Promise<SelectOption[]> => {
-// This would be an API call to your backend
-    const departments = ['Production', 'Maintenance', 'Quality Control', 'Engineering'];
-    return departments
-        .filter(dept => dept.toLowerCase().includes(inputValue.toLowerCase()))
-        .map(dept => ({ label: dept, value: dept }));
-};
 
-const loadLocationOptions = async (inputValue: string): Promise<SelectOption[]> => {
-    // This would be an API call to your backend
-    const locations = ['Building A', 'Building B', 'Line 1', 'Line 2', 'Warehouse'];
-    return locations
-        .filter(loc => loc.toLowerCase().includes(inputValue.toLowerCase()))
-        .map(loc => ({ label: loc, value: loc }));
-};
+    // Function to fetch locations by department
+    const fetchLocationsByDepartment = async (departmentId: number) => {
+        try {
+            const response = await axios.get('/admin/locations', {
+                params: {
+                    department_id: departmentId,
+                    limit: 10
+                },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
 
-// Mock function to create new options (would be replaced with API calls)
-const createNewOption = async (inputValue: string): Promise<SelectOption> => {
-    // In a real app, this would create the entity in your database via API
-    return { label: inputValue, value: inputValue };
-};
+            const departmentLocations = response.data.data.data.map((location: any) => ({
+                label: location.location_name,
+                value: location.location_id
+            }));
 
-const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {} }) => {
-    const handleChange = (field: keyof EquipmentSchema, value: string | number | null) => {
-        onChange({ ...data, [field]: value });
+            setLocations(departmentLocations);
+
+            // Auto-select first location if user doesn't have a location selected and we have locations
+            if (departmentLocations.length > 0 && (!data.location || data.location === '' || data.location === null)) {
+                onChange({ location: departmentLocations[0].value });
+            }
+
+        } catch (error) {
+            console.error('Error fetching locations for department:', error);
+        } finally {
+            setLoadingLocations(false);
+        }
     };
+
+    // Fetch initial data for dropdowns when component mounts
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            setLoadingInitialData(true);
+            try {
+                // Fetch departments
+                const deptResponse = await axios.get(route('admin.departments.search-departments'), {
+                    params: { search: '', limit: 10 }
+                });
+                setDepartments(deptResponse.data);
+
+                // Fetch plants
+                const plantResponse = await axios.get(route('admin.plants.search-plants'), {
+                    params: { search: '', limit: 10 }
+                });
+                setPlants(plantResponse.data);
+
+                // Fetch locations without department filter
+                const locResponse = await axios.get('/admin/locations', {
+                    params: { limit: 10 },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                setLocations(locResponse.data.data.data.map((location: any) => ({
+                    label: location.location_name,
+                    value: location.location_id
+                })));
+            } catch (error) {
+                console.error('Error fetching initial data:', error);
+            } finally {
+                setLoadingInitialData(false);
+            }
+        };
+
+        fetchInitialData();
+    }, []);
+
+    const handleChange = (field: keyof EquipmentSchema, value: string | number | null) => {
+        // Special handling for dueDate to maintain local state
+        if (field === 'dueDate') {
+            setLocalDueDate(value as string);
+        }
+
+        // If changing department, we might need to update locations
+        if (field === 'department' && value) {
+            setLoadingLocations(true);
+            fetchLocationsByDepartment(value as number);
+        }
+
+        // Update Redux state with the single field change
+        const updatedData = { [field]: value };
+        onChange(updatedData);
+    };
+
+    // Load department options for SmartSelect
+    const loadDepartmentOptions = async (inputValue: string): Promise<SelectOption[]> => {
+        try {
+            // If we already have pre-loaded departments and input is empty, return them
+            if (inputValue === '' && departments.length > 0) {
+                return departments;
+            }
+
+            // Otherwise load from API
+            const response = await axios.get(route('admin.departments.search-departments'), {
+                params: { search: inputValue, limit: 10 }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error loading departments:', error);
+            return [];
+        }
+    };
+
+    // Load plant options for SmartSelect
+    const loadPlantOptions = async (inputValue: string): Promise<SelectOption[]> => {
+        try {
+            // If we already have pre-loaded plants and input is empty, return them
+            if (inputValue === '' && plants.length > 0) {
+                return plants;
+            }
+
+            // Otherwise load from API
+            const response = await axios.get(route('admin.plants.search-plants'), {
+                params: { search: inputValue, limit: 10 }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error loading plants:', error);
+            return [];
+        }
+    };
+
+    // Load location options for SmartSelect - don't filter by department
+    const loadLocationOptions = async (inputValue: string): Promise<SelectOption[]> => {
+        try {
+            // If we already have pre-loaded locations and input is empty, return them
+            if (inputValue === '' && locations.length > 0) {
+                return locations;
+            }
+
+            // Only include department_id as an optional filter, not a requirement
+            const params: Record<string, string> = {
+                search: inputValue,
+                limit: '10'
+            };
+
+            // Add department as an optional filter if selected
+            if (data.department) {
+                params.department_id = String(data.department);
+            }
+
+            const response = await axios.get('/admin/locations', {
+                params,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            return response.data.data.data.map((location: any) => ({
+                label: location.location_name,
+                value: location.location_id
+            }));
+        } catch (error) {
+            console.error('Error loading locations:', error);
+            return [];
+        } finally {
+            setLoadingLocations(false);
+        }
+    };
+
+    // Create location option - don't require department
+    const createLocationOption = async (inputValue: string): Promise<SelectOption> => {
+        try {
+            // Optional department association
+            const params: any = {
+                location_name: inputValue,
+            };
+
+            // Add department if available
+            if (data.department) {
+                params.department_id = data.department;
+            }
+
+            const response = await axios.post('/admin/locations', params, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            toast.success(`Location "${inputValue}" created successfully`);
+
+            return {
+                label: inputValue,
+                value: response.data.data.location_id
+            };
+        } catch (error: any) {
+            console.error('Error creating location:', error);
+
+            if (error.response?.data?.message) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error('Failed to create location. Please try again.');
+            }
+
+            throw new Error('Failed to create location');
+        }
+    };
+
+    // Load user options for SmartSelect
+    const loadUserOptions = async (inputValue: string): Promise<SelectOption[]> => {
+        try {
+            const response = await axios.get('/admin/users', {
+                params: {
+                    search: inputValue,
+                    limit: 10
+                },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            return response.data.data.data.map((user: any) => ({
+                label: `${user.first_name} ${user.last_name}`,
+                value: user.user_id
+            }));
+        } catch (error) {
+            console.error('Error loading users:', error);
+            return [];
+        }
+    };
+
+    // Refine the date handling to prevent null values
+    const handleDateChange = (date: Date | undefined) => {
+        if (date) {
+            const formattedDate = format(date, 'yyyy-MM-dd');
+            setLocalDueDate(formattedDate);
+            handleChange('dueDate', formattedDate);
+        }
+    };
+
+
+    useEffect(() => {
+        if (data.dueDate !== localDueDate && data.dueDate) {
+            setLocalDueDate(data.dueDate);
+        }
+    }, [data.dueDate]);
+
+    useEffect(() => {
+        if (technician) {
+            const updates: any = {};
+            let hasChanges = false;
+
+            // Auto-fill plant from technician - use correct field name and prevent overwrite
+            if (technician.plant_id && (!data.plant || data.plant === '' || data.plant === null)) {
+                updates.plant = technician.plant_id;
+                hasChanges = true;
+            }
+
+            // Auto-fill department from technician - use correct field name and prevent overwrite
+            if (technician.department_id && (!data.department || data.department === '' || data.department === null)) {
+                updates.department = technician.department_id;
+                hasChanges = true;
+
+                // When department changes, we may need to fetch related locations and auto-select first one
+                setLoadingLocations(true);
+                fetchLocationsByDepartment(technician.department_id);
+            }
+
+            // Auto-fill due date to today if not already set
+            if (!data.dueDate || data.dueDate === '') {
+                const today = new Date();
+                const formattedDate = format(today, 'yyyy-MM-dd');
+                updates.dueDate = formattedDate;
+                setLocalDueDate(formattedDate);
+                hasChanges = true;
+            }
+
+            // Only update if there are actual changes
+            if (hasChanges) {
+                onChange(updates);
+            }
+        }
+    }, [technician?.employee_id]); // Use employee_id to prevent infinite loops
+
+    // DONT REMOVE
+    console.log('Equipment data:', data)
+    console.log('Technician data:', technician)
 
     return (
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Equipment Details</CardTitle>
+                    <CardTitle>Details</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Organizational info in one row */}
+                    <div className="grid grid-cols-3 gap-4 mb-6">
                         <div>
                             <Label htmlFor="plant" className={errors.plant ? 'text-destructive' : ''}>
                                 Plant
@@ -64,11 +328,19 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {} }) =>
                                 value={data.plant}
                                 onChange={(value) => handleChange('plant', value as string)}
                                 loadOptions={loadPlantOptions}
-                                onCreateOption={createNewOption}
-                                placeholder="Select or create plant"
+                                placeholder="Select plant"
                                 error={errors.plant}
                                 className={errors.plant ? 'border-destructive' : ''}
+                                loading={loadingInitialData}
+                                cacheOptions={true}
+                                defaultOptions={plants.length > 0 ? plants : true}
+                                minSearchLength={0}
                             />
+                            {technician?.plant && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Auto-filled from technician: {technician.plant.plant_name}
+                                </p>
+                            )}
                         </div>
 
                         <div>
@@ -80,11 +352,19 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {} }) =>
                                 value={data.department}
                                 onChange={(value) => handleChange('department', value as string)}
                                 loadOptions={loadDepartmentOptions}
-                                onCreateOption={createNewOption}
-                                placeholder="Select or create department"
+                                placeholder="Select department"
                                 error={errors.department}
                                 className={errors.department ? 'border-destructive' : ''}
+                                loading={loadingInitialData}
+                                cacheOptions={true}
+                                defaultOptions={departments.length > 0 ? departments : true}
+                                minSearchLength={0}
                             />
+                            {technician?.department && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Auto-filled from technician: {technician.department.department_name}
+                                </p>
+                            )}
                         </div>
 
                         <div>
@@ -96,64 +376,146 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {} }) =>
                                 value={data.location}
                                 onChange={(value) => handleChange('location', value as string)}
                                 loadOptions={loadLocationOptions}
-                                onCreateOption={createNewOption}
+                                onCreateOption={createLocationOption}
                                 placeholder="Select or create location"
                                 error={errors.location}
                                 className={errors.location ? 'border-destructive' : ''}
+                                loading={loadingLocations || loadingInitialData}
+                                cacheOptions={false}
+                                defaultOptions={locations.length > 0 ? locations : true}
+                                minSearchLength={0}
                             />
                         </div>
+                    </div>
 
-                        <div>
-                            <Label htmlFor="description" className={errors.description ? 'text-destructive' : ''}>
-                                Equipment Description
-                            </Label>
-                            <Input
-                                id="description"
-                                value={data.description}
-                                onChange={(e) => handleChange('description', e.target.value)}
-                                className={errors.description ? 'border-destructive' : ''}
-                            />
-                            {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
+                    {/* Equipment details below */}
+                    <div className="border-t pt-6">
+                        <h3 className="font-medium text-sm mb-4">Equipment Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="md:col-span-2">
+                                <Label htmlFor="description" className={errors.description ? 'text-destructive' : ''}>
+                                    Equipment Description
+                                </Label>
+                                <Input
+                                    id="description"
+                                    value={data.description}
+                                    onChange={(e) => handleChange('description', e.target.value)}
+                                    className={errors.description ? 'border-destructive' : ''}
+                                />
+                                {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
+                            </div>
+                            <div>
+                                <Label htmlFor="serialNumber" className={errors.serialNumber ? 'text-destructive' : ''}>
+                                    Serial Number
+                                </Label>
+                                <Input
+                                    id="serialNumber"
+                                    value={data.serialNumber || ''}
+                                    onChange={(e) => handleChange('serialNumber', e.target.value)}
+                                    className={errors.serialNumber ? 'border-destructive' : ''}
+                                />
+                                {errors.serialNumber && <p className="text-sm text-destructive mt-1">{errors.serialNumber}</p>}
+                            </div>
+
+                            <div>
+                                <Label htmlFor="recallNumber" className={errors.recallNumber ? 'text-destructive' : ''}>
+                                    Recall Number
+                                </Label>
+                                <Input
+                                    id="recallNumber"
+                                    value={data.recallNumber || ''}
+                                    onChange={(e) => handleChange('recallNumber', e.target.value)}
+                                    className={errors.recallNumber ? 'border-destructive' : ''}
+                                />
+                                {errors.recallNumber && <p className="text-sm text-destructive mt-1">{errors.recallNumber}</p>}
+                            </div>
+
+                            <div>
+                                <Label htmlFor="model" className={errors.model ? 'text-destructive' : ''}>
+                                    Model
+                                </Label>
+                                <Input
+                                    id="model"
+                                    value={data.model || ''}
+                                    onChange={(e) => handleChange('model', e.target.value)}
+                                    className={errors.model ? 'border-destructive' : ''}
+                                />
+                                {errors.model && <p className="text-sm text-destructive mt-1">{errors.model}</p>}
+                            </div>
+
+                            <div>
+                                <Label htmlFor="manufacturer" className={errors.manufacturer ? 'text-destructive' : ''}>
+                                    Manufacturer
+                                </Label>
+                                <Input
+                                    id="manufacturer"
+                                    value={data.manufacturer || ''}
+                                    onChange={(e) => handleChange('manufacturer', e.target.value)}
+                                    className={errors.manufacturer ? 'border-destructive' : ''}
+                                />
+                                {errors.manufacturer && <p className="text-sm text-destructive mt-1">{errors.manufacturer}</p>}
+                            </div>
+
                         </div>
+                    </div>
 
-                        <div>
-                            <Label htmlFor="serialNumber" className={errors.serialNumber ? 'text-destructive' : ''}>
-                                Serial Number <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                                id="serialNumber"
-                                value={data.serialNumber || ''}
-                                onChange={(e) => handleChange('serialNumber', e.target.value)}
-                                className={errors.serialNumber ? 'border-destructive' : ''}
-                                required
-                            />
-                            {errors.serialNumber && <p className="text-sm text-destructive mt-1">{errors.serialNumber}</p>}
-                        </div>
+                    {/* Due date section */}
+                    <div className="border-t pt-6 mt-6">
+                        <h3 className="font-medium text-sm mb-4">Scheduling Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <Label htmlFor="dueDate" className={errors.dueDate ? 'text-destructive' : ''}>
+                                    Due Date
+                                </Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !localDueDate && "text-muted-foreground",
+                                                errors.dueDate && "border-destructive"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {localDueDate ? format(new Date(localDueDate), 'PPP') : <span>Select a date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={localDueDate ? new Date(localDueDate) : undefined}
+                                            onSelect={handleDateChange}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                {errors.dueDate && <p className="text-sm text-destructive mt-1">{errors.dueDate}</p>}
+                                {technician && localDueDate && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Auto-filled to current day
+                                    </p>
+                                )}
+                            </div>
 
-                        <div>
-                            <Label htmlFor="model" className={errors.model ? 'text-destructive' : ''}>
-                                Model
-                            </Label>
-                            <Input
-                                id="model"
-                                value={data.model || ''}
-                                onChange={(e) => handleChange('model', e.target.value)}
-                                className={errors.model ? 'border-destructive' : ''}
-                            />
-                            {errors.model && <p className="text-sm text-destructive mt-1">{errors.model}</p>}
-                        </div>
-
-                        <div className="md:col-span-2">
-                            <Label htmlFor="manufacturer" className={errors.manufacturer ? 'text-destructive' : ''}>
-                                Manufacturer
-                            </Label>
-                            <Input
-                                id="manufacturer"
-                                value={data.manufacturer || ''}
-                                onChange={(e) => handleChange('manufacturer', e.target.value)}
-                                className={errors.manufacturer ? 'border-destructive' : ''}
-                            />
-                            {errors.manufacturer && <p className="text-sm text-destructive mt-1">{errors.manufacturer}</p>}
+                            <div>
+                                <Label htmlFor="receivedBy" className={errors.receivedBy ? 'text-destructive' : ''}>
+                                    Received By
+                                </Label>
+                                <InertiaSmartSelect
+                                    name="receivedBy"
+                                    value={data.receivedBy}
+                                    onChange={(value) => handleChange('receivedBy', value as string)}
+                                    loadOptions={loadUserOptions}
+                                    placeholder="Select user"
+                                    error={errors.receivedBy}
+                                    className={errors.receivedBy ? 'border-destructive' : ''}
+                                    cacheOptions={true}
+                                    defaultOptions={true}
+                                    minSearchLength={2}
+                                />
+                                {errors.receivedBy && <p className="text-sm text-destructive mt-1">{errors.receivedBy}</p>}
+                            </div>
                         </div>
                     </div>
                 </CardContent>
