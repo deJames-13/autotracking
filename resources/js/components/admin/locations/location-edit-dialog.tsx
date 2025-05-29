@@ -19,6 +19,7 @@ export function LocationEditDialog({
     onSuccess
 }: LocationEditDialogProps) {
     const handleSuccess = () => {
+        console.log('LocationEditDialog: Edit successful, calling onSuccess');
         onOpenChange(false);
         onSuccess();
     };

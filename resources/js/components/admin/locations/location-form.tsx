@@ -31,23 +31,22 @@ export function LocationForm({ location, departments, onSuccess, onCancel }: Loc
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        const submitData = {
-            ...data,
-            department_id: parseInt(data.department_id),
-        };
-
         const options = {
             onSuccess: () => {
+                console.log('LocationForm: Operation successful, calling onSuccess');
                 reset();
                 onSuccess?.();
+            },
+            onError: (errors: any) => {
+                console.error('LocationForm: Operation failed:', errors);
             },
             preserveScroll: true,
         };
 
         if (isEditing) {
-            put(`/api/v1/locations/${location.location_id}`, options);
+            put(route('admin.locations.update', location.location_id), options);
         } else {
-            post('/api/v1/locations', options);
+            post(route('admin.locations.store'), options);
         }
     };
 

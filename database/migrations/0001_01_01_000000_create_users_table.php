@@ -16,8 +16,6 @@ return new class extends Migration
             $table->string('plant_name')->unique();
             $table->string('address')->nullable();
             $table->string('telephone')->nullable();
-
-
             $table->timestamps();
         });
         
@@ -41,10 +39,10 @@ return new class extends Migration
             $table->string('email')->nullable()->unique();
             $table->string('avatar')->nullable();
             $table->string('password'); //PIN
-            $table->foreignId('role_id')->constrained('roles', 'role_id');
+            $table->foreignId('role_id')->constrained('roles', 'role_id')->onDelete('restrict');
             $table->timestamp('email_verified_at')->nullable(); 
-            $table->foreignId('department_id')->nullable()->constrained('departments', 'department_id');
-            $table->foreignId('plant_id')->nullable()->constrained('plants', 'plant_id');
+            $table->foreignId('department_id')->nullable()->constrained('departments', 'department_id')->onDelete('set null');
+            $table->foreignId('plant_id')->nullable()->constrained('plants', 'plant_id')->onDelete('set null');
             $table->rememberToken();
             $table->timestamps();
         });
@@ -52,9 +50,10 @@ return new class extends Migration
         Schema::create('locations', function (Blueprint $table) {
             $table->id('location_id');
             $table->string('location_name');
-            $table->foreignId('department_id')->constrained('departments', 'department_id')->nullable();
+            $table->foreignId('department_id')->nullable()->constrained('departments', 'department_id')->onDelete('set null');
             $table->timestamps();
         });
+
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('employee_id')->primary();
             $table->string('token');
@@ -63,7 +62,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index()->references('employee_id')->on('users');
+            $table->foreignId('user_id')->nullable()->index()->references('employee_id')->on('users')->onDelete('cascade');
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');
@@ -79,7 +78,6 @@ return new class extends Migration
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('locations');
-        Schema::dropIfExists('equipments');
         Schema::dropIfExists('users');
         Schema::dropIfExists('roles');
         Schema::dropIfExists('departments');

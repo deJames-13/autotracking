@@ -14,11 +14,17 @@ export function LocationDeleteDialog({ location, open, onOpenChange, onSuccess }
     const handleDelete = () => {
         if (!location) return;
 
-        router.delete(`/api/v1/locations/${location.location_id}`, {
+        console.log('LocationDeleteDialog: Deleting location', location.location_id);
+
+        router.delete(route('admin.locations.destroy', location.location_id), {
             onSuccess: () => {
+                console.log('LocationDeleteDialog: Delete successful, calling onSuccess');
                 onOpenChange(false);
                 onSuccess();
             },
+            onError: (errors) => {
+                console.error('Error deleting location:', errors);
+            }
         });
     };
 
@@ -45,6 +51,7 @@ export function LocationDeleteDialog({ location, open, onOpenChange, onSuccess }
                         <div className="text-sm text-muted-foreground mt-1">
                             <div>ID: {location.location_id}</div>
                             <div>Department: {location.department?.department_name || 'No department'}</div>
+                            <div>Equipment: {location.equipments?.length || 0}</div>
                         </div>
                     </div>
                     <div className="flex justify-end gap-3">
