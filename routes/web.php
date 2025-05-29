@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\LocationController as AdminLocationController;
 use App\Http\Controllers\Admin\EquipmentController as AdminEquipmentController;
 use App\Http\Controllers\Admin\PlantController as AdminPlantController;
 use App\Http\Controllers\Admin\TrackingController as AdminTrackingController;
+use App\Http\Controllers\Admin\Auth\AdminLoginController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Models\User;
 use App\Models\Location;
 use App\Models\TrackingRecord;
@@ -20,9 +22,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
-    
-    // Admin CRUD routes with proper server-side handling
-    Route::prefix('admin')->name('admin.')->group(function () {
+});
+
+// Admin Authentication Routes
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::middleware('guest')->group(function () {
+        Route::get('login', [AdminLoginController::class, 'create'])
+            ->name('login');
+        Route::post('login', [AdminLoginController::class, 'store'])
+            ->name('login.store');
+    });
+
+    Route::middleware('auth')->group(function () {
+        Route::post('logout', [AdminLoginController::class, 'destroy'])
+            ->name('logout');
+        
+        // Admin Dashboard
+        Route::get('dashboard', [AdminDashboardController::class, 'index'])
+            ->name('dashboard');
         
         // Users management
         Route::resource('users', AdminUserController::class)->parameters([
@@ -40,9 +57,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
         
         // Locations management
-        Route::get('locations/api/search-locations', [AdminLocationController::class, 'searchLocations'])
-            ->name('locations.search-locations');
-            
         Route::resource('locations', AdminLocationController::class)->parameters([
             'locations' => 'location:location_id'
         ]);
@@ -66,8 +80,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('tracking', [AdminTrackingController::class, 'index'])->name('tracking.index');
         Route::get('tracking/request', [AdminTrackingController::class, 'requestIndex'])->name('tracking.request.index');
         
+        // Additional routes for searching departments, plants, and locations
+        Route::get('departments/search', [AdminDepartmentController::class, 'searchDepartments'])->name('departments.search-departments');
+        Route::post('departments/create', [AdminDepartmentController::class, 'createDepartment'])->name('departments.create-department');
+        Route::get('plants/search', [AdminPlantController::class, 'searchPlants'])->name('plants.search-plants');
+        Route::post('plants/create', [AdminPlantController::class, 'createPlant'])->name('plants.create-plant');
+        Route::get('locations/search', [AdminLocationController::class, 'searchLocations'])->name('locations.search-locations');
     });
-
 });
 
 require __DIR__.'/settings.php';

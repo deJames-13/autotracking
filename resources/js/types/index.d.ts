@@ -154,86 +154,54 @@ export interface UserFormData {
 
 // Tracking types
 export interface TrackingFormData {
-    equipment_id: string;FormData {
+    equipment_id: string;
     technician_id: string;
-    location_id: string; g;
-    cal_date: string; ng;
+    location_id: string;
+    cal_date: string;
     cal_due_date: string;
-    description: string;;
+    description: string;
     recall_number: string;
     is_new_registration: boolean;
-    serial_number: string; oolean;
+    serial_number: string;
     model: string;
-    manufacturer: string;;
+    manufacturer: string;
     equipment_scan: string;
-    employee_scan: string;;
-} employee_scan: string;
-}
-export interface OutgoingFormData {
-    next_cal_due_date: string;ata {
-    description: string; tring;
-    recall_number: string;
     employee_scan: string;
-} employee_scan: string;
 }
-// Equipment form types
+
 export interface EquipmentFormData {
-    employee_id?: number | null;ta {
-    serial_number: string; null;
-    description: string; g;
+    serial_number: string;
+    description: string;
     model: string;
-    manufacturer: string; manufacturer: string;
-}}
+    manufacturer: string;
+    employee_id?: number;
+}
 
-// Department form types
-export interface DepartmentFormData {ormData {
-    department_name: string; department_name: string;
-}}
+export interface DepartmentFormData {
+    department_name: string;
+}
 
-// Location form types
-export interface LocationFormData {ormData {
+export interface LocationFormData {
     location_name: string;
-    department_id: number; department_id: number;
-}}
+    department_id: number;
+}
 
-// Plant form types
-export interface PlantFormData {ormData {
-    plant_name: string; g;
+export interface PlantFormData {
+    plant_name: string;
     address?: string;
-    telephone ?: string; telephone ?: string;
-}}
-
-// API Response types
-export interface ApiResponse<T = any> { esponse<T = any> {
-    success: boolean;
-    message ?: string; string;
-    data?: T;
-    error ?: string; error ?: string;
-}}
-
-// Filter typesipmentFilters {
-export interface EquipmentFilters {
-    search?: string; string;
-    employee_id?: number | string; manufacturer?: string;
-    manufacturer?: string;
+    telephone?: string;
 }
-}
-rFilters {
+
 export interface UserFilters {
     search?: string;
-    role_id?: number; department_id?: number;
+    role_id?: number;
     department_id?: number;
 }
-}
-ckingFilters {
+
 export interface TrackingFilters {
     search?: string;
-    equipment_id?: number; r;
-    technician_id?: number; ber;
-    location_id?: number;
-    recall?: boolean; g;
-    date_from?: string; date_to?: string;
+    status?: string;
+    date_from?: string;
     date_to?: string;
-}
 }
 
