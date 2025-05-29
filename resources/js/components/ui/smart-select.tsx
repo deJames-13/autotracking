@@ -1,5 +1,5 @@
 import { Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useController, UseControllerProps } from 'react-hook-form';
 import AsyncCreatableSelect from 'react-select/async-creatable';
 import { SingleValue, MultiValue, ActionMeta } from 'react-select';
@@ -12,11 +12,11 @@ export interface SelectOption {
 
 interface SmartSelectFieldProps extends UseControllerProps {
     loadOptions: (inputValue: string) => Promise<SelectOption[]>;
-    initialValue?: string | number | null;
+    initialValue?: string | number | null | (string | number | null)[];
     customNoneLabel?: string;
     noNoneOption?: boolean;
     loading?: boolean;
-    onSelect?: (value: string | number | null) => void;
+    onSelect?: (value: string | number | null | (string | number | null)[]) => void;
     onCreateOption?: (inputValue: string) => Promise<SelectOption> | SelectOption;
     placeholder?: string;
     isDisabled?: boolean;
@@ -29,6 +29,7 @@ interface SmartSelectFieldProps extends UseControllerProps {
 interface SmartSelectProps {
     loadOptions: (inputValue: string) => Promise<SelectOption[]>;
     onSelect: (value: string | number | null | (string | number | null)[]) => void;
+    value?: string | number | null | (string | number | null)[];
     onCreateOption?: (inputValue: string) => Promise<SelectOption> | SelectOption;
     customNoneLabel?: string;
     noNoneOption?: boolean;
@@ -39,7 +40,292 @@ interface SmartSelectProps {
     isMulti?: boolean;
     cacheOptions?: boolean;
     defaultOptions?: SelectOption[] | boolean;
+    name?: string;
+    error?: string;
 }
+
+// Store selected option labels globally to prevent losing them on re-renders
+const optionCache = new Map<string | number, string>();
+
+// Direct form component that works with Inertia
+export const InertiaSmartSelect = ({
+    name,
+    value,
+    onChange,
+    error,
+    loadOptions,
+    onCreateOption,
+    customNoneLabel = 'None',
+    noNoneOption = false,
+    loading = false,
+    isMulti = false,
+    ...props
+}: {
+    name: string;
+    value: string | number | null | (string | number | null)[];
+    onChange: (value: string | number | null | (string | number | null)[]) => void;
+    error?: string;
+} & Omit<SmartSelectProps, 'onSelect' | 'value'>) => {
+    // Ref to track if we've initialized the component
+    const initialized = useRef(false);
+    // Internal selectedOption state - ONLY updated by our controlled logic
+    const [selectedOption, setSelectedOption] = useState<SelectOption | SelectOption[] | null>(null);
+    // Track if we're loading a label for a value
+    const [loadingLabel, setLoadingLabel] = useState(false);
+
+    // Function to load the label for a value if we don't have it cached
+    const loadLabelForValue = async (val: string | number | null) => {
+        if (val === null || val === 'none') return;
+        if (optionCache.has(val)) return;
+
+        try {
+            setLoadingLabel(true);
+            // Load all options to try to find a match
+            const options = await loadOptions('');
+            const option = options.find(opt => opt.value === val);
+
+            if (option) {
+                optionCache.set(val, option.label);
+            } else {
+                // If we can't find it, just use the value as the label
+                optionCache.set(val, String(val));
+            }
+        } catch (error) {
+            console.error('Error loading label for value:', error);
+            // Fallback to using the value as the label
+            optionCache.set(val, String(val));
+        } finally {
+            setLoadingLabel(false);
+        }
+    };
+
+    // Simple async load options without any side effects
+    const handleAsyncLoadOptions = async (inputValue: string): Promise<SelectOption[]> => {
+        if (inputValue.length < 2) return []; // Require at least 2 chars to search
+
+        try {
+            const options = await loadOptions(inputValue);
+
+            if (noNoneOption) {
+                return options;
+            }
+
+            // Add "None" option if not in multi-select mode
+            if (!isMulti) {
+                return [
+                    { label: customNoneLabel, value: 'none' },
+                    ...options
+                ];
+            }
+
+            return options;
+        } catch (error) {
+            console.error('Error loading options:', error);
+            return [];
+        }
+    };
+
+    // Handle change from the select component
+    const handleChange = (
+        newValue: SingleValue<SelectOption> | MultiValue<SelectOption>,
+        actionMeta: ActionMeta<SelectOption>
+    ) => {
+        if (isMulti) {
+            const values = newValue as MultiValue<SelectOption>;
+            // Send the numeric values to the form, but keep the full options with labels for display
+            const newValues = values ? values.map(option => option.value) : [];
+            onChange(newValues);
+            setSelectedOption(values || null);
+        } else {
+            const option = newValue as SingleValue<SelectOption>;
+            if (!option) {
+                onChange(null);
+                setSelectedOption(null);
+                return;
+            }
+
+            if (option.value === 'none') {
+                onChange(null);
+                setSelectedOption({ label: customNoneLabel, value: 'none' });
+            } else {
+                // Save the label to our cache - use a string key for consistent lookup
+                optionCache.set(String(option.value), option.label);
+
+                // Send just the value to the form
+                onChange(option.value);
+
+                // Keep the full option with label for display
+                setSelectedOption(option);
+            }
+        }
+    };
+
+    // Handle create option - keep the numerical ID from the API
+    const handleCreateOption = async (inputValue: string) => {
+        if (onCreateOption) {
+            try {
+                const newOption = await onCreateOption(inputValue);
+
+                // Save the label to our cache - use a string key for consistent lookup
+                optionCache.set(String(newOption.value), newOption.label);
+
+                if (isMulti) {
+                    const currentValues = selectedOption as SelectOption[] || [];
+                    const newValues = [...currentValues, newOption];
+                    // For multi-select, use the numeric ID values
+                    onChange(newValues.map(option => option.value));
+                    setSelectedOption(newValues);
+                } else {
+                    // Send the numeric ID value to the form
+                    onChange(newOption.value);
+
+                    // Keep the full option with label for display
+                    setSelectedOption(newOption);
+                }
+            } catch (error) {
+                console.error('Error creating new option:', error);
+            }
+        }
+    };
+
+    // Function to get or fetch label for a value
+    const getOrFetchLabel = async (val: string | number | null) => {
+        if (val === null || val === 'none') return null;
+
+        // Check cache first with string key for consistent lookup
+        const cacheKey = String(val);
+        if (optionCache.has(cacheKey)) {
+            return { value: val, label: optionCache.get(cacheKey)! };
+        }
+
+        try {
+            setLoadingLabel(true);
+            // Try to load the label
+            const options = await loadOptions('');
+            const option = options.find(opt => String(opt.value) === cacheKey);
+
+            if (option) {
+                // Found the option, cache and return
+                optionCache.set(cacheKey, option.label);
+                return option;
+            } else {
+                // If not found, use the value as label
+                optionCache.set(cacheKey, cacheKey);
+                return { value: val, label: cacheKey };
+            }
+        } catch (error) {
+            console.error('Error loading label for value:', error);
+            // Use value as label as fallback
+            optionCache.set(cacheKey, cacheKey);
+            return { value: val, label: cacheKey };
+        } finally {
+            setLoadingLabel(false);
+        }
+    };
+
+    // Initialize selected option based on value prop
+    useEffect(() => {
+        const initializeOption = async () => {
+            // For simple cases when option is already selected, just return
+            if (selectedOption && value !== null && String(selectedOption.value) === String(value)) {
+                return;
+            }
+
+            // For multi-select
+            if (isMulti && Array.isArray(value)) {
+                // Handle multi-select initialization
+                const options = await Promise.all(
+                    value.map(async (val) => {
+                        const option = await getOrFetchLabel(val);
+                        return option || { label: String(val), value: val };
+                    })
+                );
+                setSelectedOption(options);
+                return;
+            }
+
+            // For single-select
+            if (!isMulti) {
+                if (value === null) {
+                    // For null/none value
+                    if (!noNoneOption) {
+                        setSelectedOption({ label: customNoneLabel, value: 'none' });
+                    } else {
+                        setSelectedOption(null);
+                    }
+                    return;
+                }
+
+                // For actual value
+                const option = await getOrFetchLabel(value);
+                setSelectedOption(option);
+            }
+        };
+
+        initializeOption();
+    }, [value, isMulti, noNoneOption]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center p-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+            </div>
+        );
+    }
+
+    // Use a modified value for display in the select component
+    const getDisplayValue = () => {
+        // If we don't have a selected option yet, return null
+        if (!selectedOption) return null;
+
+        // For multi-select, return the array of options
+        if (isMulti) return selectedOption;
+
+        // For single select, ensure we show the label but use the value internally
+        return selectedOption;
+    };
+
+    return (
+        <div>
+            <AsyncCreatableSelect
+                name={name}
+                value={selectedOption}
+                onChange={handleChange}
+                loadOptions={handleAsyncLoadOptions}
+                onCreateOption={onCreateOption ? handleCreateOption : undefined}
+                isLoading={loading || loadingLabel}
+                cacheOptions={props.cacheOptions ?? true}
+                defaultOptions={props.defaultOptions ?? false}
+                isSearchable
+                isMulti={isMulti}
+                placeholder={props.placeholder}
+                isDisabled={props.isDisabled}
+                className={props.className}
+                formatCreateLabel={(inputValue) => `Create "${inputValue}"`}
+                noOptionsMessage={({ inputValue }) =>
+                    !inputValue || inputValue.length < 2
+                        ? 'Type at least 2 characters to search...'
+                        : `No options found for "${inputValue}"`
+                }
+                getOptionValue={(option) => String(option.value)}
+                getOptionLabel={(option) => option.label}
+                styles={{
+                    control: (base) => ({
+                        ...base,
+                        minHeight: '38px',
+                    }),
+                    menu: (base) => ({
+                        ...base,
+                        zIndex: 999,
+                    })
+                }}
+            />
+            {error && (
+                <p className="mt-1 text-sm text-red-600">{error}</p>
+            )}
+        </div>
+    );
+};
 
 const SmartSelectField = ({
     loadOptions,
@@ -172,6 +458,8 @@ const SmartSelectField = ({
                 noOptionsMessage={({ inputValue }) =>
                     inputValue ? `No options found for "${inputValue}"` : 'Start typing to search...'
                 }
+                getOptionValue={(option) => String(option.value)}
+                getOptionLabel={(option) => option.label}
             />
             {error && (
                 <p className="mt-1 text-sm text-red-600">{error.message}</p>
@@ -246,6 +534,8 @@ const SmartSelect = ({
             noOptionsMessage={({ inputValue }) =>
                 inputValue ? `No options found for "${inputValue}"` : 'Start typing to search...'
             }
+            getOptionValue={(option) => String(option.value)}
+            getOptionLabel={(option) => option.label}
         />
     );
 };

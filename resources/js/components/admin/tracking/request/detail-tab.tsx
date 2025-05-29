@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EquipmentSchema } from '@/validation/tracking-request-schema';
+import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
 
 interface DetailTabProps {
     data: EquipmentSchema;
@@ -11,12 +11,39 @@ interface DetailTabProps {
     errors?: Record<string, string>;
 }
 
-// Mock data for plants and departments (would come from backend)
-const plants = ['Plant A', 'Plant B', 'Plant C'];
-const departments = ['Production', 'Maintenance', 'Quality Control', 'Engineering'];
+// Mock service to load options (would be replaced with actual API calls)
+const loadPlantOptions = async (inputValue: string): Promise<SelectOption[]> => {
+    // This would be an API call to your backend
+    const plants = ['Plant A', 'Plant B', 'Plant C'];
+    return plants
+        .filter(plant => plant.toLowerCase().includes(inputValue.toLowerCase()))
+        .map(plant => ({ label: plant, value: plant }));
+};
+
+const loadDepartmentOptions = async (inputValue: string): Promise<SelectOption[]> => {
+// This would be an API call to your backend
+    const departments = ['Production', 'Maintenance', 'Quality Control', 'Engineering'];
+    return departments
+        .filter(dept => dept.toLowerCase().includes(inputValue.toLowerCase()))
+        .map(dept => ({ label: dept, value: dept }));
+};
+
+const loadLocationOptions = async (inputValue: string): Promise<SelectOption[]> => {
+    // This would be an API call to your backend
+    const locations = ['Building A', 'Building B', 'Line 1', 'Line 2', 'Warehouse'];
+    return locations
+        .filter(loc => loc.toLowerCase().includes(inputValue.toLowerCase()))
+        .map(loc => ({ label: loc, value: loc }));
+};
+
+// Mock function to create new options (would be replaced with API calls)
+const createNewOption = async (inputValue: string): Promise<SelectOption> => {
+    // In a real app, this would create the entity in your database via API
+    return { label: inputValue, value: inputValue };
+};
 
 const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {} }) => {
-    const handleChange = (field: keyof EquipmentSchema, value: string) => {
+    const handleChange = (field: keyof EquipmentSchema, value: string | number | null) => {
         onChange({ ...data, [field]: value });
     };
 
@@ -32,53 +59,48 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {} }) =>
                             <Label htmlFor="plant" className={errors.plant ? 'text-destructive' : ''}>
                                 Plant
                             </Label>
-                            <Select
+                            <InertiaSmartSelect
+                                name="plant"
                                 value={data.plant}
-                                onValueChange={(value) => handleChange('plant', value)}
-                            >
-                                <SelectTrigger className={errors.plant ? 'border-destructive' : ''}>
-                                    <SelectValue placeholder="Select plant" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {plants.map((plant) => (
-                                        <SelectItem key={plant} value={plant}>{plant}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {errors.plant && <p className="text-sm text-destructive mt-1">{errors.plant}</p>}
+                                onChange={(value) => handleChange('plant', value as string)}
+                                loadOptions={loadPlantOptions}
+                                onCreateOption={createNewOption}
+                                placeholder="Select or create plant"
+                                error={errors.plant}
+                                className={errors.plant ? 'border-destructive' : ''}
+                            />
                         </div>
 
                         <div>
                             <Label htmlFor="department" className={errors.department ? 'text-destructive' : ''}>
                                 Department
                             </Label>
-                            <Select
+                            <InertiaSmartSelect
+                                name="department"
                                 value={data.department}
-                                onValueChange={(value) => handleChange('department', value)}
-                            >
-                                <SelectTrigger className={errors.department ? 'border-destructive' : ''}>
-                                    <SelectValue placeholder="Select department" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {departments.map((dept) => (
-                                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {errors.department && <p className="text-sm text-destructive mt-1">{errors.department}</p>}
+                                onChange={(value) => handleChange('department', value as string)}
+                                loadOptions={loadDepartmentOptions}
+                                onCreateOption={createNewOption}
+                                placeholder="Select or create department"
+                                error={errors.department}
+                                className={errors.department ? 'border-destructive' : ''}
+                            />
                         </div>
 
                         <div>
                             <Label htmlFor="location" className={errors.location ? 'text-destructive' : ''}>
                                 Location
                             </Label>
-                            <Input
-                                id="location"
+                            <InertiaSmartSelect
+                                name="location"
                                 value={data.location}
-                                onChange={(e) => handleChange('location', e.target.value)}
+                                onChange={(value) => handleChange('location', value as string)}
+                                loadOptions={loadLocationOptions}
+                                onCreateOption={createNewOption}
+                                placeholder="Select or create location"
+                                error={errors.location}
                                 className={errors.location ? 'border-destructive' : ''}
                             />
-                            {errors.location && <p className="text-sm text-destructive mt-1">{errors.location}</p>}
                         </div>
 
                         <div>

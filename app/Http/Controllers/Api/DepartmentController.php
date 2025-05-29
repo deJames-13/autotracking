@@ -14,13 +14,24 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class DepartmentController extends Controller
 {
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection|JsonResponse
     {
         $query = Department::with(['users', 'locations']);
 
         if ($request->has('search')) {
             $search = $request->get('search');
             $query->where('department_name', 'like', "%{$search}%");
+        }
+
+        // For SmartSelect component format
+        if ($request->has('format') && $request->get('format') === 'select') {
+            $departments = $query->get()->map(function ($department) {
+                return [
+                    'label' => $department->department_name,
+                    'value' => $department->department_id
+                ];
+            });
+            return response()->json($departments);
         }
 
         $departments = $query->paginate($request->get('per_page', 15));
@@ -68,5 +79,24 @@ class DepartmentController extends Controller
         return LocationResource::collection(
             $department->locations()->paginate(15)
         );
+    }
+    
+    /**
+     * Create a department quickly via API for SmartSelect
+     */
+    public function quickCreate(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:departments,department_name'
+        ]);
+        
+        $department = Department::create([
+            'department_name' => $request->input('name')
+        ]);
+        
+        return response()->json([
+            'label' => $department->department_name,
+            'value' => $department->department_id
+        ]);
     }
 }

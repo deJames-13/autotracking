@@ -34,7 +34,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'departments' => 'department:department_id'
         ]);
         
-        // Locations management
+        // Locations management - Better organization of routes
+        // API routes first (not using resource route naming patterns)
+        Route::get('locations/api/search-departments', [AdminLocationController::class, 'searchDepartments'])
+            ->name('locations.search-departments');
+        Route::post('locations/api/create-department', [AdminLocationController::class, 'createDepartment'])
+            ->name('locations.create-department');
+        
+        // Standard resource routes
         Route::resource('locations', AdminLocationController::class)->parameters([
             'locations' => 'location:location_id'
         ]);
