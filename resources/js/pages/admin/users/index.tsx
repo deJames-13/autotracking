@@ -99,14 +99,14 @@ export default function UsersIndex({ users: initialUsers, roles, departments, pl
                                 Add User
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+                        <DialogContent className="w-full max-w-[90vw] lg:max-w-[80vw] xl:max-w-[72rem] max-h-[85vh] overflow-hidden flex flex-col">
                             <DialogHeader className="flex-shrink-0">
                                 <DialogTitle>Add New User</DialogTitle>
                                 <DialogDescription>
                                     Create a new user account. All fields marked with * are required.
                                 </DialogDescription>
                             </DialogHeader>
-                            <div className="flex-1 overflow-y-auto px-1">
+                            <div className="flex-1 overflow-y-auto px-1 py-4">
                                 <UserForm
                                     roles={roles}
                                     departments={departments}

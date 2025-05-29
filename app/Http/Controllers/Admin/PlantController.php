@@ -110,4 +110,79 @@ class PlantController extends Controller
         return redirect()->route('admin.plants.index')
             ->with('success', 'Plant deleted successfully.');
     }
+
+    /**
+     * Search plants for smart select
+     */
+    public function searchPlants(Request $request): JsonResponse
+    {
+        $search = $request->input('search', '');
+        
+        $plants = Plant::where('plant_name', 'like', "%{$search}%")
+            ->limit(10)
+            ->get()
+            ->map(function ($plant) {
+                return [
+                    'label' => $plant->plant_name,
+                    'value' => (int)$plant->plant_id // Cast to integer to ensure numeric value
+                ];
+            });
+            
+        return response()->json($plants);
+    }
+    
+    /**
+     * Create a new plant on-the-fly
+     */
+    public function createPlant(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'name' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    function ($attribute, $value, $fail) {
+                        // Custom validation - check if name contains valid characters
+                        if (!preg_match('/^[a-zA-Z0-9\s\-_]+$/', $value)) {
+                            $fail('Plant name can only contain letters, numbers, spaces, hyphens, and underscores.');
+                        }
+                    }
+                ]
+            ]);
+            
+            // Check if plant already exists
+            $existingPlant = Plant::where('plant_name', $validated['name'])->first();
+            
+            if ($existingPlant) {
+                // Return existing plant with correct label and numeric ID
+                return response()->json([
+                    'label' => $existingPlant->plant_name, // Display name
+                    'value' => (int)$existingPlant->plant_id // Numeric ID for backend
+                ]);
+            }
+            
+            // Create new plant
+            $plant = Plant::create([
+                'plant_name' => $validated['name']
+            ]);
+            
+            // Return the new plant with correct label and numeric ID
+            return response()->json([
+                'label' => $plant->plant_name, // Display name
+                'value' => (int)$plant->plant_id // Numeric ID for backend
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Return validation errors in a standardized format
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create plant: ' . $e->getMessage()
+            ], 422);
+        }
+    }
 }

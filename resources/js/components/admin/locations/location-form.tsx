@@ -58,7 +58,7 @@ export function LocationForm({ location, departments, onSuccess, onCancel }: Loc
     const loadDepartmentOptions = useCallback(async (inputValue: string): Promise<SelectOption[]> => {
         // The component will already filter out short searches
         try {
-            const response = await axios.get(route('admin.locations.search-departments'), {
+            const response = await axios.get(route('admin.departments.search-departments'), {
                 params: { search: inputValue }
             });
             return response.data;
@@ -70,7 +70,7 @@ export function LocationForm({ location, departments, onSuccess, onCancel }: Loc
 
     const createDepartmentOption = useCallback(async (inputValue: string): Promise<SelectOption> => {
         try {
-            const response = await axios.post(route('admin.locations.create-department'), {
+            const response = await axios.post(route('admin.departments.create-department'), {
                 name: inputValue
             });
             toast.success(`Department "${inputValue}" created successfully`);
@@ -199,9 +199,8 @@ export function LocationForm({ location, departments, onSuccess, onCancel }: Loc
                     loading={loadingDepartments}
                     className={allErrors.department_id ? 'border-destructive' : ''}
                     cacheOptions={true}
-                    defaultOptions={true} // Load options on mount to get proper labels
+                    defaultOptions={true}
                 />
-                <InputError message={allErrors.department_id} />
             </div>
 
             <div className="flex justify-end gap-3">

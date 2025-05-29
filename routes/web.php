@@ -29,19 +29,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'users' => 'user:employee_id'
         ]);
         
-        // Departments management  
+        // Departments management with API endpoints
+        Route::get('departments/api/search-departments', [AdminDepartmentController::class, 'searchDepartments'])
+            ->name('departments.search-departments');
+        Route::post('departments/api/create-department', [AdminDepartmentController::class, 'createDepartment'])
+            ->name('departments.create-department');  
+        
         Route::resource('departments', AdminDepartmentController::class)->parameters([
             'departments' => 'department:department_id'
         ]);
         
-        // Locations management - Better organization of routes
-        // API routes first (not using resource route naming patterns)
-        Route::get('locations/api/search-departments', [AdminLocationController::class, 'searchDepartments'])
-            ->name('locations.search-departments');
-        Route::post('locations/api/create-department', [AdminLocationController::class, 'createDepartment'])
-            ->name('locations.create-department');
-        
-        // Standard resource routes
+        // Locations management
         Route::resource('locations', AdminLocationController::class)->parameters([
             'locations' => 'location:location_id'
         ]);
@@ -51,7 +49,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'equipment' => 'equipment:equipment_id'
         ]);
         
-        // Plants management
+        // Plants management with API endpoints
+        Route::get('plants/api/search-plants', [AdminPlantController::class, 'searchPlants'])
+            ->name('plants.search-plants');
+        Route::post('plants/api/create-plant', [AdminPlantController::class, 'createPlant'])
+            ->name('plants.create-plant');
+        
         Route::resource('plants', AdminPlantController::class)->parameters([
             'plants' => 'plant:plant_id'
         ]);

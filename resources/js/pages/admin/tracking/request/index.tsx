@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { StepIndicator, type Step } from '@/components/ui/step-indicator';
 import { UserCircle2, Wrench, CalendarClock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -42,6 +43,7 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
 
     // Form state with Inertia useForm
     const { data, setData, post, processing, errors, clearErrors, setError, hasErrors } = useForm({
+        requestType: 'new', // Add requestType with 'new' as default
         technician: null,
         equipment: {
             plant: '',
@@ -82,6 +84,12 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
         setValidationMessage(null);
 
         if (currentStep === 'technician') {
+            if (!data.requestType) {
+                setError('requestType', 'Please select a request type.');
+                setValidationMessage('Please select a request type.');
+                return false;
+            }
+
             if (!data.technician) {
                 setError('technician', 'Please select a technician to continue.');
                 setValidationMessage('Please select a technician to continue.');
@@ -238,6 +246,32 @@ const TrackingRequestIndex: React.FC<TrackingRequestIndexProps> = ({ errors: ser
                     <h1 className="text-3xl font-bold tracking-tight">New Tracking Request</h1>
                     <p className="text-muted-foreground">Create a new equipment tracking request</p>
                 </div>
+
+                {/* Request Type Selection */}
+                <Tabs
+                    defaultValue="new"
+                    value={data.requestType}
+                    onValueChange={(value) => setData('requestType', value)}
+                    className="w-full"
+                >
+                    <TabsList className="grid w-full grid-cols-2 bg-muted">
+                        <TabsTrigger
+                            value="new"
+                            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                        >
+                            New
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="routine"
+                            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                        >
+                            Routine
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                {errors.requestType && (
+                    <p className="text-sm text-destructive mt-1">{errors.requestType}</p>
+                )}
 
                 {/* Steps Indicator */}
                 <StepIndicator

@@ -109,4 +109,79 @@ class DepartmentController extends Controller
         return redirect()->route('admin.departments.index')
             ->with('success', 'Department deleted successfully.');
     }
+
+    /**
+     * Search departments for smart select
+     */
+    public function searchDepartments(Request $request): JsonResponse
+    {
+        $search = $request->input('search', '');
+        
+        $departments = Department::where('department_name', 'like', "%{$search}%")
+            ->limit(10)
+            ->get()
+            ->map(function ($department) {
+                return [
+                    'label' => $department->department_name,
+                    'value' => (int)$department->department_id // Cast to integer to ensure numeric value
+                ];
+            });
+            
+        return response()->json($departments);
+    }
+    
+    /**
+     * Create a new department on-the-fly
+     */
+    public function createDepartment(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'name' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    function ($attribute, $value, $fail) {
+                        // Custom validation - check if name contains valid characters
+                        if (!preg_match('/^[a-zA-Z0-9\s\-_]+$/', $value)) {
+                            $fail('Department name can only contain letters, numbers, spaces, hyphens, and underscores.');
+                        }
+                    }
+                ]
+            ]);
+            
+            // Check if department already exists
+            $existingDepartment = Department::where('department_name', $validated['name'])->first();
+            
+            if ($existingDepartment) {
+                // Return existing department with correct label and numeric ID
+                return response()->json([
+                    'label' => $existingDepartment->department_name, // Display name
+                    'value' => (int)$existingDepartment->department_id // Numeric ID for backend
+                ]);
+            }
+            
+            // Create new department
+            $department = Department::create([
+                'department_name' => $validated['name']
+            ]);
+            
+            // Return the new department with correct label and numeric ID
+            return response()->json([
+                'label' => $department->department_name, // Display name
+                'value' => (int)$department->department_id // Numeric ID for backend
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Return validation errors in a standardized format
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create department: ' . $e->getMessage()
+            ], 422);
+        }
+    }
 }

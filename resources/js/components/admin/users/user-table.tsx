@@ -167,7 +167,7 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
 
             {/* Edit User Dialog */}
             <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-scroll">
+                <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto overflow-scroll">
                     <DialogHeader>
                         <DialogTitle>Edit User</DialogTitle>
                         <DialogDescription>
