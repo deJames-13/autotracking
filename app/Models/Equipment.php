@@ -13,6 +13,7 @@ class Equipment extends Model
         'employee_id',
         'serial_number',
         'description',
+        'model',
         'manufacturer'
     ];
     

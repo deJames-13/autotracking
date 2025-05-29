@@ -45,7 +45,7 @@ export function AppSidebar() {
     const trackingItems: NavItem[] = [
         ...(canManageTracking() ? [
             {
-                title: 'requests',
+                title: 'Requests',
                 href: '/admin/tracking',
                 icon: ArrowDownToLine,
             },

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class TrackingRecord extends Model
 {
+    protected $table = 'tracking_records'; // Add explicit table name
     protected $primaryKey = 'tracking_id';
     
     protected $fillable = [

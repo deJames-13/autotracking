@@ -35,6 +35,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Explicitly drop tracking_records to ensure it's dropped before any table it references
         Schema::dropIfExists('tracking_records');
     }
 };

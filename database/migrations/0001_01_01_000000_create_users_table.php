@@ -75,6 +75,18 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Temporarily disable foreign key checks to allow dropping tables in any order
+        Schema::disableForeignKeyConstraints();
+        
+        // Drop tables in order - starting with tables that reference others
+        if (Schema::hasTable('tracking_records')) {
+            Schema::dropIfExists('tracking_records');
+        }
+        
+        if (Schema::hasTable('equipments')) {
+            Schema::dropIfExists('equipments');
+        }
+        
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('locations');
@@ -82,5 +94,8 @@ return new class extends Migration
         Schema::dropIfExists('roles');
         Schema::dropIfExists('departments');
         Schema::dropIfExists('plants');
+        
+        // Re-enable foreign key checks
+        Schema::enableForeignKeyConstraints();
     }
 };

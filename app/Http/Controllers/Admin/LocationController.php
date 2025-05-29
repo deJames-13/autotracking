@@ -70,7 +70,7 @@ class LocationController extends Controller
 
     public function show(Location $location, Request $request): Response|JsonResponse
     {
-        $location->load(['department', 'equipments']);
+        $location->load(['department', 'trackingRecords']);
         
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {

@@ -12,6 +12,7 @@ interface EquipmentFormData {
     employee_id: string;
     serial_number: string;
     description: string;
+    model: string;
     manufacturer: string;
     [key: string]: any;
 }
@@ -30,6 +31,7 @@ export function EquipmentForm({ equipment, users, onSuccess, onCancel }: Equipme
         employee_id: equipment?.employee_id?.toString() || '',
         serial_number: equipment?.serial_number || '',
         description: equipment?.description || '',
+        model: equipment?.model || '',
         manufacturer: equipment?.manufacturer || '',
     });
 
@@ -85,6 +87,18 @@ export function EquipmentForm({ equipment, users, onSuccess, onCancel }: Equipme
                     rows={3}
                 />
                 <InputError message={errors.description} />
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="model">Model *</Label>
+                <Input
+                    id="model"
+                    value={data.model}
+                    onChange={(e) => setData('model', e.target.value)}
+                    required
+                    placeholder="Enter model name"
+                />
+                <InputError message={errors.model} />
             </div>
 
             <div className="space-y-2">

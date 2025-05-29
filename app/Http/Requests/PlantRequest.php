@@ -15,6 +15,8 @@ class PlantRequest extends FormRequest
     {
         return [
             'plant_name' => ['required', 'string', 'max:255', 'unique:plants,plant_name,' . ($this->route('plant') ? $this->route('plant')->plant_id : 'NULL') . ',plant_id'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'telephone' => ['nullable', 'string', 'max:20'],
         ];
     }
 }

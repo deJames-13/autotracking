@@ -14,6 +14,7 @@ class EquipmentResource extends JsonResource
             'employee_id' => $this->employee_id,
             'serial_number' => $this->serial_number,
             'description' => $this->description,
+            'model' => $this->model,
             'manufacturer' => $this->manufacturer,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

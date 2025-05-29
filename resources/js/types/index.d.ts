@@ -95,6 +95,7 @@ export interface Equipment {
     employee_id?: number | null;
     serial_number: string;
     description: string;
+    model: string;
     manufacturer: string;
     created_at: string;
     updated_at: string;
@@ -153,80 +154,86 @@ export interface UserFormData {
 
 // Tracking types
 export interface TrackingFormData {
-    equipment_id: string;
+    equipment_id: string;FormData {
     technician_id: string;
-    location_id: string;
-    cal_date: string;
+    location_id: string; g;
+    cal_date: string; ng;
     cal_due_date: string;
-    description: string;
+    description: string;;
     recall_number: string;
     is_new_registration: boolean;
-    serial_number: string;
-    manufacturer: string;
+    serial_number: string; oolean;
+    model: string;
+    manufacturer: string;;
     equipment_scan: string;
-    employee_scan: string;
+    employee_scan: string;;
+} employee_scan: string;
 }
-
 export interface OutgoingFormData {
-    next_cal_due_date: string;
-    description: string;
+    next_cal_due_date: string;ata {
+    description: string; tring;
     recall_number: string;
     employee_scan: string;
+} employee_scan: string;
 }
-
 // Equipment form types
 export interface EquipmentFormData {
-    employee_id?: number | null;
-    serial_number: string;
-    description: string;
-    manufacturer: string;
-}
+    employee_id?: number | null;ta {
+    serial_number: string; null;
+    description: string; g;
+    model: string;
+    manufacturer: string; manufacturer: string;
+}}
 
 // Department form types
-export interface DepartmentFormData {
-    department_name: string;
-}
+export interface DepartmentFormData {ormData {
+    department_name: string; department_name: string;
+}}
 
 // Location form types
-export interface LocationFormData {
+export interface LocationFormData {ormData {
     location_name: string;
-    department_id: number;
-}
+    department_id: number; department_id: number;
+}}
 
 // Plant form types
-export interface PlantFormData {
-    plant_name: string;
+export interface PlantFormData {ormData {
+    plant_name: string; g;
     address?: string;
-    telephone?: string;
-}
+    telephone ?: string; telephone ?: string;
+}}
 
 // API Response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = any> { esponse<T = any> {
     success: boolean;
-    message?: string;
+    message ?: string; string;
     data?: T;
-    error?: string;
-}
+    error ?: string; error ?: string;
+}}
 
-// Filter types
+// Filter typesipmentFilters {
 export interface EquipmentFilters {
-    search?: string;
-    employee_id?: number | string;
+    search?: string; string;
+    employee_id?: number | string; manufacturer?: string;
     manufacturer?: string;
 }
-
+}
+rFilters {
 export interface UserFilters {
     search?: string;
-    role_id?: number;
+    role_id?: number; department_id?: number;
     department_id?: number;
 }
-
+}
+ckingFilters {
 export interface TrackingFilters {
     search?: string;
-    equipment_id?: number;
-    technician_id?: number;
+    equipment_id?: number; r;
+    technician_id?: number; ber;
     location_id?: number;
-    recall?: boolean;
-    date_from?: string;
+    recall?: boolean; g;
+    date_from?: string; date_to?: string;
     date_to?: string;
 }
+}
+

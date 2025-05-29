@@ -2,14 +2,12 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { type Department } from '@/types';
+import { type Department, type DepartmentFormData as IDepartmentFormData } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
-interface DepartmentFormData {
-    department_name: string;
-    [key: string]: any;
-}
+// Use the interface from types file or extend it if needed
+type DepartmentFormData = IDepartmentFormData;
 
 interface DepartmentFormProps {
     department?: Department;
