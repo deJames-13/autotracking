@@ -13,7 +13,7 @@ interface DepartmentFormData {
 
 interface DepartmentFormProps {
     department?: Department;
-    onSuccess?: () => void;
+    onSuccess?: (department?: Department) => void;
     onCancel?: () => void;
 }
 
@@ -28,10 +28,12 @@ export function DepartmentForm({ department, onSuccess, onCancel }: DepartmentFo
         e.preventDefault();
 
         const options = {
-            onSuccess: () => {
+            onSuccess: (page: any) => {
                 console.log('DepartmentForm: Operation successful, calling onSuccess');
                 reset();
-                onSuccess?.();
+                // Pass the department data from the response
+                const departmentData = page.props?.department || department;
+                onSuccess?.(departmentData);
             },
             onError: (errors: any) => {
                 console.error('DepartmentForm: Operation failed:', errors);

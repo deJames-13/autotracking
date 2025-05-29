@@ -7,23 +7,42 @@ use App\Models\Equipment;
 use App\Models\Location;
 use App\Models\TrackingRecord;
 use App\Models\User;
+use App\Models\Department;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Inertia\Inertia;
 
 class TrackingController extends Controller
 {
+    /**
+     * Show incoming equipment page
+     */
+    public function showIncoming()
+    {
+        $users = User::with(['role', 'department', 'plant'])->get();
+        $locations = Location::with('department')->get();
+        $departments = Department::all();
+
+        return Inertia::render('tracking/incoming', [
+            'users' => $users,
+            'locations' => $locations,
+            'departments' => $departments,
+        ]);
+    }
+
     /**
      * Handle incoming equipment process
      */
     public function incoming(Request $request): JsonResponse
     {
         $request->validate([
-            'equipment_id' => 'required|exists:equipments,equipment_id',
+            'equipment_id' => 'required_without:is_new_registration|exists:equipments,equipment_id',
             'technician_id' => 'required|exists:users,employee_id',
             'location_id' => 'required|exists:locations,location_id',
+            'department_id' => 'required|exists:departments,department_id',
             'cal_date' => 'required|date',
             'cal_due_date' => 'required|date|after_or_equal:cal_date',
             'description' => 'required|string',
@@ -41,6 +60,13 @@ class TrackingController extends Controller
             return response()->json([
                 'error' => 'You are not allowed to claim this instrument. Department mismatch.'
             ], 403);
+        }
+
+        // Validate department matches location
+        if ($request->department_id != $location->department_id) {
+            return response()->json([
+                'error' => 'Selected department does not match the location\'s department.'
+            ], 400);
         }
 
         DB::beginTransaction();

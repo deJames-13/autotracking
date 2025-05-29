@@ -11,7 +11,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Scan, Plus, Clock, User as UserIcon, MapPin, Calendar, FileText } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
-import { type User, type Location, type Equipment, type BreadcrumbItem } from '@/types';
+import { DepartmentSelect } from '@/components/tracking/department-select';
+import { type User, type Location, type Equipment, type Department, type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tracking', href: '/tracking' },
@@ -21,19 +22,22 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface IncomingProps {
     users: User[];
     locations: Location[];
+    departments?: Department[];
 }
 
-export default function TrackingIncoming({ users, locations }: IncomingProps) {
+export default function TrackingIncoming({ users, locations, departments = [] }: IncomingProps) {
     const [scannedEquipment, setScannedEquipment] = useState<Equipment | null>(null);
     const [scannedEmployee, setScannedEmployee] = useState<User | null>(null);
     const [isNewRegistration, setIsNewRegistration] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [cycleStartTime] = useState(new Date());
+    const [availableDepartments, setAvailableDepartments] = useState<Department[]>(departments);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         equipment_id: '',
         technician_id: '',
         location_id: '',
+        department_id: '',
         cal_date: new Date().toISOString().split('T')[0],
         cal_due_date: '',
         description: '',
@@ -103,6 +107,7 @@ export default function TrackingIncoming({ users, locations }: IncomingProps) {
                 setData(prev => ({
                     ...prev,
                     technician_id: result.data.employee_id,
+                    department_id: result.data.department_id ? result.data.department_id.toString() : '',
                 }));
 
                 // Auto-fill location based on employee's department
@@ -119,6 +124,10 @@ export default function TrackingIncoming({ users, locations }: IncomingProps) {
         } catch (error) {
             console.error('Error scanning employee:', error);
         }
+    };
+
+    const handleDepartmentCreated = (department: Department) => {
+        setAvailableDepartments(prev => [...prev, department]);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -244,28 +253,45 @@ export default function TrackingIncoming({ users, locations }: IncomingProps) {
                         </div>
 
                         <div>
-                            <Label htmlFor="location_id">Location *</Label>
-                            <Select value={data.location_id} onValueChange={(value) => setData('location_id', value)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select location" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {locations.map((location) => (
-                                        <SelectItem key={location.location_id} value={location.location_id.toString()}>
-                                            <div className="flex items-center gap-2">
-                                                <MapPin className="h-4 w-4" />
-                                                {location.location_name}
-                                                {location.department && (
-                                                    <Badge variant="secondary">{location.department.department_name}</Badge>
-                                                )}
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {errors.location_id && (
-                                <span className="text-sm text-destructive">{errors.location_id}</span>
-                            )}
+                            <DepartmentSelect
+                                departments={availableDepartments}
+                                value={data.department_id}
+                                onValueChange={(value) => {
+                                    setData('department_id', value);
+                                    // Clear location when department changes
+                                    setData('location_id', '');
+                                }}
+                                onDepartmentCreated={handleDepartmentCreated}
+                                error={errors.department_id}
+                                required
+                            />
+
+                            <div className="mt-4">
+                                <Label htmlFor="location_id">Location *</Label>
+                                <Select value={data.location_id} onValueChange={(value) => setData('location_id', value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select location" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {locations
+                                            .filter(location => !data.department_id || location.department_id.toString() === data.department_id)
+                                            .map((location) => (
+                                                <SelectItem key={location.location_id} value={location.location_id.toString()}>
+                                                    <div className="flex items-center gap-2">
+                                                        <MapPin className="h-4 w-4" />
+                                                        {location.location_name}
+                                                        {location.department && (
+                                                            <Badge variant="secondary">{location.department.department_name}</Badge>
+                                                        )}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.location_id && (
+                                    <span className="text-sm text-destructive">{errors.location_id}</span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -351,7 +377,7 @@ export default function TrackingIncoming({ users, locations }: IncomingProps) {
                             onClick={() => setCurrentStep(currentStep + 1)}
                             disabled={
                                 (currentStep === 1 && !data.equipment_scan) ||
-                                (currentStep === 2 && !data.technician_id) ||
+                                (currentStep === 2 && (!data.technician_id || !data.department_id)) ||
                                 (currentStep === 3 && (!data.cal_date || !data.cal_due_date || !data.description))
                             }
                         >
