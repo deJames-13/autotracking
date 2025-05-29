@@ -9,7 +9,9 @@ class Plant extends Model
     protected $primaryKey = 'plant_id';
     
     protected $fillable = [
-        'plant_name'
+        'plant_name',
+        'address',
+        'telephone'
     ];
     
     public function users()

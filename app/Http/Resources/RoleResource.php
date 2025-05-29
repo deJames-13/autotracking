@@ -14,6 +14,7 @@ class RoleResource extends JsonResource
             'role_name' => $this->role_name,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'users' => UserResource::collection($this->whenLoaded('users')),
         ];
     }
 }

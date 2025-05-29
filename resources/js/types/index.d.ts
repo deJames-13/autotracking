@@ -58,6 +58,7 @@ export interface Role {
     role_name: string;
     created_at: string;
     updated_at: string;
+    users?: User[];
 }
 
 export interface Department {
@@ -148,4 +149,84 @@ export interface UserFormData {
     department_id?: number;
     plant_id?: number;
     avatar?: string;
+}
+
+// Tracking types
+export interface TrackingFormData {
+    equipment_id: string;
+    technician_id: string;
+    location_id: string;
+    cal_date: string;
+    cal_due_date: string;
+    description: string;
+    recall_number: string;
+    is_new_registration: boolean;
+    serial_number: string;
+    manufacturer: string;
+    equipment_scan: string;
+    employee_scan: string;
+}
+
+export interface OutgoingFormData {
+    next_cal_due_date: string;
+    description: string;
+    recall_number: string;
+    employee_scan: string;
+}
+
+// Equipment form types
+export interface EquipmentFormData {
+    employee_id?: number | null;
+    serial_number: string;
+    description: string;
+    manufacturer: string;
+}
+
+// Department form types
+export interface DepartmentFormData {
+    department_name: string;
+}
+
+// Location form types
+export interface LocationFormData {
+    location_name: string;
+    department_id: number;
+}
+
+// Plant form types
+export interface PlantFormData {
+    plant_name: string;
+    address?: string;
+    telephone?: string;
+}
+
+// API Response types
+export interface ApiResponse<T = any> {
+    success: boolean;
+    message?: string;
+    data?: T;
+    error?: string;
+}
+
+// Filter types
+export interface EquipmentFilters {
+    search?: string;
+    employee_id?: number | string;
+    manufacturer?: string;
+}
+
+export interface UserFilters {
+    search?: string;
+    role_id?: number;
+    department_id?: number;
+}
+
+export interface TrackingFilters {
+    search?: string;
+    equipment_id?: number;
+    technician_id?: number;
+    location_id?: number;
+    recall?: boolean;
+    date_from?: string;
+    date_to?: string;
 }

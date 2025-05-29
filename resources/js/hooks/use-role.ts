@@ -1,73 +1,51 @@
-import { type SharedData, type User } from '@/types';
 import { usePage } from '@inertiajs/react';
+import { type SharedData } from '@/types';
 
 export function useRole() {
     const { auth } = usePage<SharedData>().props;
     const user = auth.user;
 
-    const hasRole = (roleName: string | string[]): boolean => {
-        if (!user) {
-            console.warn('No authenticated user found');
-            return false;
-        }
-
-        if (!user.role) {
-            console.warn('User role not loaded. Make sure role relationship is eager loaded for authenticated user.');
-            console.warn('User data:', { employee_id: user.employee_id, role_id: user.role_id });
-            return false;
-        }
-
-        const userRole = user.role.role_name;
-
-        if (Array.isArray(roleName)) {
-            return roleName.includes(userRole);
-        }
-
-        return userRole === roleName;
+    const canManageUsers = () => {
+        return user.role?.role_name === 'admin';
     };
 
-    const isAdmin = (): boolean => {
-        return hasRole('admin');
+    const canManageEquipment = () => {
+        return ['admin', 'personnel_in_charge'].includes(user.role?.role_name || '');
     };
 
-    const isPersonnelInCharge = (): boolean => {
-        return hasRole('personnel_in_charge');
+    const canManagePlants = () => {
+        return user.role?.role_name === 'admin';
     };
 
-    const isTechnician = (): boolean => {
-        return hasRole('technician');
+    const canManageTracking = () => {
+        return ['admin', 'personnel_in_charge'].includes(user.role?.role_name || '');
     };
 
-    const isEmployee = (): boolean => {
-        return hasRole('employee');
+    const isAdmin = () => {
+        return user.role?.role_name === 'admin';
     };
 
-    const canManageUsers = (): boolean => {
-        return hasRole(['admin', 'personnel_in_charge']);
+    const isEmployee = () => {
+        return user.role?.role_name === 'employee';
     };
 
-    const canManagePlants = (): boolean => {
-        return hasRole(['admin']); // Only admin can manage plants
+    const isPersonnelInCharge = () => {
+        return user.role?.role_name === 'personnel_in_charge';
     };
 
-    const canManageEquipment = (): boolean => {
-        return hasRole(['admin', 'personnel_in_charge', 'technician']);
-    };
-
-    const canViewReports = (): boolean => {
-        return hasRole(['admin', 'personnel_in_charge']);
+    const isTechnician = () => {
+        return user.role?.role_name === 'technician';
     };
 
     return {
-        user,
-        hasRole,
+        canManageUsers,
+        canManageEquipment,
+        canManagePlants,
+        canManageTracking,
         isAdmin,
+        isEmployee,
         isPersonnelInCharge,
         isTechnician,
-        isEmployee,
-        canManageUsers,
-        canManagePlants,
-        canManageEquipment,
-        canViewReports,
+        user,
     };
 }

@@ -1,10 +1,10 @@
 - Setup MVRCs - Model Controller Routes Views
-    - Roles 
-        - Technician
-        - Employee
-        - Person In Charge
-        - Admin
-    - Equipments
+    - [x] Roles 
+        - [x] Technician
+        - [x] Employee
+        - [x] Person In Charge
+        - [x] Admin
+    - [x] Equipments
     - Tracking Record
         - Incoming
         - Outgoing

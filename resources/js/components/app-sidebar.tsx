@@ -6,7 +6,21 @@ import { Separator } from '@/components/ui/separator';
 import { useRole } from '@/hooks/use-role';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Building2, Factory, HardDrive, LayoutGrid, MapPin, Users, Wrench } from 'lucide-react';
+import {
+    BookOpen,
+    Building2,
+    Factory,
+    HardDrive,
+    LayoutGrid,
+    MapPin,
+    Users,
+    Wrench,
+    ArrowDownToLine,
+    ArrowUpFromLine,
+    Activity,
+    Clock,
+    AlertTriangle
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const footerNavItems: NavItem[] = [
@@ -18,7 +32,7 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { canManageUsers, canManageEquipment, canManagePlants } = useRole();
+    const { canManageUsers, canManageEquipment, canManagePlants, canManageTracking } = useRole();
 
     const dashboardItems: NavItem[] = [
         {
@@ -26,6 +40,36 @@ export function AppSidebar() {
             href: '/dashboard',
             icon: LayoutGrid,
         },
+    ];
+
+    const trackingItems: NavItem[] = [
+        ...(canManageTracking() ? [
+            {
+                title: 'Incoming',
+                href: '/tracking/incoming',
+                icon: ArrowDownToLine,
+            },
+            {
+                title: 'Outgoing',
+                href: '/tracking/outgoing',
+                icon: ArrowUpFromLine,
+            },
+            {
+                title: 'Active Records',
+                href: '/tracking/active',
+                icon: Activity,
+            },
+            {
+                title: 'Overdue Items',
+                href: '/tracking/overdue',
+                icon: AlertTriangle,
+            },
+            {
+                title: 'Due Soon',
+                href: '/tracking/due-soon',
+                icon: Clock,
+            }
+        ] : [])
     ];
 
     const manageItems: NavItem[] = [
@@ -80,7 +124,12 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={dashboardItems} label="Main"/>
-                <NavMain items={manageItems} label="Manage"/>
+                {trackingItems.length > 0 && (
+                    <NavMain items={trackingItems} label="Tracking" />
+                )}
+                {manageItems.length > 0 && (
+                    <NavMain items={manageItems} label="Manage" />
+                )}
             </SidebarContent>
 
             <SidebarFooter>
