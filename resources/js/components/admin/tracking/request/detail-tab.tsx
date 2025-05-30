@@ -26,15 +26,31 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { usePage } from '@inertiajs/react';
+import { type SharedData } from '@/types';
 
 interface DetailTabProps {
     data: EquipmentSchema;
     onChange: (data: EquipmentSchema) => void;
+    onScannedEmployeeChange?: (employee: User | null) => void;
+    onReceivedByChange?: (user: User | null) => void;
     errors?: Record<string, string>;
     technician?: User | null;
+    receivedBy?: User | null;
 }
 
-const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, technician }) => {
+const DetailTab: React.FC<DetailTabProps> = ({
+    data,
+    onChange,
+    onScannedEmployeeChange,
+    onReceivedByChange,
+    errors = {},
+    technician,
+    receivedBy
+}) => {
+    const { auth } = usePage<SharedData>().props;
+    const currentUser = auth.user;
+
     const [departments, setDepartments] = useState<SelectOption[]>([]);
     const [locations, setLocations] = useState<SelectOption[]>([]);
     const [plants, setPlants] = useState<SelectOption[]>([]);
@@ -61,6 +77,11 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
                 const employee = response.data.employee;
                 setScannedEmployee(employee);
 
+                // Pass scanned employee to parent
+                if (onScannedEmployeeChange) {
+                    onScannedEmployeeChange(employee);
+                }
+
                 // Auto-fill plant, department, and location based on employee
                 const updates: any = {};
 
@@ -83,11 +104,17 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
             } else {
                 toast.error('Employee not found with this barcode');
                 setScannedEmployee(null);
+                if (onScannedEmployeeChange) {
+                    onScannedEmployeeChange(null);
+                }
             }
         } catch (error) {
             console.error('Error fetching employee by barcode:', error);
             toast.error('Error searching for employee');
             setScannedEmployee(null);
+            if (onScannedEmployeeChange) {
+                onScannedEmployeeChange(null);
+            }
         } finally {
             setLoadingEmployee(false);
         }
@@ -100,6 +127,9 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
             fetchEmployeeByBarcode(value);
         } else {
             setScannedEmployee(null);
+            if (onScannedEmployeeChange) {
+                onScannedEmployeeChange(null);
+            }
         }
     };
 
@@ -122,9 +152,9 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
     // Function to fetch locations by department
     const fetchLocationsByDepartment = async (departmentId: number) => {
         try {
-            const response = await axios.get(route('admin.departments.search-departments'), {
+            const response = await axios.get(route('admin.locations.search-locations'), {
                 params: {
-                    department_id: departmentId,
+                    // department_id: departmentId,
                     limit: 10
                 },
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -376,6 +406,16 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
         }
     }, [technician?.employee_id, scannedEmployee]);
 
+    // Auto-fill receivedBy to current user when component mounts
+    useEffect(() => {
+        if (!receivedBy && currentUser && onReceivedByChange) {
+            // Set the current user as receivedBy
+            onReceivedByChange(currentUser);
+            // Also update the equipment receivedBy field
+            handleChange('receivedBy', currentUser.user_id);
+        }
+    }, [receivedBy, onReceivedByChange, currentUser]);
+
     // DONT REMOVE
     console.log('Equipment data:', data)
     console.log('Technician data:', technician)
@@ -568,19 +608,6 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
                             </div>
 
                             <div>
-                                <Label htmlFor="recallNumber" className={errors.recallNumber ? 'text-destructive' : ''}>
-                                    Recall Number
-                                </Label>
-                                <Input
-                                    id="recallNumber"
-                                    value={data.recallNumber || ''}
-                                    onChange={(e) => handleChange('recallNumber', e.target.value)}
-                                    className={errors.recallNumber ? 'border-destructive' : ''}
-                                />
-                                {errors.recallNumber && <p className="text-sm text-destructive mt-1">{errors.recallNumber}</p>}
-                            </div>
-
-                            <div>
                                 <Label htmlFor="model" className={errors.model ? 'text-destructive' : ''}>
                                     Model
                                 </Label>
@@ -654,7 +681,8 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
                                 </Label>
                                 <InertiaSmartSelect
                                     name="receivedBy"
-                                    value={data.receivedBy}
+                                    value={data.receivedBy.employee_id}
+                                    label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : undefined}
                                     onChange={(value) => handleChange('receivedBy', value as string)}
                                     loadOptions={loadUserOptions}
                                     placeholder="Select user"
@@ -665,6 +693,11 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
                                     minSearchLength={2}
                                 />
                                 {errors.receivedBy && <p className="text-sm text-destructive mt-1">{errors.receivedBy}</p>}
+                                {receivedBy && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Auto-filled to current user: {receivedBy.first_name} {receivedBy.last_name}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>

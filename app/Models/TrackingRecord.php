@@ -11,6 +11,7 @@ class TrackingRecord extends Model
     
     protected $fillable = [
         'recall',
+        'recall_number',
         'description',
         'equipment_id',
         'technician_id',
@@ -36,6 +37,22 @@ class TrackingRecord extends Model
         'cal_date' => 'date',
         'cal_due_date' => 'date'
     ];
+    
+    // Generate a unique recall number
+    public static function generateUniqueRecallNumber(): string
+    {
+        $timestamp = now()->format('ymdHis');
+        $random = mt_rand(10000, 99999);
+        $recallNumber = "RCL-{$timestamp}-{$random}";
+        
+        // Ensure uniqueness by checking if it already exists
+        while (self::where('recall_number', $recallNumber)->exists()) {
+            $random = mt_rand(10000, 99999);
+            $recallNumber = "RCL-{$timestamp}-{$random}";
+        }
+        
+        return $recallNumber;
+    }
     
     public function equipment()
     {

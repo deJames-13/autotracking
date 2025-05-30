@@ -1,69 +1,138 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera } from 'lucide-react';
-import { EmployeeSchema } from '@/validation/tracking-request-schema';
+import axios from 'axios';
 
 interface ConfirmEmployeeTabProps {
     data: {
         technician: any;
         equipment: any;
         calibration: any;
-        confirmation: EmployeeSchema;
+        confirmation_pin: string;
+        scannedEmployee?: any;
+        receivedBy?: any;
     };
-    onChange: (data: EmployeeSchema) => void;
+    onChange: (pin: string) => void;
     errors?: Record<string, string>;
 }
 
-// Mock data for employees (would come from backend)
-const employees = [
-    { id: '1', name: 'Alex Johnson' },
-    { id: '2', name: 'Maria Garcia' },
-    { id: '3', name: 'David Chen' },
-    { id: '4', name: 'Sarah Williams' },
-];
-
 const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange, errors = {} }) => {
-    const [showScanner, setShowScanner] = useState(false);
+    const [locationNames, setLocationNames] = useState({
+        plant: '',
+        department: '',
+        location: ''
+    });
+    const [loading, setLoading] = useState(true);
+    const [recallNumber, setRecallNumber] = useState('');
+    const [recallLoading, setRecallLoading] = useState(false);
 
-    // Generate a mock recall number (in real app, this would come from backend)
-    const recallNumber = `RCL-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    // Generate a unique recall number when component mounts
+    useEffect(() => {
+        const fetchUniqueRecallNumber = async () => {
+            setRecallLoading(true);
+            try {
+                const response = await axios.get('/admin/tracking/request/generate-recall', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
 
-    const handleEmployeeChange = (employeeId: string) => {
-        const selectedEmployee = employees.find(e => e.id === employeeId) || null;
-        if (selectedEmployee) {
-            onChange({
-                ...data.confirmation,
-                employee: {
-                    id: selectedEmployee.id,
-                    name: selectedEmployee.name
+                if (response.data.success) {
+                    setRecallNumber(response.data.recall_number);
+                } else {
+                    console.error('Failed to generate recall number:', response.data.message);
+                    // Fallback to local generation if backend fails
+                    const timestamp = Date.now().toString();
+                    const random = Math.floor(10000 + Math.random() * 90000);
+                    setRecallNumber(`RCL-${timestamp.slice(-8)}-${random}`);
                 }
-            });
-        }
-    };
+            } catch (error) {
+                console.error('Error fetching recall number:', error);
+                // Fallback to local generation
+                const timestamp = Date.now().toString();
+                const random = Math.floor(10000 + Math.random() * 90000);
+                setRecallNumber(`RCL-${timestamp.slice(-8)}-${random}`);
+            } finally {
+                setRecallLoading(false);
+            }
+        };
 
-    const handlePinChange = (pin: string) => {
-        onChange({ ...data.confirmation, pin });
-    };
+        fetchUniqueRecallNumber();
+    }, []);
 
-    const handleScanBarcode = () => {
-        setShowScanner(true);
-        // In a real app, this would activate a barcode scanner
-        // For now, we'll just simulate finding an employee after a delay
-        setTimeout(() => {
-            const randomEmployee = employees[Math.floor(Math.random() * employees.length)];
-            onChange({
-                ...data.confirmation,
-                employee: {
-                    id: randomEmployee.id,
-                    name: randomEmployee.name
+    // Fetch location names when component mounts or equipment data changes
+    useEffect(() => {
+        const fetchLocationNames = async () => {
+            setLoading(true);
+            try {
+                const names = { plant: '', department: '', location: '' };
+
+                // First, try to get names from scannedEmployee
+                if (data.scannedEmployee) {
+                    names.plant = data.scannedEmployee.plant?.plant_name || '';
+                    names.department = data.scannedEmployee.department?.department_name || '';
+                    // Location might not be in scannedEmployee, so we'll fetch it separately
                 }
-            });
-            setShowScanner(false);
-        }, 2000);
+
+                // Fetch plant name if not available from scannedEmployee
+                if (!names.plant && data.equipment.plant) {
+                    try {
+                        const plantResponse = await axios.get(`/admin/plants/${data.equipment.plant}`, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        names.plant = plantResponse.data.plant_name || `Plant ID: ${data.equipment.plant}`;
+                    } catch (error) {
+                        console.error('Error fetching plant:', error);
+                        names.plant = `Plant ID: ${data.equipment.plant}`;
+                    }
+                }
+
+                // Fetch department name if not available from scannedEmployee
+                if (!names.department && data.equipment.department) {
+                    try {
+                        const deptResponse = await axios.get(`/admin/departments/${data.equipment.department}`, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        names.department = deptResponse.data.department_name || `Department ID: ${data.equipment.department}`;
+                    } catch (error) {
+                        console.error('Error fetching department:', error);
+                        names.department = `Department ID: ${data.equipment.department}`;
+                    }
+                }
+
+                // Fetch location name
+                if (data.equipment.location) {
+                    try {
+                        const locationResponse = await axios.get(`/admin/locations/${data.equipment.location}`, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        names.location = locationResponse.data.location_name || `Location ID: ${data.equipment.location}`;
+                    } catch (error) {
+                        console.error('Error fetching location:', error);
+                        names.location = `Location ID: ${data.equipment.location}`;
+                    }
+                }
+
+                setLocationNames(names);
+            } catch (error) {
+                console.error('Error fetching location names:', error);
+                // Fallback to IDs if fetch fails
+                setLocationNames({
+                    plant: data.equipment.plant ? `Plant ID: ${data.equipment.plant}` : 'Not assigned',
+                    department: data.equipment.department ? `Department ID: ${data.equipment.department}` : 'Not assigned',
+                    location: data.equipment.location ? `Location ID: ${data.equipment.location}` : 'Not assigned'
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLocationNames();
+    }, [data.equipment.plant, data.equipment.department, data.equipment.location, data.scannedEmployee]);
+
+    // Get location names with loading state
+    const getLocationName = (type: 'plant' | 'department' | 'location') => {
+        if (loading) return 'Loading...';
+        return locationNames[type] || 'Not assigned';
     };
 
     return (
@@ -75,12 +144,14 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                 </CardHeader>
                 <CardContent>
                     <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-2">Request for Recall #{recallNumber}</h3>
+                        <h3 className="text-lg font-semibold mb-2">
+                            Request for Recall #{recallLoading ? 'Generating...' : recallNumber}
+                        </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <div>
                                 <h4 className="font-medium">Technician</h4>
-                                <p>{data.technician?.name || 'Not selected'}</p>
+                                <p>{data.technician?.full_name || `${data.technician?.first_name} ${data.technician?.last_name}` || 'Not selected'}</p>
                             </div>
 
                             <div>
@@ -93,26 +164,16 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
 
                             <div>
                                 <h4 className="font-medium">Location</h4>
-                                <p>{data.equipment.plant}, {data.equipment.department}</p>
-                                <p className="text-sm text-muted-foreground">{data.equipment.location}</p>
+                                <p>{getLocationName('plant')}, {getLocationName('department')}</p>
+                                <p className="text-sm text-muted-foreground">{getLocationName('location')}</p>
                             </div>
 
                             <div>
-                                <h4 className="font-medium">Calibration Dates</h4>
-                                <div className="grid grid-cols-3 gap-2">
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Cal Date</p>
-                                        <p>{data.calibration.calibrationDate || 'Not set'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Due Date</p>
-                                        <p>{data.calibration.expectedDueDate || 'Not set'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Date Out</p>
-                                        <p>{data.calibration.dateOut || 'Not set'}</p>
-                                    </div>
-                                </div>
+                                <h4 className="font-medium">Received By</h4>
+                                <p>{data.receivedBy ? `${data.receivedBy.first_name} ${data.receivedBy.last_name}` : 'Not assigned'}</p>
+                                {data.receivedBy && (
+                                    <p className="text-sm text-muted-foreground">ID: {data.receivedBy.employee_id}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -120,36 +181,21 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                     <div className="border-t pt-6">
                         <h3 className="font-semibold mb-4">Employee Confirmation</h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <Label
-                                    htmlFor="employee"
-                                    className={errors['employee.id'] ? 'text-destructive' : ''}
-                                >
-                                    Registered By
-                                </Label>
-                                <div className="flex gap-2">
-                                    <Select
-                                        value={data.confirmation.employee?.id || ''}
-                                        onValueChange={handleEmployeeChange}
-                                    >
-                                        <SelectTrigger className={`flex-1 ${errors['employee.id'] ? 'border-destructive' : ''}`}>
-                                            <SelectValue placeholder="Select employee" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {employees.map((emp) => (
-                                                <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <Button type="button" variant="outline" onClick={handleScanBarcode}>
-                                        <Camera className="h-4 w-4 mr-2" />
-                                        Scan
-                                    </Button>
+                        {/* Show scanned employee info if available */}
+                        {data.scannedEmployee && (
+                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+                                <div className="flex items-center text-green-800">
+                                    <span className="font-medium">
+                                        Registered by: {data.scannedEmployee.first_name} {data.scannedEmployee.last_name}
+                                    </span>
                                 </div>
-                                {errors['employee.id'] && <p className="text-sm text-destructive mt-1">{errors['employee.id']}</p>}
+                                <div className="text-sm text-green-600 mt-1">
+                                    ID: {data.scannedEmployee.employee_id} | {data.scannedEmployee.department?.department_name} - {data.scannedEmployee.plant?.plant_name}
+                                </div>
                             </div>
+                        )}
 
+                        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                             <div>
                                 <Label
                                     htmlFor="pin"
@@ -161,19 +207,13 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                                     id="pin"
                                     type="password"
                                     placeholder="Enter PIN"
-                                    value={data.confirmation.pin}
-                                    onChange={(e) => handlePinChange(e.target.value)}
+                                    value={data.confirmation_pin}
+                                    onChange={(e) => onChange(e.target.value)}
                                     className={errors.pin ? 'border-destructive' : ''}
                                 />
                                 {errors.pin && <p className="text-sm text-destructive mt-1">{errors.pin}</p>}
                             </div>
                         </div>
-
-                        {showScanner && (
-                            <div className="mt-4 p-4 border rounded-md bg-muted text-center">
-                                <p className="animate-pulse">Scanning employee barcode...</p>
-                            </div>
-                        )}
                     </div>
                 </CardContent>
             </Card>

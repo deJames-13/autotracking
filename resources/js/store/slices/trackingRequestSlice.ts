@@ -38,23 +38,17 @@ export interface CalibrationState {
     dateOut: string
 }
 
-export interface ConfirmationState {
-    employee: {
-        id: string
-        name: string
-    } | null
-    pin: string
-}
-
 export interface TrackingRequestState {
     requestType: 'new' | 'routine'
     technician: TechnicianState | null
     equipment: EquipmentState
     calibration: CalibrationState
-    confirmation: ConfirmationState
+    confirmation_pin: string
     currentStep: string
     completedSteps: string[]
     isFormDirty: boolean
+    scannedEmployee: TechnicianState | null
+    receivedBy: TechnicianState | null
 }
 
 const initialState: TrackingRequestState = {
@@ -77,13 +71,12 @@ const initialState: TrackingRequestState = {
         expectedDueDate: '',
         dateOut: ''
     },
-    confirmation: {
-        employee: null,
-        pin: ''
-    },
+    confirmation_pin: '',
     currentStep: 'technician',
     completedSteps: [],
-    isFormDirty: false
+    isFormDirty: false,
+    scannedEmployee: null,
+    receivedBy: null
 }
 
 const trackingRequestSlice = createSlice({
@@ -133,12 +126,8 @@ const trackingRequestSlice = createSlice({
             state.calibration = action.payload
             state.isFormDirty = true
         },
-        updateConfirmation: (state, action: PayloadAction<Partial<ConfirmationState>>) => {
-            state.confirmation = { ...state.confirmation, ...action.payload }
-            state.isFormDirty = true
-        },
-        setConfirmation: (state, action: PayloadAction<ConfirmationState>) => {
-            state.confirmation = action.payload
+        updateConfirmationPin: (state, action: PayloadAction<string>) => {
+            state.confirmation_pin = action.payload
             state.isFormDirty = true
         },
         setCurrentStep: (state, action: PayloadAction<string>) => {
@@ -163,7 +152,15 @@ const trackingRequestSlice = createSlice({
         },
         markFormClean: (state) => {
             state.isFormDirty = false
-        }
+        },
+        setScannedEmployee: (state, action: PayloadAction<TechnicianState | null>) => {
+            state.scannedEmployee = action.payload;
+            state.isFormDirty = true;
+        },
+        setReceivedBy: (state, action: PayloadAction<TechnicianState | null>) => {
+            state.receivedBy = action.payload;
+            state.isFormDirty = true;
+        },
     }
 })
 
@@ -174,13 +171,14 @@ export const {
     setEquipment,
     updateCalibration,
     setCalibration,
-    updateConfirmation,
-    setConfirmation,
+    updateConfirmationPin,
     setCurrentStep,
     addCompletedStep,
     setCompletedSteps,
     resetForm,
-    markFormClean
+    markFormClean,
+    setScannedEmployee,
+    setReceivedBy
 } = trackingRequestSlice.actions
 
 export default trackingRequestSlice.reducer

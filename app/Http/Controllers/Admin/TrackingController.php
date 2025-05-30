@@ -10,6 +10,8 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -107,5 +109,111 @@ class TrackingController extends Controller
             'data' => $trackingRecords,
             'total' => $trackingRecords->count(),
         ]);
+    }
+
+    /**
+     * Store a new tracking request.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function store(Request $request)
+    {
+        // TODO: Implement the store method for tracking requests
+        // This will be implemented in a future update
+    }
+
+    /**
+     * Generate a unique recall number for tracking requests
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function generateUniqueRecall(): JsonResponse
+    {
+        try {
+            $recallNumber = TrackingRecord::generateUniqueRecallNumber();
+            
+            return response()->json([
+                'success' => true,
+                'recall_number' => $recallNumber
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error generating unique recall number: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate recall number. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Confirm employee PIN for tracking request
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function confirmRequestPin(Request $request): JsonResponse
+    {
+        $request->validate([
+            'employee_id' => 'required|numeric',
+            'pin' => 'required|string|min:4',
+        ]);
+
+        try {
+            // Find the employee by employee_id
+            $employee = User::where('employee_id', $request->employee_id)->first();
+
+            if (!$employee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employee not found.'
+                ], 404);
+            }
+
+            // Check if employee has a PIN set - using password field as PIN
+            if (!$employee->password) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employee PIN is not set. Please contact administrator.'
+                ], 400);
+            }
+
+            // Verify the PIN - assuming PIN is stored in password field
+            if (!Hash::check($request->pin, $employee->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid PIN. Please try again.'
+                ], 401);
+            }
+
+            // PIN is correct
+            return response()->json([
+                'success' => true,
+                'message' => 'PIN confirmed successfully.',
+                'employee' => [
+                    'employee_id' => $employee->employee_id,
+                    'first_name' => $employee->first_name,
+                    'last_name' => $employee->last_name,
+                    'department' => $employee->department ? [
+                        'department_id' => $employee->department->department_id,
+                        'department_name' => $employee->department->department_name,
+                    ] : null,
+                    'plant' => $employee->plant ? [
+                        'plant_id' => $employee->plant->plant_id,
+                        'plant_name' => $employee->plant->plant_name,
+                    ] : null,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error confirming request PIN: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while confirming PIN. Please try again.'
+            ], 500);
+        }
     }
 }

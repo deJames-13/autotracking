@@ -95,6 +95,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Tracking management
         Route::get('tracking', [AdminTrackingController::class, 'index'])->name('tracking.index');
         Route::get('tracking/request', [AdminTrackingController::class, 'requestIndex'])->name('tracking.request.index');
+        Route::get('tracking/request/generate-recall', [AdminTrackingController::class, 'generateUniqueRecall'])->name('tracking.request.generate-recall');
+        Route::post('tracking/request/confirm-pin', [AdminTrackingController::class, 'confirmRequestPin'])->name('tracking.request.confirm-pin');
         
         // Additional search routes
         Route::get('tracking-records/search', [AdminTrackingController::class, 'searchTrackingRecords'])->name('tracking-records.search');

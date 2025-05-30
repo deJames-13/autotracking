@@ -20,15 +20,19 @@ import {
     setTechnician,
     updateEquipment,
     updateCalibration,
-    updateConfirmation,
+    updateConfirmationPin,
     setCurrentStep,
     addCompletedStep,
     resetForm,
-    markFormClean
+    markFormClean,
+    setScannedEmployee,
+    setReceivedBy
 } from '@/store/slices/trackingRequestSlice'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import { store, persistor } from '@/store'
+import { toast } from 'react-hot-toast';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -56,10 +60,12 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
         technician,
         equipment,
         calibration,
-        confirmation,
+        confirmation_pin,
         currentStep,
         completedSteps,
-        isFormDirty
+        isFormDirty,
+        scannedEmployee,
+        receivedBy
     } = useAppSelector(state => state.trackingRequest)
 
     // Form state with Inertia useForm - use Redux data as initial values
@@ -68,7 +74,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
         technician,
         equipment,
         calibration,
-        confirmation
+        confirmation_pin
     })
 
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
@@ -112,7 +118,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
             }
         }
         else if (currentStep === 'details') {
-            const requiredFields = ['plant', 'department', 'location', 'description', 'recallNumber', 'serialNumber'] as const;
+            const requiredFields = ['plant', 'department', 'location', 'description', 'serialNumber'] as const;
             let isValid = true;
 
             requiredFields.forEach(field => {
@@ -166,14 +172,8 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
             }
         }
         else if (currentStep === 'confirmation') {
-            if (!confirmation.employee) {
-                setError('confirmation.employee', 'Please select an employee for confirmation.');
-                setValidationMessage('Please select an employee for confirmation.');
-                return false;
-            }
-
-            if (!confirmation.pin || confirmation.pin.length < 4) {
-                setError('confirmation.pin', 'PIN must be at least 4 digits.');
+            if (!confirmation_pin || confirmation_pin.length < 4) {
+                setError('confirmation_pin', 'PIN must be at least 4 digits.');
                 setValidationMessage('PIN must be at least 4 digits.');
                 return false;
             }
@@ -204,12 +204,61 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
         }
     };
 
+    const handleConfirmPin = async () => {
+        if (!validateCurrentStep()) return false;
+
+        try {
+            // Get current Redux state
+            const currentState = store.getState().trackingRequest;
+
+            // Check if we have a scanned employee and PIN
+            if (!currentState.scannedEmployee?.employee_id || !currentState.confirmation_pin) {
+                toast.error("Employee ID and PIN are required.");
+                return false;
+            }
+
+            // Send request to verify PIN using Axios or fetch with proper CSRF handling
+            const response = await axios.post(route('admin.tracking.request.confirm-pin'), {
+                employee_id: currentState.scannedEmployee.employee_id,
+                pin: currentState.confirmation_pin
+            });
+
+            // Axios automatically handles response status
+            const result = response.data;
+
+            if (!result.success) {
+                toast.error(result.message || "Invalid PIN. Please try again.");
+                return false;
+            }
+
+            // PIN verified successfully
+            toast.success("Employee PIN confirmed successfully.");
+            return true;
+
+        } catch (error) {
+            console.error('Error confirming PIN:', error);
+
+            // Check if the error has a response from the server
+            if (axios.isAxiosError(error) && error.response) {
+                toast.error(error.response.data.message || "PIN verification failed. Please try again.");
+            } else {
+                toast.error("An error occurred while verifying the PIN. Please try again.");
+            }
+            return false;
+        }
+    }
+
     // Handle form submission
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!validateCurrentStep()) return;
 
+        // First confirm PIN before proceeding with submission
+        const isPinConfirmed = await handleConfirmPin();
+        if (!isPinConfirmed) return;
+
         // Get current Redux state for submission
-        const currentState = store.getState().trackingRequest
+        const currentState = store.getState().trackingRequest;
+        console.log(currentState);
 
         // Submit the form with current Redux data
         post(route('admin.tracking.request.store'), {
@@ -218,12 +267,14 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                 technician: currentState.technician,
                 equipment: currentState.equipment,
                 calibration: currentState.calibration,
-                confirmation: currentState.confirmation
+                confirmation_pin: currentState.confirmation_pin,
+                scannedEmployee: currentState.scannedEmployee,
+                receivedBy: currentState.receivedBy
             },
             onSuccess: () => {
                 // Reset Redux state on successful submission
-                dispatch(resetForm())
-                dispatch(markFormClean())
+                dispatch(resetForm());
+                dispatch(markFormClean());
                 router.visit(route('admin.tracking.index'));
             },
             onError: (errors) => {
@@ -234,7 +285,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                     dispatch(setCurrentStep('details'));
                 } else if (errors.calibration || Object.keys(errors).some(key => key.startsWith('calibration.'))) {
                     dispatch(setCurrentStep('calibration'));
-                } else if (errors.confirmation || Object.keys(errors).some(key => key.startsWith('confirmation.'))) {
+                } else if (errors.confirmation_pin) {
                     dispatch(setCurrentStep('confirmation'));
                 }
 
@@ -270,8 +321,8 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
         } else if (key === 'calibration') {
             // Handle dates in calibration data
             dispatch(updateCalibration(value))
-        } else if (key === 'confirmation') {
-            dispatch(updateConfirmation(value))
+        } else if (key === 'confirmation_pin') {
+            dispatch(updateConfirmationPin(value))
         } else {
             // Handle non-nested data
             dispatch(setTechnician(value));
@@ -282,25 +333,8 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
     const handleRequestTypeChange = (type: 'new' | 'routine') => {
         dispatch(setRequestType(type));
 
-        // If switching to new, generate recall number
-        if (type === 'new') {
-            const generateRecallNumber = () => {
-                const timestamp = Date.now().toString().slice(-6);
-                const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-                return `RCL-${timestamp}-${random}`;
-            };
-
-            dispatch(updateEquipment({
-                ...equipment,
-                recallNumber: generateRecallNumber()
-            }));
-        } else {
-            // If switching to routine, clear recall number so user can search/select
-            dispatch(updateEquipment({
-                ...equipment,
-                recallNumber: ''
-            }));
-        }
+        // We'll no longer generate or modify the recall number here
+        // The recall number will be generated in the ConfirmEmployeeTab
     };
 
     // Add cleanup effect when component unmounts or user navigates away
@@ -375,12 +409,14 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                         <TabsTrigger
                             value="new"
                             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                            disabled={currentStep === 'confirmation'}
                         >
                             New Equipment
                         </TabsTrigger>
                         <TabsTrigger
                             value="routine"
                             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                            disabled={currentStep === 'confirmation'}
                         >
                             Routine Calibration
                         </TabsTrigger>
@@ -412,8 +448,11 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                             <DetailTab
                                 data={equipment}
                                 onChange={(equipmentUpdate) => dispatch(updateEquipment(equipmentUpdate))}
+                                onScannedEmployeeChange={(employee) => dispatch(setScannedEmployee(employee))}
+                                onReceivedByChange={(user) => dispatch(setReceivedBy(user))}
                                 errors={getStepErrors('equipment')}
                                 technician={technician}
+                                receivedBy={receivedBy}
                             />
                         )}
 
@@ -432,10 +471,12 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                                     technician,
                                     equipment,
                                     calibration,
-                                    confirmation
+                                    confirmation_pin,
+                                    scannedEmployee,
+                                    receivedBy
                                 }}
-                                onChange={(conf) => dispatch(updateConfirmation(conf))}
-                                errors={getStepErrors('confirmation')}
+                                onChange={(pin) => dispatch(updateConfirmationPin(pin))}
+                                errors={{ pin: getError('confirmation_pin') }}
                             />
                         )}
                     </div>

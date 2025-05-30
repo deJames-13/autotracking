@@ -21,7 +21,8 @@ export const equipmentSchema = z.object({
     }),
     description: z.string().min(1, "Description is required"),
     serialNumber: z.string().min(1, "Serial number is required"),
-    recallNumber: z.string().optional().default(''),
+    // Make recall number optional since it will be generated in the confirm tab
+    recallNumber: z.string().optional(),
     model: z.string().optional().default(''),
     manufacturer: z.string().optional().default(''),
     dueDate: z.string().optional().nullable(),

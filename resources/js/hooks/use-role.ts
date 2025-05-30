@@ -4,7 +4,6 @@ import { type SharedData } from '@/types';
 export function useRole() {
     const { auth } = usePage<SharedData>().props;
     const user = auth.user;
-    console.log(user)
 
     const canManageUsers = () => {
         return user.role?.role_name === 'admin';
