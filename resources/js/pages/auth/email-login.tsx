@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
@@ -16,12 +16,12 @@ type LoginForm = {
     remember: boolean;
 };
 
-interface LoginProps {
+interface EmailLoginProps {
     status?: string;
-    canResetPassword: boolean;
+    canResetPassword?: boolean;
 }
 
-export default function Login({ status, canResetPassword }: LoginProps) {
+export default function EmailLogin({ status, canResetPassword }: EmailLoginProps) {
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
         login: '',
         password: '',
@@ -36,23 +36,23 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     };
 
     return (
-        <AuthLayout title="Login" description="Enter your credentials to access your account">
-            <Head title="Login" />
+        <AuthLayout title="Login" description="Sign in with your email and PIN">
+            <Head title="Employee Email Login" />
 
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">
-                        <Label htmlFor="login">Employee ID or Email</Label>
+                        <Label htmlFor="login">Email Address</Label>
                         <Input
                             id="login"
-                            type="text"
+                            type="email"
                             required
                             autoFocus
                             tabIndex={1}
-                            autoComplete="username"
+                            autoComplete="email"
                             value={data.login}
                             onChange={(e) => setData('login', e.target.value)}
-                            placeholder="Enter your employee ID or email"
+                            placeholder="Enter your email address"
                             disabled={processing}
                         />
                         <InputError message={errors.login} />
@@ -100,8 +100,11 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 </div>
 
                 <div className="text-center">
-                    <div className="text-xs text-muted-foreground">
-                        Use your Employee ID or email with your PIN to sign in
+                    <div className="text-muted-foreground text-sm">
+                        Use Employee ID instead?{' '}
+                        <TextLink href={route('login')} tabIndex={6}>
+                            Login
+                        </TextLink>
                     </div>
                 </div>
             </form>

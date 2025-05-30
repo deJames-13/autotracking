@@ -21,6 +21,14 @@ export function useRole() {
         return ['admin', 'personnel_in_charge'].includes(user.role?.role_name || '');
     };
 
+    const canViewEmployeeTracking = () => {
+        return user.role?.role_name === 'employee';
+    };
+
+    const canCheckInOut = () => {
+        return user.role?.role_name === 'employee';
+    };
+
     const isAdmin = () => {
         return user.role?.role_name === 'admin';
     };
@@ -42,6 +50,8 @@ export function useRole() {
         canManageEquipment,
         canManagePlants,
         canManageRequestIncoming,
+        canViewEmployeeTracking,
+        canCheckInOut,
         isAdmin,
         isEmployee,
         isPersonnelInCharge,

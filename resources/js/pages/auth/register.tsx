@@ -127,8 +127,12 @@ export default function Register() {
 
                 <div className="text-muted-foreground text-center text-sm">
                     Already have an account?{' '}
-                    <TextLink href={route('login')} tabIndex={7}>
-                        Log in
+                    <TextLink href={route('employee.login')} tabIndex={7}>
+                        Employee Login
+                    </TextLink>
+                    {' or '}
+                    <TextLink href={route('login')} tabIndex={8}>
+                        Admin Login
                     </TextLink>
                 </div>
             </form>

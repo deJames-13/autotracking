@@ -19,7 +19,11 @@ import {
     ArrowUpFromLine,
     Activity,
     Clock,
-    AlertTriangle
+    AlertTriangle,
+    Package,
+    CheckCircle,
+    LogOut,
+    Calendar
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -32,22 +36,47 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { canManageUsers, canManageEquipment, canManagePlants, canManageRequestIncoming } = useRole();
+    const { canManageUsers, canManageEquipment, canManagePlants, canManageRequestIncoming, canViewEmployeeTracking } = useRole();
 
     const dashboardItems: NavItem[] = [
-        // {
-        //     title: 'Dashboard',
-        //     href: '/dashboard',
-        //     icon: LayoutGrid,
-        // },
+        ...(canManageUsers() ? [
+            {
+                title: 'Dashboard',
+                href: '/admin/dashboard',
+                icon: Users,
+            },
+        ] : [
+            {
+                title: 'Dashboard',
+                href: '/dashboard',
+                icon: Users,
+            },
+        ]),
     ];
 
-    const trackingItems: NavItem[] = [
+    // Admin tracking items
+    const adminTrackingItems: NavItem[] = [
         ...(canManageRequestIncoming() ? [
             {
                 title: 'Incoming',
                 href: '/admin/tracking',
                 icon: ArrowDownToLine,
+            },
+        ] : [])
+    ];
+
+    // Employee tracking items
+    const employeeTrackingItems: NavItem[] = [
+        ...(canViewEmployeeTracking() ? [
+            {
+                title: 'My Equipment',
+                href: '/employee/tracking',
+                icon: Package,
+            },
+            {
+                title: 'Request Calibration',
+                href: '/employee/tracking/request',
+                icon: Calendar,
             },
         ] : [])
     ];
@@ -84,7 +113,6 @@ export function AppSidebar() {
                 icon: Factory,
             }
         ] : [])
-    
     ];
 
 
@@ -104,8 +132,11 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={dashboardItems} label="Main"/>
-                {trackingItems.length > 0 && (
-                    <NavMain items={trackingItems} label="Tracking" />
+                {adminTrackingItems.length > 0 && (
+                    <NavMain items={adminTrackingItems} label="Tracking" />
+                )}
+                {employeeTrackingItems.length > 0 && (
+                    <NavMain items={employeeTrackingItems} label="Equipment" />
                 )}
                 {manageItems.length > 0 && (
                     <NavMain items={manageItems} label="Manage" />

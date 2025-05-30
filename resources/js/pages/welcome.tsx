@@ -15,7 +15,7 @@ export default function Welcome() {
                 className="relative flex min-h-screen flex-col items-center p-6 text-[#1b1b18] lg:justify-center lg:p-8 dark:bg-[#0a0a0a]"
                 style={{
                     backgroundImage: `url(${bg_display})`,
-                    backgroundSize: 'contain',
+                    backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
                     backgroundColor: '#FDFDFC'
@@ -44,13 +44,13 @@ export default function Welcome() {
                             <>
                                 <Link
                                     href={route('login')}
-                                        className="inline-block rounded-sm border border-border px-5 py-1.5 text-sm leading-normal text-foreground hover:border-border/80 dark:border-border dark:text-foreground dark:hover:border-border/80"
+                                        className="font-bold uppercase inline-block rounded-sm border border-primary bg-primary px-5 py-1.5 text-sm leading-normal text-primary-foreground hover:bg-primary/90 dark:border-primary dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
                                 >
                                         Login
                                 </Link>
                                 <Link
                                         href={route('admin.login')}
-                                        className="inline-block rounded-sm border border-border px-5 py-1.5 text-sm leading-normal text-foreground hover:border-border/80 dark:border-border dark:text-foreground dark:hover:border-border/80"
+                                        className="uppercase inline-block rounded-sm border border-primary/40 bg-primary px-5 py-1.5 text-sm leading-normal text-primary-foreground hover:bg-primary/90 dark:border-primary dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/60 "
                                 >
                                         Admin
                                 </Link>

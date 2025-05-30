@@ -33,6 +33,14 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $user = $request->user();
+        
+        // Redirect based on user role
+        if (in_array($user->role?->role_name, ['admin', 'personnel_in_charge'])) {
+            return redirect()->intended(route('admin.dashboard', absolute: false));
+        }
+
+        // For employees and other roles, redirect to main dashboard
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
@@ -44,8 +52,9 @@ class AuthenticatedSessionController extends Controller
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
+
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect('/login');
     }
 }

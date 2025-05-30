@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\PlantController as AdminPlantController;
 use App\Http\Controllers\Admin\TrackingController as AdminTrackingController;
 use App\Http\Controllers\Admin\Auth\AdminLoginController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Models\User;
 use App\Models\Location;
 use App\Models\TrackingRecord;
@@ -17,6 +18,31 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
+
+
+Route::middleware('auth')->group(function () {
+    Route::post('logout', [\App\Http\Controllers\Auth\EmployeeLoginController::class, 'destroy'])
+        ->name('logout');
+});
+
+// Employee Routes (authenticated)
+Route::prefix('employee')->name('employee.')->middleware('auth')->group(function () {
+    // Employee Tracking Routes
+    Route::get('tracking', [\App\Http\Controllers\Employee\TrackingController::class, 'index'])
+        ->name('tracking.index');
+    Route::get('tracking/equipment/{equipment}', [\App\Http\Controllers\Employee\TrackingController::class, 'show'])
+        ->name('tracking.equipment.show');
+    Route::post('tracking/equipment/{equipment}/check-in', [\App\Http\Controllers\Employee\TrackingController::class, 'checkIn'])
+        ->name('tracking.equipment.check-in');
+    Route::post('tracking/equipment/{equipment}/check-out', [\App\Http\Controllers\Employee\TrackingController::class, 'checkOut'])
+        ->name('tracking.equipment.check-out');
+    
+    // Employee Tracking Request Routes
+    Route::get('tracking/request', [\App\Http\Controllers\Employee\TrackingController::class, 'requestIndex'])
+        ->name('tracking.request.index');
+    Route::post('tracking/request', [\App\Http\Controllers\Employee\TrackingController::class, 'requestStore'])
+        ->name('tracking.request.store');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
@@ -46,11 +72,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'users' => 'user:employee_id'
         ]);
         
-        // Departments management with API endpoints
-        Route::get('departments/api/search-departments', [AdminDepartmentController::class, 'searchDepartments'])
-            ->name('departments.search-departments');
-        Route::post('departments/api/create-department', [AdminDepartmentController::class, 'createDepartment'])
-            ->name('departments.create-department');  
         
         Route::resource('departments', AdminDepartmentController::class)->parameters([
             'departments' => 'department:department_id'
@@ -65,12 +86,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('equipment', AdminEquipmentController::class)->parameters([
             'equipment' => 'equipment:equipment_id'
         ]);
-        
-        // Plants management with API endpoints
-        Route::get('plants/api/search-plants', [AdminPlantController::class, 'searchPlants'])
-            ->name('plants.search-plants');
-        Route::post('plants/api/create-plant', [AdminPlantController::class, 'createPlant'])
-            ->name('plants.create-plant');
         
         Route::resource('plants', AdminPlantController::class)->parameters([
             'plants' => 'plant:plant_id'
