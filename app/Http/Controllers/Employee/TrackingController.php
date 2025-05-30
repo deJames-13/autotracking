@@ -259,6 +259,20 @@ class TrackingController extends Controller
             }
 
             if (!$equipment) {
+                // For new requests, ensure recall number is unique
+                if ($validated['requestType'] === 'new') {
+                    $recallNumber = $validated['equipment']['recallNumber'];
+                    
+                    // If recall number already exists, generate a new one
+                    while (Equipment::where('recall_number', $recallNumber)->exists()) {
+                        $timestamp = now()->format('ymdHis');
+                        $random = str_pad(random_int(1, 999), 3, '0', STR_PAD_LEFT);
+                        $recallNumber = "RCL-{$timestamp}-{$random}";
+                    }
+                    
+                    $validated['equipment']['recallNumber'] = $recallNumber;
+                }
+
                 // Create new equipment record
                 $equipment = Equipment::create([
                     'recall_number' => $validated['equipment']['recallNumber'],
@@ -266,9 +280,9 @@ class TrackingController extends Controller
                     'serial_number' => $validated['equipment']['serialNumber'],
                     'model' => $validated['equipment']['model'],
                     'manufacturer' => $validated['equipment']['manufacturer'],
-                    'plant_id' => $validated['equipment']['plant'], // This is now the ID
-                    'department_id' => $validated['equipment']['department'], // This is now the ID
-                    'location_id' => $validated['equipment']['location'], // This is now the ID
+                    'plant_id' => $validated['equipment']['plant'],
+                    'department_id' => $validated['equipment']['department'],
+                    'location_id' => $validated['equipment']['location'],
                     'employee_id' => $user->employee_id,
                     'status' => 'pending_calibration',
                 ]);
@@ -288,10 +302,11 @@ class TrackingController extends Controller
                 'technician_id' => $validated['technician']['employee_id'],
                 'description' => "Calibration request - {$validated['requestType']}",
                 'notes' => "Request submitted by {$user->first_name} {$user->last_name}. Received by employee ID: {$validated['confirmation']['receivedBy']}",
+                'recall' => $validated['requestType'] === 'new' ? false : true, // New equipment doesn't have recall initially
             ]);
 
             return redirect()->route('employee.tracking.index')
-                ->with('success', 'Calibration request submitted successfully!');
+                ->with('success', 'Calibration request submitted successfully! Recall Number: ' . $equipment->recall_number);
 
         } catch (\Exception $e) {
             \Log::error('Error creating calibration request', [

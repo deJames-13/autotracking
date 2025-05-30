@@ -164,4 +164,53 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')
             ->with('success', 'User deleted successfully.');
     }
+
+    /**
+     * Search for employee by barcode (employee_id)
+     */
+    public function searchByBarcode(Request $request): JsonResponse
+    {
+        $barcode = $request->get('barcode');
+        
+        if (!$barcode) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Barcode is required'
+            ], 400);
+        }
+
+        try {
+            // Search for employee by employee_id (which is used as barcode)
+            $employee = User::with(['role', 'department', 'plant'])
+                ->where('employee_id', $barcode)
+                ->first();
+
+            if ($employee) {
+                return response()->json([
+                    'success' => true,
+                    'employee' => [
+                        'employee_id' => $employee->employee_id,
+                        'first_name' => $employee->first_name,
+                        'last_name' => $employee->last_name,
+                        'email' => $employee->email,
+                        'plant_id' => $employee->plant_id,
+                        'department_id' => $employee->department_id,
+                        'role' => $employee->role,
+                        'department' => $employee->department,
+                        'plant' => $employee->plant
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employee not found with this ID'
+                ], 404);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error searching for employee'
+            ], 500);
+        }
+    }
 }

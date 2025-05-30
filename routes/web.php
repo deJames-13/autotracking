@@ -67,11 +67,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', [AdminDashboardController::class, 'index'])
             ->name('dashboard');
         
-        // Users management
+        // Users management - specific routes before resource
+        Route::get('search-by-barcode/users', [AdminUserController::class, 'searchByBarcode'])->name('users.search-by-barcode');
+        
         Route::resource('users', AdminUserController::class)->parameters([
             'users' => 'user:employee_id'
         ]);
-        
         
         Route::resource('departments', AdminDepartmentController::class)->parameters([
             'departments' => 'department:department_id'
@@ -95,12 +96,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('tracking', [AdminTrackingController::class, 'index'])->name('tracking.index');
         Route::get('tracking/request', [AdminTrackingController::class, 'requestIndex'])->name('tracking.request.index');
         
+        // Additional search routes
+        Route::get('tracking-records/search', [AdminTrackingController::class, 'searchTrackingRecords'])->name('tracking-records.search');
+        
         // Additional routes for searching departments, plants, and locations
-        Route::get('departments/search', [AdminDepartmentController::class, 'searchDepartments'])->name('departments.search-departments');
+        Route::get('search/departments/', [AdminDepartmentController::class, 'searchDepartments'])->name('departments.search-departments');
         Route::post('departments/create', [AdminDepartmentController::class, 'createDepartment'])->name('departments.create-department');
-        Route::get('plants/search', [AdminPlantController::class, 'searchPlants'])->name('plants.search-plants');
+        Route::get('search/plants', [AdminPlantController::class, 'searchPlants'])->name('plants.search-plants');
         Route::post('plants/create', [AdminPlantController::class, 'createPlant'])->name('plants.create-plant');
-        Route::get('locations/search', [AdminLocationController::class, 'searchLocations'])->name('locations.search-locations');
+        Route::get('search/locations', [AdminLocationController::class, 'searchLocations'])->name('locations.search-locations');
     });
 });
 

@@ -278,6 +278,31 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
         }
     };
 
+    // Handle request type change to reset form and generate recall number for new requests
+    const handleRequestTypeChange = (type: 'new' | 'routine') => {
+        dispatch(setRequestType(type));
+
+        // If switching to new, generate recall number
+        if (type === 'new') {
+            const generateRecallNumber = () => {
+                const timestamp = Date.now().toString().slice(-6);
+                const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                return `RCL-${timestamp}-${random}`;
+            };
+
+            dispatch(updateEquipment({
+                ...equipment,
+                recallNumber: generateRecallNumber()
+            }));
+        } else {
+            // If switching to routine, clear recall number so user can search/select
+            dispatch(updateEquipment({
+                ...equipment,
+                recallNumber: ''
+            }));
+        }
+    };
+
     // Add cleanup effect when component unmounts or user navigates away
     useEffect(() => {
         // Cleanup function that runs when component unmounts
@@ -343,7 +368,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                 <Tabs
                     defaultValue="new"
                     value={requestType}
-                    onValueChange={(value) => dispatch(setRequestType(value as 'new' | 'routine'))}
+                    onValueChange={handleRequestTypeChange}
                     className="w-full"
                 >
                     <TabsList className="grid w-full grid-cols-2 bg-muted">
@@ -351,13 +376,13 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                             value="new"
                             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                         >
-                            New
+                            New Equipment
                         </TabsTrigger>
                         <TabsTrigger
                             value="routine"
                             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                         >
-                            Routine
+                            Routine Calibration
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>

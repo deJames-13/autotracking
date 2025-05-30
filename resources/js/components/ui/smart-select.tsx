@@ -55,6 +55,7 @@ export const InertiaSmartSelect = ({
     value,
     onChange,
     error,
+    label, // Add label prop
     loadOptions,
     onCreateOption,
     customNoneLabel = 'None',
@@ -69,6 +70,7 @@ export const InertiaSmartSelect = ({
     value: string | number | null | (string | number | null)[];
     onChange: (value: string | number | null | (string | number | null)[]) => void;
     error?: string;
+        label?: string; // Add label prop type
     initialOption?: SelectOption | null;
     minSearchLength?: number;
 } & Omit<SmartSelectProps, 'onSelect' | 'value' | 'initialOption' | 'minSearchLength'>) => {
@@ -283,7 +285,13 @@ export const InertiaSmartSelect = ({
                     return;
                 }
 
-                // For actual value
+                // If label prop is provided, use it directly
+                if (label && value !== null) {
+                    setSelectedOption({ label, value });
+                    return;
+                }
+
+                // For actual value without provided label
                 const option = await getOrFetchLabel(value);
                 setSelectedOption(option);
             }
@@ -291,7 +299,7 @@ export const InertiaSmartSelect = ({
 
         // Only run initialization if the value has changed
         initializeOption();
-    }, [value]); // Only depend on value, not isMulti, noNoneOption
+    }, [value, label]); // Add label to dependencies
 
     if (loading) {
         return (

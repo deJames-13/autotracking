@@ -7,7 +7,7 @@ import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
 import axios from 'axios';
 import { User } from '@/types';
 import { toast } from 'react-hot-toast';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Scan, User as UserIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import {
@@ -17,6 +17,15 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Scanner } from '@yudiel/react-qr-scanner';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 
 interface DetailTabProps {
     data: EquipmentSchema;
@@ -32,12 +41,88 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
     const [loadingInitialData, setLoadingInitialData] = useState(true);
     const [loadingLocations, setLoadingLocations] = useState(false);
     const [localDueDate, setLocalDueDate] = useState<string | null>(data.dueDate || null);
+    const [employeeBarcode, setEmployeeBarcode] = useState<string>('');
+    const [scannedEmployee, setScannedEmployee] = useState<User | null>(null);
+    const [loadingEmployee, setLoadingEmployee] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
 
+    // Function to fetch employee by barcode
+    const fetchEmployeeByBarcode = async (barcode: string) => {
+        if (!barcode) return;
+
+        setLoadingEmployee(true);
+        try {
+            const response = await axios.get('/admin/search-by-barcode', {
+                params: { barcode },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (response.data.success && response.data.employee) {
+                const employee = response.data.employee;
+                setScannedEmployee(employee);
+
+                // Auto-fill plant, department, and location based on employee
+                const updates: any = {};
+
+                if (employee.plant_id) {
+                    updates.plant = employee.plant_id;
+                }
+
+                if (employee.department_id) {
+                    updates.department = employee.department_id;
+                    // Fetch locations for this department
+                    setLoadingLocations(true);
+                    fetchLocationsByDepartment(employee.department_id);
+                }
+
+                if (Object.keys(updates).length > 0) {
+                    onChange(updates);
+                }
+
+                toast.success(`Employee found: ${employee.first_name} ${employee.last_name}`);
+            } else {
+                toast.error('Employee not found with this barcode');
+                setScannedEmployee(null);
+            }
+        } catch (error) {
+            console.error('Error fetching employee by barcode:', error);
+            toast.error('Error searching for employee');
+            setScannedEmployee(null);
+        } finally {
+            setLoadingEmployee(false);
+        }
+    };
+
+    // Handle barcode input change
+    const handleBarcodeChange = (value: string) => {
+        setEmployeeBarcode(value);
+        if (value.length >= 1) { // Employee ID can be just 1 digit
+            fetchEmployeeByBarcode(value);
+        } else {
+            setScannedEmployee(null);
+        }
+    };
+
+    // Handle barcode scan
+    const handleScan = (detectedCodes: any[]) => {
+        if (detectedCodes && detectedCodes.length > 0) {
+            const scannedText = detectedCodes[0].rawValue;
+            setEmployeeBarcode(scannedText);
+            setShowScanner(false);
+            fetchEmployeeByBarcode(scannedText);
+        }
+    };
+
+    // Handle scan error
+    const handleScanError = (error: any) => {
+        console.error('Scan error:', error);
+        toast.error('Error scanning barcode');
+    };
 
     // Function to fetch locations by department
     const fetchLocationsByDepartment = async (departmentId: number) => {
         try {
-            const response = await axios.get('/admin/locations', {
+            const response = await axios.get(route('admin.users.search-by-barcode'), {
                 params: {
                     department_id: departmentId,
                     limit: 10
@@ -269,26 +354,11 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
         }
     }, [data.dueDate]);
 
+    // Auto-fill due date when technician is selected (but don't override employee barcode data)
     useEffect(() => {
-        if (technician) {
+        if (technician && !scannedEmployee) {
             const updates: any = {};
             let hasChanges = false;
-
-            // Auto-fill plant from technician - use correct field name and prevent overwrite
-            if (technician.plant_id && (!data.plant || data.plant === '' || data.plant === null)) {
-                updates.plant = technician.plant_id;
-                hasChanges = true;
-            }
-
-            // Auto-fill department from technician - use correct field name and prevent overwrite
-            if (technician.department_id && (!data.department || data.department === '' || data.department === null)) {
-                updates.department = technician.department_id;
-                hasChanges = true;
-
-                // When department changes, we may need to fetch related locations and auto-select first one
-                setLoadingLocations(true);
-                fetchLocationsByDepartment(technician.department_id);
-            }
 
             // Auto-fill due date to today if not already set
             if (!data.dueDate || data.dueDate === '') {
@@ -304,7 +374,7 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
                 onChange(updates);
             }
         }
-    }, [technician?.employee_id]); // Use employee_id to prevent infinite loops
+    }, [technician?.employee_id, scannedEmployee]);
 
     // DONT REMOVE
     console.log('Equipment data:', data)
@@ -317,6 +387,84 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
                     <CardTitle>Details</CardTitle>
                 </CardHeader>
                 <CardContent>
+                    {/* Employee Barcode Section */}
+                    <div className="mb-6 p-4 border rounded-lg bg-muted/20">
+                        <h3 className="font-medium text-sm mb-4 flex items-center">
+                            <UserIcon className="h-4 w-4 mr-2" />
+                            Employee Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                            <div className="md:col-span-2">
+                                <Label htmlFor="employeeBarcode" className={errors.employeeBarcode ? 'text-destructive' : ''}>
+                                    Employee Barcode (Employee ID) *
+                                </Label>
+                                <Input
+                                    id="employeeBarcode"
+                                    value={employeeBarcode}
+                                    onChange={(e) => handleBarcodeChange(e.target.value)}
+                                    placeholder="Scan or enter employee ID"
+                                    className={errors.employeeBarcode ? 'border-destructive' : ''}
+                                    disabled={loadingEmployee}
+                                />
+                                {errors.employeeBarcode && <p className="text-sm text-destructive mt-1">{errors.employeeBarcode}</p>}
+                            </div>
+                            <div>
+                                <Dialog open={showScanner} onOpenChange={setShowScanner}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline" className="w-full">
+                                            <Scan className="h-4 w-4 mr-2" />
+                                            Scan Barcode
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-md">
+                                        <DialogHeader>
+                                            <DialogTitle>Scan Employee Barcode</DialogTitle>
+                                            <DialogDescription>
+                                                Position the Code 128 barcode within the camera frame to scan
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="flex items-center justify-center p-4">
+                                            <div className="w-full max-w-sm">
+                                                <Scanner
+                                                    onScan={handleScan}
+                                                    onError={handleScanError}
+                                                    formats={['code_128', 'code_39']}
+                                                    constraints={{
+                                                        video: {
+                                                            facingMode: 'environment'
+                                                        }
+                                                    }}
+                                                    allowMultiple={false}
+                                                    scanDelay={500}
+                                                    components={{
+                                                        finder: true,
+                                                        torch: true,
+                                                        zoom: false
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
+                        </div>
+
+                        {/* Employee Info Display */}
+                        {scannedEmployee && (
+                            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                                <div className="flex items-center text-green-800">
+                                    <UserIcon className="h-4 w-4 mr-2" />
+                                    <span className="font-medium">
+                                        {scannedEmployee.first_name} {scannedEmployee.last_name}
+                                    </span>
+                                </div>
+                                <div className="text-sm text-green-600 mt-1">
+                                    ID: {scannedEmployee.employee_id} | {scannedEmployee.department?.department_name} - {scannedEmployee.plant?.plant_name}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Organizational info in one row */}
                     <div className="grid grid-cols-3 gap-4 mb-6">
                         <div>
@@ -327,6 +475,7 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
                                 name="plant"
                                 value={data.plant}
                                 onChange={(value) => handleChange('plant', value as string)}
+                                label={scannedEmployee?.plant?.plant_name}
                                 loadOptions={loadPlantOptions}
                                 placeholder="Select plant"
                                 error={errors.plant}
@@ -336,9 +485,9 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
                                 defaultOptions={plants.length > 0 ? plants : true}
                                 minSearchLength={0}
                             />
-                            {technician?.plant && (
+                            {scannedEmployee?.plant && (
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Auto-filled from technician: {technician.plant.plant_name}
+                                    Auto-filled from employee: {scannedEmployee.plant.plant_name}
                                 </p>
                             )}
                         </div>
@@ -353,6 +502,7 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
                                 onChange={(value) => handleChange('department', value as string)}
                                 loadOptions={loadDepartmentOptions}
                                 placeholder="Select department"
+                                label={scannedEmployee?.department?.department_name}
                                 error={errors.department}
                                 className={errors.department ? 'border-destructive' : ''}
                                 loading={loadingInitialData}
@@ -360,9 +510,9 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
                                 defaultOptions={departments.length > 0 ? departments : true}
                                 minSearchLength={0}
                             />
-                            {technician?.department && (
+                            {scannedEmployee?.department && (
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Auto-filled from technician: {technician.department.department_name}
+                                    Auto-filled from employee: {scannedEmployee.department.department_name}
                                 </p>
                             )}
                         </div>
