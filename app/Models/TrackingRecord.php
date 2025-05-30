@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class TrackingRecord extends Model
 {
-    protected $table = 'tracking_records'; // Add explicit table name
+    protected $table = 'tracking_records';
     protected $primaryKey = 'tracking_id';
     
     protected $fillable = [
@@ -14,7 +14,8 @@ class TrackingRecord extends Model
         'description',
         'equipment_id',
         'technician_id',
-        'location_id',
+        'location_id_out',
+        'location_id_in',
         'due_date',
         'date_in',
         'employee_id_in',
@@ -22,7 +23,9 @@ class TrackingRecord extends Model
         'cal_due_date',
         'date_out',
         'employee_id_out',
-        'cycle_time'
+        'cycle_time',
+        'calibration_request_id',
+        'notes'
     ];
     
     protected $casts = [
@@ -44,9 +47,14 @@ class TrackingRecord extends Model
         return $this->belongsTo(User::class, 'technician_id', 'employee_id');
     }
     
-    public function location()
+    public function locationOut()
     {
-        return $this->belongsTo(Location::class, 'location_id', 'location_id');
+        return $this->belongsTo(Location::class, 'location_id_out', 'location_id');
+    }
+    
+    public function locationIn()
+    {
+        return $this->belongsTo(Location::class, 'location_id_in', 'location_id');
     }
     
     public function employeeIn()

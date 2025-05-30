@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -46,7 +47,7 @@ interface TrackingRequestIndexProps {
 }
 
 const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: serverErrors = {} }) => {
-    const { canManageUsers } = useRole();
+    const { canManageRequestIncoming } = useRole();
     const dispatch = useAppDispatch()
 
     // Get state from Redux
@@ -111,7 +112,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
             }
         }
         else if (currentStep === 'details') {
-            const requiredFields = ['plant', 'department', 'location', 'description', 'serialNumber'] as const;
+            const requiredFields = ['plant', 'department', 'location', 'description', 'recallNumber', 'serialNumber'] as const;
             let isValid = true;
 
             requiredFields.forEach(field => {
@@ -323,7 +324,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
     }, [dispatch]);
 
     // Redirect if user doesn't have permission
-    if (!canManageUsers()) {
+    if (!canManageRequestIncoming()) {
         router.visit('/dashboard');
         return null;
     }

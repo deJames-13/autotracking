@@ -4,6 +4,7 @@ import { type SharedData } from '@/types';
 export function useRole() {
     const { auth } = usePage<SharedData>().props;
     const user = auth.user;
+    console.log(user)
 
     const canManageUsers = () => {
         return user.role?.role_name === 'admin';
@@ -22,11 +23,11 @@ export function useRole() {
     };
 
     const canViewEmployeeTracking = () => {
-        return user.role?.role_name === 'employee';
+        return user.role?.role_name !== 'admin';
     };
 
     const canCheckInOut = () => {
-        return user.role?.role_name === 'employee';
+        return user.role?.role_name !== 'employee';
     };
 
     const isAdmin = () => {
@@ -57,5 +58,6 @@ export function useRole() {
         isPersonnelInCharge,
         isTechnician,
         user,
+        auth,
     };
 }

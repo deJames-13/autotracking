@@ -4,6 +4,9 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { useRole } from '@/hooks/use-role';
+import { router } from '@inertiajs/react';
+import { useEffect } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -21,6 +24,19 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ trackingStats = { activeRequests: 0, equipmentTracked: 0, recentUpdates: 0 } }: DashboardProps) {
+    const { isAdmin, isEmployee } = useRole();
+
+    useEffect(() => {
+        // Redirect based on user role
+        if (isAdmin()) {
+            router.visit(route('admin.dashboard'));
+        } else if (isEmployee()) {
+            router.visit(route('employee.tracking.index'));
+        }
+        // If neither admin nor employee, stay on this page (fallback)
+    }, [isAdmin, isEmployee]);
+
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
@@ -30,10 +46,18 @@ export default function Dashboard({ trackingStats = { activeRequests: 0, equipme
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-semibold">Tracking Overview</h2>
                         <Button asChild>
-                            <Link href={route('admin.tracking.request.index')}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                New Request
-                            </Link>
+                            {
+
+                                isEmployee ?
+                                    <Link href={route('employee.tracking.request.index')}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        New Request
+                                    </Link> : 
+                                    <Link href={route('admin.tracking.request.index')}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        New Request
+                                    </Link>
+                            }
                         </Button>
                     </div>
 
@@ -54,11 +78,19 @@ export default function Dashboard({ trackingStats = { activeRequests: 0, equipme
                     </div>
 
                     <div className="mt-4 text-right">
-                        <Button variant="outline" asChild>
-                            <Link href={route('admin.tracking.index')}>
-                                View All Tracking Requests
-                            </Link>
-                        </Button>
+                        {
+                            isEmployee ?
+                                <Button variant="outline" asChild>
+                                    <Link href={route('employee.tracking.index')}>
+                                        View All Tracking Requests
+                                    </Link>
+                                </Button> : 
+                                <Button variant="outline" asChild>
+                                    <Link href={route('admin.tracking.index')}>
+                                        View All Tracking Requests
+                                    </Link>
+                                </Button>
+                        }
                     </div>
                 </div>
 

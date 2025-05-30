@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Equipment;
 use App\Models\TrackingRecord;
 use App\Models\Location;
+use App\Models\User;
+use App\Models\CalibrationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -171,5 +173,160 @@ class TrackingController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Equipment checked out successfully.');
+    }
+
+    /**
+     * Display the employee tracking request form.
+     */
+    public function requestIndex(Request $request): Response
+    {
+        $user = Auth::user();
+        
+        // Get existing equipment that could be used for routine calibration
+        // Check if equipment is available based on calibration status
+        $existingEquipment = Equipment::with(['plant', 'department', 'location'])
+            ->where(function($query) {
+                // Equipment is available if:
+                // 1. It has been calibrated before (has last_calibration_date)
+                // 2. OR it's not currently in calibration process
+                $query->whereNotNull('last_calibration_date')
+                      ->orWhere('status', '!=', 'in_calibration');
+            })
+            ->where('status', '!=', 'retired')
+            ->get()
+            ->map(function ($equipment) {
+                return [
+                    'id' => $equipment->equipment_id,
+                    'recall_number' => $equipment->recall_number ?? "RCL-{$equipment->equipment_id}",
+                    'description' => $equipment->description,
+                    'serial_number' => $equipment->serial_number,
+                    'model' => $equipment->model,
+                    'manufacturer' => $equipment->manufacturer,
+                    'plant' => $equipment->plant?->plant_name,
+                    'department' => $equipment->department?->department_name,
+                    'location' => $equipment->location?->location_name,
+                    'last_calibration' => $equipment->last_calibration_date,
+                    'next_due' => $equipment->next_calibration_due,
+                    'calibration_status' => $this->getCalibrationStatus($equipment),
+                ];
+            });
+
+        return Inertia::render('employee/tracking/request/index', [
+            'existingEquipment' => $existingEquipment,
+        ]);
+    }
+
+    /**
+     * Store a new tracking request from employee.
+     */
+    public function requestStore(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+
+        // Validate the request data
+        $validated = $request->validate([
+            'requestType' => 'required|in:new,routine',
+            'technician' => 'required|array',
+            'technician.employee_id' => 'required|exists:users,employee_id',
+            'equipment' => 'required|array',
+            'equipment.recallNumber' => 'required|string|max:255',
+            'equipment.description' => 'required|string|max:500',
+            'equipment.serialNumber' => 'required|string|max:255',
+            'equipment.model' => 'nullable|string|max:255',
+            'equipment.manufacturer' => 'nullable|string|max:255',
+            'equipment.plant' => 'required|string|max:255',
+            'equipment.department' => 'required|string|max:255',
+            'equipment.location' => 'required|string|max:255',
+            'confirmation' => 'required|array',
+            'confirmation.receivedBy' => 'required|exists:users,employee_id',
+            'confirmation.employeePin' => 'required|string|min:4',
+        ]);
+
+        // Verify employee PIN
+        if (!Hash::check($validated['confirmation']['employeePin'], $user->pin)) {
+            throw ValidationException::withMessages([
+                'confirmation.employeePin' => 'Invalid PIN provided.',
+            ]);
+        }
+
+        try {
+            // Find or create equipment record
+            $equipment = null;
+            
+            if ($validated['requestType'] === 'routine') {
+                // Try to find existing equipment by recall number
+                $equipment = Equipment::where('recall_number', $validated['equipment']['recallNumber'])->first();
+            }
+
+            if (!$equipment) {
+                // Create new equipment record
+                $equipment = Equipment::create([
+                    'recall_number' => $validated['equipment']['recallNumber'],
+                    'description' => $validated['equipment']['description'],
+                    'serial_number' => $validated['equipment']['serialNumber'],
+                    'model' => $validated['equipment']['model'],
+                    'manufacturer' => $validated['equipment']['manufacturer'],
+                    'plant_id' => $validated['equipment']['plant'], // This is now the ID
+                    'department_id' => $validated['equipment']['department'], // This is now the ID
+                    'location_id' => $validated['equipment']['location'], // This is now the ID
+                    'employee_id' => $user->employee_id,
+                    'status' => 'pending_calibration',
+                ]);
+            } else {
+                // Update existing equipment status to pending calibration
+                $equipment->update([
+                    'status' => 'pending_calibration'
+                ]);
+            }
+
+            // Create tracking record for the calibration request
+            TrackingRecord::create([
+                'equipment_id' => $equipment->equipment_id,
+                'employee_id_out' => $user->employee_id,
+                'location_id_out' => $equipment->location_id,
+                'date_out' => now(),
+                'technician_id' => $validated['technician']['employee_id'],
+                'description' => "Calibration request - {$validated['requestType']}",
+                'notes' => "Request submitted by {$user->first_name} {$user->last_name}. Received by employee ID: {$validated['confirmation']['receivedBy']}",
+            ]);
+
+            return redirect()->route('employee.tracking.index')
+                ->with('success', 'Calibration request submitted successfully!');
+
+        } catch (\Exception $e) {
+            \Log::error('Error creating calibration request', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->employee_id,
+                'request_data' => $validated
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['general' => 'An error occurred while submitting your request. Please try again.'])
+                ->withInput();
+        }
+    }
+
+    /**
+     * Determine calibration status based on equipment data.
+     */
+    private function getCalibrationStatus(Equipment $equipment): string
+    {
+        if (!$equipment->last_calibration_date) {
+            return 'never_calibrated';
+        }
+
+        if ($equipment->status === 'in_calibration') {
+            return 'in_calibration';
+        }
+
+        if ($equipment->next_calibration_due && $equipment->next_calibration_due < now()) {
+            return 'overdue';
+        }
+
+        if ($equipment->next_calibration_due && $equipment->next_calibration_due <= now()->addDays(30)) {
+            return 'due_soon';
+        }
+
+        return 'current';
     }
 }

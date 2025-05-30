@@ -1,8 +1,11 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
-import { Users, Wrench, Activity, AlertTriangle } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Users, Package, Clock, AlertTriangle } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -11,119 +14,201 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-interface DashboardStats {
-    total_users: number;
-    total_equipment: number;
-    active_tracking: number;
-    overdue_tracking: number;
-}
-
-interface RecentTracking {
-    tracking_id: number;
-    equipment: {
-        description: string;
-        serial_number: string;
-    };
-    technician: {
-        first_name: string;
-        last_name: string;
-    };
-    location: {
-        location_name: string;
-    };
-    cal_due_date: string;
-}
-
 interface AdminDashboardProps {
-    stats: DashboardStats;
-    recentTracking: RecentTracking[];
+    stats: {
+        total_equipment: number;
+        active_requests: number;
+        equipment_tracked: number;
+        total_users: number;
+        overdue_equipment: number;
+        recent_updates: number;
+    };
+    recentActivities: Array<{
+        id: number;
+        type: string;
+        description: string;
+        user: string;
+        created_at: string;
+    }>;
+    pendingRequests: Array<{
+        id: number;
+        equipment: any;
+        requested_by: any;
+        technician: any;
+        status: string;
+        created_at: string;
+    }>;
 }
 
-export default function AdminDashboard({ stats, recentTracking }: AdminDashboardProps) {
+export default function AdminDashboard({ stats, recentActivities, pendingRequests }: AdminDashboardProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Dashboard" />
-
-            <div className="space-y-6 p-6">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-                    <p className="text-muted-foreground">Overview of system management and tracking activities</p>
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                {/* Header */}
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+                        <p className="text-muted-foreground">Overview of system activity and equipment tracking</p>
+                    </div>
+                    <Button asChild>
+                        <Link href={route('admin.tracking.request.index')}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            New Request
+                        </Link>
+                    </Button>
                 </div>
 
-                {/* Stats Cards */}
+                {/* Stats Grid */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.total_users}</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Equipment</CardTitle>
-                            <Wrench className="h-4 w-4 text-muted-foreground" />
+                            <Package className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.total_equipment}</div>
+                            <p className="text-xs text-muted-foreground">Registered in system</p>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Active Tracking</CardTitle>
-                            <Activity className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-sm font-medium">Active Requests</CardTitle>
+                            <Clock className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{stats.active_tracking}</div>
+                            <div className="text-2xl font-bold">{stats.active_requests}</div>
+                            <p className="text-xs text-muted-foreground">Pending calibration</p>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+                            <CardTitle className="text-sm font-medium">Equipment Tracked</CardTitle>
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.equipment_tracked}</div>
+                            <p className="text-xs text-muted-foreground">Currently out</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Overdue Equipment</CardTitle>
                             <AlertTriangle className="h-4 w-4 text-destructive" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-destructive">{stats.overdue_tracking}</div>
+                            <div className="text-2xl font-bold text-destructive">{stats.overdue_equipment}</div>
+                            <p className="text-xs text-muted-foreground">Needs attention</p>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Recent Tracking */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Recent Tracking Activities</CardTitle>
-                        <CardDescription>Latest equipment tracking records</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {recentTracking.length > 0 ? (
+                {/* Main Content Grid */}
+                <div className="grid gap-4 md:grid-cols-2">
+                    {/* Recent Activities */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Recent Activities</CardTitle>
+                        </CardHeader>
+                        <CardContent>
                             <div className="space-y-4">
-                                {recentTracking.map((record) => (
-                                    <div key={record.tracking_id} className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div>
-                                            <p className="font-medium">{record.equipment.description}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                S/N: {record.equipment.serial_number} • 
-                                                Technician: {record.technician.first_name} {record.technician.last_name} • 
-                                                Location: {record.location.location_name}
-                                            </p>
+                                {recentActivities.length > 0 ? (
+                                    recentActivities.map((activity) => (
+                                        <div key={activity.id} className="flex items-center space-x-4">
+                                            <div className="flex-1 space-y-1">
+                                                <p className="text-sm font-medium">{activity.description}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    by {activity.user} • {new Date(activity.created_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-sm text-muted-foreground">Due Date</p>
-                                            <p className="font-medium">{new Date(record.cal_due_date).toLocaleDateString()}</p>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No recent activities</p>
+                                )}
                             </div>
-                        ) : (
-                            <p className="text-muted-foreground">No recent tracking activities</p>
-                        )}
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+
+                    {/* Pending Requests */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle>Pending Requests</CardTitle>
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href={route('admin.tracking.index')}>View All</Link>
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {pendingRequests.length > 0 ? (
+                                    pendingRequests.map((request) => (
+                                        <div key={request.id} className="flex items-center justify-between">
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium">
+                                                    {request.equipment?.recall_number}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Requested by {request.requested_by?.first_name} {request.requested_by?.last_name}
+                                                </p>
+                                            </div>
+                                            <Badge variant="outline">Pending</Badge>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No pending requests</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                        <Link href={route('admin.equipment.index')}>
+                            <CardContent className="p-6">
+                                <div className="flex items-center space-x-4">
+                                    <Package className="h-8 w-8 text-primary" />
+                                    <div>
+                                        <h3 className="font-semibold">Manage Equipment</h3>
+                                        <p className="text-sm text-muted-foreground">View and manage all equipment</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Link>
+                    </Card>
+
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                        <Link href={route('admin.users.index')}>
+                            <CardContent className="p-6">
+                                <div className="flex items-center space-x-4">
+                                    <Users className="h-8 w-8 text-primary" />
+                                    <div>
+                                        <h3 className="font-semibold">Manage Users</h3>
+                                        <p className="text-sm text-muted-foreground">View and manage user accounts</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Link>
+                    </Card>
+
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                        <Link href={route('admin.tracking.index')}>
+                            <CardContent className="p-6">
+                                <div className="flex items-center space-x-4">
+                                    <Clock className="h-8 w-8 text-primary" />
+                                    <div>
+                                        <h3 className="font-semibold">Tracking Records</h3>
+                                        <p className="text-sm text-muted-foreground">View all tracking activities</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Link>
+                    </Card>
+                </div>
             </div>
         </AppLayout>
     );

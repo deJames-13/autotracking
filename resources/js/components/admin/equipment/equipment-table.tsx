@@ -43,7 +43,8 @@ export function EquipmentTable({ equipment, users, onRefresh }: EquipmentTablePr
                             <TableHead className="w-[150px]">Recall Number</TableHead>
                             <TableHead className="w-[150px]">Serial Number</TableHead>
                             <TableHead className="w-[200px]">Description</TableHead>
-                            <TableHead className="w-[150px]">Manufacturer</TableHead>
+                            <TableHead className="w-[150px]">Plant</TableHead>
+                            <TableHead className="w-[150px]">Department</TableHead>
                             <TableHead className="w-[200px]">Assigned User</TableHead>
                             <TableHead className="w-[100px]">Status</TableHead>
                             <TableHead className="w-[100px]">Created</TableHead>
@@ -53,7 +54,7 @@ export function EquipmentTable({ equipment, users, onRefresh }: EquipmentTablePr
                     <TableBody>
                         {equipment.data.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={9} className="h-24 text-center">
+                                <TableCell colSpan={10} className="h-24 text-center">
                                     No equipment found.
                                 </TableCell>
                             </TableRow>
@@ -80,7 +81,12 @@ export function EquipmentTable({ equipment, users, onRefresh }: EquipmentTablePr
                                     </TableCell>
                                     <TableCell>
                                         <div className="text-sm">
-                                            {item.manufacturer}
+                                            {item.plant?.plant_name || 'Not assigned'}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="text-sm">
+                                            {item.department?.department_name || 'Not assigned'}
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -103,8 +109,13 @@ export function EquipmentTable({ equipment, users, onRefresh }: EquipmentTablePr
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={item.user ? "default" : "secondary"}>
-                                            {item.user ? 'Assigned' : 'Available'}
+                                        <Badge variant={
+                                            item.status === 'active' ? 'default' :
+                                                item.status === 'in_calibration' ? 'secondary' :
+                                                    item.status === 'pending_calibration' ? 'outline' :
+                                                        'destructive'
+                                        }>
+                                            {item.status?.replace('_', ' ').toUpperCase()}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>

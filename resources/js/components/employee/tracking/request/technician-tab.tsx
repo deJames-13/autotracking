@@ -34,7 +34,12 @@ const EmployeeTechnicianTab: React.FC<EmployeeTechnicianTabProps> = ({ data, onC
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
 
-                setTechnicians(response.data.data.data);
+                // Additional client-side filter to ensure only technicians
+                const technicianUsers = response.data.data.data.filter(user =>
+                    user.role?.role_name === 'technician'
+                );
+
+                setTechnicians(technicianUsers);
             } catch (error) {
                 console.error('Error fetching technicians:', error);
             } finally {
@@ -73,18 +78,20 @@ const EmployeeTechnicianTab: React.FC<EmployeeTechnicianTabProps> = ({ data, onC
                             onChange(selectedTech || null);
                         }}
                     >
-                        <div className="grid grid-cols-3 bg-muted px-4 py-2 text-sm font-medium">
+                        <div className="grid grid-cols-4 bg-muted px-4 py-2 text-sm font-medium">
                             <div>Selection</div>
                             <div>Name</div>
+                            <div>Role</div>
                             <div>Department</div>
                         </div>
 
                         {loading ? (
                             <div className="divide-y">
                                 {[1, 2, 3].map((i) => (
-                                    <div key={i} className="grid grid-cols-3 px-4 py-3 items-center">
+                                    <div key={i} className="grid grid-cols-4 px-4 py-3 items-center">
                                         <div><Skeleton className="h-4 w-4 rounded-full" /></div>
                                         <div><Skeleton className="h-4 w-32" /></div>
+                                        <div><Skeleton className="h-4 w-24" /></div>
                                         <div><Skeleton className="h-4 w-24" /></div>
                                     </div>
                                 ))}
@@ -94,7 +101,7 @@ const EmployeeTechnicianTab: React.FC<EmployeeTechnicianTabProps> = ({ data, onC
                                 {technicians.map((tech) => (
                                     <div
                                         key={tech.employee_id}
-                                        className="grid grid-cols-3 px-4 py-3 items-center hover:bg-muted cursor-pointer"
+                                        className="grid grid-cols-4 px-4 py-3 items-center hover:bg-muted cursor-pointer"
                                         onClick={() => onChange(tech)}
                                     >
                                         <div onClick={(e) => e.stopPropagation()}>
@@ -107,6 +114,7 @@ const EmployeeTechnicianTab: React.FC<EmployeeTechnicianTabProps> = ({ data, onC
                                             <div className="font-medium">{tech.full_name || `${tech.first_name} ${tech.last_name}`}</div>
                                             <div className="text-sm text-muted-foreground">{tech.email}</div>
                                         </div>
+                                        <div>{tech.role?.role_name || 'Not assigned'}</div>
                                         <div>{tech.department?.department_name || 'Not assigned'}</div>
                                     </div>
                                 ))}

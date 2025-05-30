@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\EquipmentRequest;
 use App\Models\Equipment;
 use App\Models\User;
+use App\Models\Plant;
+use App\Models\Department;
+use App\Models\Location;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +20,7 @@ class EquipmentController extends Controller
     public function index(Request $request): Response|JsonResponse
     {
         // Get initial data for the page
-        $equipments = Equipment::with(['user.role', 'user.department'])
+        $equipments = Equipment::with(['user.role', 'user.department', 'plant', 'department', 'location'])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('recall_number', 'like', "%{$search}%")
@@ -33,6 +36,15 @@ class EquipmentController extends Controller
                     $query->where('employee_id', $request->employee_id);
                 }
             })
+            ->when($request->status, function ($query, $status) {
+                $query->where('status', $status);
+            })
+            ->when($request->plant_id, function ($query, $plantId) {
+                $query->where('plant_id', $plantId);
+            })
+            ->when($request->department_id, function ($query, $departmentId) {
+                $query->where('department_id', $departmentId);
+            })
             ->when($request->manufacturer, function ($query, $manufacturer) {
                 $query->where('manufacturer', 'like', "%{$manufacturer}%");
             })
@@ -47,18 +59,28 @@ class EquipmentController extends Controller
             ->orderBy('first_name')
             ->get();
 
+        $plants = Plant::orderBy('plant_name')->get();
+        $departments = Department::orderBy('department_name')->get();
+        $locations = Location::with('department')->orderBy('location_name')->get();
+
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
                 'data' => $equipments,
                 'users' => $users,
+                'plants' => $plants,
+                'departments' => $departments,
+                'locations' => $locations,
             ]);
         }
 
         return Inertia::render('admin/equipment/index', [
             'equipment' => $equipments,
             'users' => $users,
-            'filters' => $request->only(['search', 'employee_id', 'manufacturer']),
+            'plants' => $plants,
+            'departments' => $departments,
+            'locations' => $locations,
+            'filters' => $request->only(['search', 'employee_id', 'manufacturer', 'status', 'plant_id', 'department_id']),
         ]);
     }
 
@@ -68,8 +90,15 @@ class EquipmentController extends Controller
             ->orderBy('first_name')
             ->get();
 
+        $plants = Plant::orderBy('plant_name')->get();
+        $departments = Department::orderBy('department_name')->get();
+        $locations = Location::with('department')->orderBy('location_name')->get();
+
         return Inertia::render('admin/equipment/create', [
             'users' => $users,
+            'plants' => $plants,
+            'departments' => $departments,
+            'locations' => $locations,
         ]);
     }
 
@@ -83,7 +112,7 @@ class EquipmentController extends Controller
 
     public function show(Equipment $equipment, Request $request): Response|JsonResponse
     {
-        $equipment->load(['user.role', 'user.department', 'trackingRecords']);
+        $equipment->load(['user.role', 'user.department', 'plant', 'department', 'location', 'trackingRecords']);
         
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
@@ -103,9 +132,16 @@ class EquipmentController extends Controller
             ->orderBy('first_name')
             ->get();
 
+        $plants = Plant::orderBy('plant_name')->get();
+        $departments = Department::orderBy('department_name')->get();
+        $locations = Location::with('department')->orderBy('location_name')->get();
+
         return Inertia::render('admin/equipment/edit', [
             'equipment' => $equipment,
             'users' => $users,
+            'plants' => $plants,
+            'departments' => $departments,
+            'locations' => $locations,
         ]);
     }
 

@@ -87,6 +87,34 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
                                     {new Date(equipment.updated_at).toLocaleString()}
                                 </p>
                             </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-muted-foreground">Plant</label>
+                                <p className="text-sm">{equipment.plant?.plant_name || 'Not assigned'}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-muted-foreground">Department</label>
+                                <p className="text-sm">{equipment.department?.department_name || 'Not assigned'}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-muted-foreground">Location</label>
+                                <p className="text-sm">{equipment.location?.location_name || 'Not assigned'}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-muted-foreground">Status</label>
+                                <p className="text-sm">
+                                    <Badge variant={equipment.status === 'active' ? 'default' : 'secondary'}>
+                                        {equipment.status?.replace('_', ' ').toUpperCase()}
+                                    </Badge>
+                                </p>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-muted-foreground">Last Calibration</label>
+                                <p className="text-sm">{equipment.last_calibration_date || 'Never'}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-muted-foreground">Next Due Date</label>
+                                <p className="text-sm">{equipment.next_calibration_due || 'Not set'}</p>
+                            </div>
                         </div>
                     </div>
                 </ScrollArea>

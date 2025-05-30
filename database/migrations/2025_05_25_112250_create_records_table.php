@@ -25,11 +25,11 @@ return new class extends Migration
             $table->foreignId('employee_id_in')->constrained('users', 'employee_id')->onDelete('restrict');
 
             // CAL
-            $table->date('cal_date');
-            $table->date('cal_due_date');
+            $table->date('cal_date')->nullable();
+            $table->date('cal_due_date')->nullable();
             $table->dateTime('date_out')->nullable();
             $table->foreignId('employee_id_out')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
-            $table->integer('cycle_time');
+            $table->integer('cycle_time')->nullable();
             $table->timestamps();
         });
     }

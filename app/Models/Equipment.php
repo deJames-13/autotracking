@@ -15,12 +15,38 @@ class Equipment extends Model
         'serial_number',
         'description',
         'model',
-        'manufacturer'
+        'manufacturer',
+        'plant_id',
+        'department_id',
+        'location_id',
+        'status',
+        'last_calibration_date',
+        'next_calibration_due'
+    ];
+
+    protected $casts = [
+        'last_calibration_date' => 'date',
+        'next_calibration_due' => 'date'
     ];
     
     public function user()
     {
         return $this->belongsTo(User::class, 'employee_id', 'employee_id');
+    }
+    
+    public function plant()
+    {
+        return $this->belongsTo(Plant::class, 'plant_id', 'plant_id');
+    }
+    
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'department_id');
+    }
+    
+    public function location()
+    {
+        return $this->belongsTo(Location::class, 'location_id', 'location_id');
     }
     
     public function trackingRecords()

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class EquipmentRequest extends FormRequest
 {
@@ -13,13 +14,116 @@ class EquipmentRequest extends FormRequest
 
     public function rules(): array
     {
+        $equipmentId = $this->route('equipment') ? $this->route('equipment')->equipment_id : null;
+        
         return [
-            'employee_id' => ['nullable', 'exists:users,employee_id'],
-            'recall_number' => ['required', 'string', 'max:255', 'unique:equipments,recall_number,' . ($this->route('equipment') ? $this->route('equipment')->equipment_id : 'NULL') . ',equipment_id'],
-            'serial_number' => ['nullable', 'string', 'max:255'],
-            'description' => ['required', 'string'],
-            'model' => ['required', 'string', 'max:255'],
-            'manufacturer' => ['required', 'string', 'max:255'],
+            'employee_id' => [
+                'nullable', 
+                'exists:users,employee_id'
+            ],
+            'recall_number' => [
+                'required', 
+                'string', 
+                'max:255', 
+                Rule::unique('equipments', 'recall_number')->ignore($equipmentId, 'equipment_id')
+            ],
+            'serial_number' => [
+                'nullable', 
+                'string', 
+                'max:255'
+            ],
+            'description' => [
+                'required', 
+                'string'
+            ],
+            'model' => [
+                'nullable', 
+                'string', 
+                'max:255'
+            ],
+            'manufacturer' => [
+                'nullable', 
+                'string', 
+                'max:255'
+            ],
+            'plant_id' => [
+                'nullable', 
+                'exists:plants,plant_id'
+            ],
+            'department_id' => [
+                'nullable', 
+                'exists:departments,department_id'
+            ],
+            'location_id' => [
+                'nullable', 
+                'exists:locations,location_id'
+            ],
+            'status' => [
+                'nullable', 
+                Rule::in(['active', 'inactive', 'pending_calibration', 'in_calibration', 'retired'])
+            ],
+            'last_calibration_date' => [
+                'nullable', 
+                'date',
+                'before_or_equal:today'
+            ],
+            'next_calibration_due' => [
+                'nullable', 
+                'date',
+                'after:last_calibration_date'
+            ],
         ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'employee_id.exists' => 'The selected employee does not exist.',
+            'recall_number.required' => 'Recall number is required.',
+            'recall_number.unique' => 'This recall number is already in use.',
+            'description.required' => 'Equipment description is required.',
+            'plant_id.exists' => 'The selected plant does not exist.',
+            'department_id.exists' => 'The selected department does not exist.',
+            'location_id.exists' => 'The selected location does not exist.',
+            'status.in' => 'Invalid status selected.',
+            'last_calibration_date.date' => 'Last calibration date must be a valid date.',
+            'last_calibration_date.before_or_equal' => 'Last calibration date cannot be in the future.',
+            'next_calibration_due.date' => 'Next calibration due date must be a valid date.',
+            'next_calibration_due.after' => 'Next calibration due date must be after the last calibration date.',
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'employee_id' => 'assigned employee',
+            'recall_number' => 'recall number',
+            'serial_number' => 'serial number',
+            'description' => 'description',
+            'model' => 'model',
+            'manufacturer' => 'manufacturer',
+            'plant_id' => 'plant',
+            'department_id' => 'department',
+            'location_id' => 'location',
+            'status' => 'status',
+            'last_calibration_date' => 'last calibration date',
+            'next_calibration_due' => 'next calibration due date',
+        ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        // Convert empty strings to null for nullable fields
+        $this->merge([
+            'employee_id' => $this->employee_id ?: null,
+            'serial_number' => $this->serial_number ?: null,
+            'model' => $this->model ?: null,
+            'manufacturer' => $this->manufacturer ?: null,
+            'plant_id' => $this->plant_id ?: null,
+            'department_id' => $this->department_id ?: null,
+            'location_id' => $this->location_id ?: null,
+            'last_calibration_date' => $this->last_calibration_date ?: null,
+            'next_calibration_due' => $this->next_calibration_due ?: null,
+        ]);
     }
 }

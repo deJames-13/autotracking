@@ -48,9 +48,8 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
                     queryParams.append('search', searchQuery);
                 }
 
-                if (filters.role_id) {
-                    queryParams.append('role_id', filters.role_id);
-                }
+                // Always filter for technicians only
+                queryParams.append('role_name', 'technician');
 
                 if (filters.department_id) {
                     queryParams.append('department_id', filters.department_id);
@@ -62,7 +61,12 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
                     }
                 });
 
-                setTechnicians(response.data.data.data);
+                // Additional client-side filter to ensure only technicians
+                const technicianUsers = response.data.data.data.filter(user =>
+                    user.role?.role_name === 'technician'
+                );
+
+                setTechnicians(technicianUsers);
                 setRoles(response.data.roles);
                 setDepartments(response.data.departments);
                 setPlants(response.data.plants);
@@ -78,6 +82,11 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
 
     // Handle filter changes
     const handleFilterChange = (key: string, value: string) => {
+        // Don't allow role filtering since we only want technicians
+        if (key === 'role_id') {
+            return;
+        }
+
         setFilters(prev => ({
             ...prev,
             [key]: value
@@ -87,7 +96,7 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
     // Reset filters
     const resetFilters = () => {
         setFilters({
-            role_id: '',
+            role_id: '', // Keep this but it won't be used
             department_id: '',
         });
         setSearchQuery('');
@@ -113,27 +122,6 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
                                 <DropdownMenuLabel>Filter Technicians</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
-                                    <DropdownMenuItem className="p-0 focus:bg-transparent">
-                                        <div className="p-2 w-full">
-                                            <Label htmlFor="role">Role</Label>
-                                            <Select
-                                                value={filters.role_id}
-                                                onValueChange={(value) => handleFilterChange('role_id', value)}
-                                            >
-                                                <SelectTrigger id="role">
-                                                    <SelectValue placeholder="Select role" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="">All Roles</SelectItem>
-                                                    {roles.map((role) => (
-                                                        <SelectItem key={role.role_id} value={role.role_id.toString()}>
-                                                            {role.role_name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </DropdownMenuItem>
                                     <DropdownMenuItem className="p-0 focus:bg-transparent">
                                         <div className="p-2 w-full">
                                             <Label htmlFor="department">Department</Label>
@@ -192,9 +180,10 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
                                 onChange(selectedTech || null);
                             }}
                         >
-                            <div className="grid grid-cols-4 bg-muted px-4 py-2 text-sm font-medium">
+                            <div className="grid grid-cols-5 bg-muted px-4 py-2 text-sm font-medium">
                                 <div>Selection</div>
                                 <div>Name</div>
+                                <div>Role</div>
                                 <div>Department</div>
                                 <div>Plant</div>
                             </div>
@@ -202,9 +191,10 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
                             {loading ? (
                                 <div className="divide-y">
                                     {[1, 2, 3].map((i) => (
-                                        <div key={i} className="grid grid-cols-4 px-4 py-3 items-center">
+                                        <div key={i} className="grid grid-cols-5 px-4 py-3 items-center">
                                             <div><Skeleton className="h-4 w-4 rounded-full" /></div>
                                             <div><Skeleton className="h-4 w-32" /></div>
+                                            <div><Skeleton className="h-4 w-24" /></div>
                                             <div><Skeleton className="h-4 w-24" /></div>
                                             <div><Skeleton className="h-4 w-24" /></div>
                                         </div>
@@ -215,7 +205,7 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
                                         {technicians.map((tech) => (
                                             <div
                                                 key={tech.employee_id}
-                                                className="grid grid-cols-4 px-4 py-3 items-center hover:bg-muted cursor-pointer"
+                                                className="grid grid-cols-5 px-4 py-3 items-center hover:bg-muted cursor-pointer"
                                                 onClick={() => onChange(tech)}
                                             >
                                                 <div onClick={(e) => e.stopPropagation()}>
@@ -228,6 +218,7 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
                                                 <div className="font-medium">{tech.full_name || `${tech.first_name} ${tech.last_name}`}</div>
                                                 <div className="text-sm text-muted-foreground">{tech.email}</div>
                                             </div>
+                                                <div>{tech.role?.role_name || 'Not assigned'}</div>
                                             <div>{tech.department?.department_name || 'Not assigned'}</div>
                                             <div>{tech.plant?.plant_name || 'Not assigned'}</div>
                                         </div>

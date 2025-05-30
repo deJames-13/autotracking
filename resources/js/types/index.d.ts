@@ -93,13 +93,23 @@ export interface Location {
 export interface Equipment {
     equipment_id: number;
     employee_id?: number | null;
-    serial_number: string;
+    recall_number: string;
+    serial_number?: string | null;
     description: string;
-    model: string;
-    manufacturer: string;
+    model?: string | null;
+    manufacturer?: string | null;
+    plant_id?: number | null;
+    department_id?: number | null;
+    location_id?: number | null;
+    status: 'active' | 'inactive' | 'pending_calibration' | 'in_calibration' | 'retired';
+    last_calibration_date?: string | null;
+    next_calibration_due?: string | null;
     created_at: string;
     updated_at: string;
     user?: User;
+    plant?: Plant;
+    department?: Department;
+    location?: Location;
     tracking_records?: TrackingRecord[];
 }
 
@@ -170,11 +180,18 @@ export interface TrackingFormData {
 }
 
 export interface EquipmentFormData {
-    serial_number: string;
+    employee_id?: number | null;
+    recall_number: string;
+    serial_number?: string;
     description: string;
-    model: string;
-    manufacturer: string;
-    employee_id?: number;
+    model?: string;
+    manufacturer?: string;
+    plant_id?: number | null;
+    department_id?: number | null;
+    location_id?: number | null;
+    status?: 'active' | 'inactive' | 'pending_calibration' | 'in_calibration' | 'retired';
+    last_calibration_date?: string | null;
+    next_calibration_due?: string | null;
 }
 
 export interface DepartmentFormData {

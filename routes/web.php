@@ -19,7 +19,6 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-
 Route::middleware('auth')->group(function () {
     Route::post('logout', [\App\Http\Controllers\Auth\EmployeeLoginController::class, 'destroy'])
         ->name('logout');
@@ -45,6 +44,7 @@ Route::prefix('employee')->name('employee.')->middleware('auth')->group(function
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Main dashboard - redirects based on role
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');

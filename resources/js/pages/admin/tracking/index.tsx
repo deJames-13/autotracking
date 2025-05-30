@@ -22,7 +22,7 @@ interface TrackingIndexProps {
 }
 
 const TrackingIndex: React.FC<TrackingIndexProps> = ({ filters = {}, requests = [] }) => {
-    const { canManageUsers } = useRole();
+    const { canManageRequestIncoming } = useRole();
 
     const { data, setData, get, processing } = useForm({
         search: filters.search || '',
@@ -30,10 +30,10 @@ const TrackingIndex: React.FC<TrackingIndexProps> = ({ filters = {}, requests = 
 
     // Redirect if user doesn't have permission
     useEffect(() => {
-        if (!canManageUsers()) {
+        if (!canManageRequestIncoming()) {
             router.visit('/dashboard');
         }
-    }, [canManageUsers]);
+    }, [canManageRequestIncoming]);
 
     const handleFilterChange = () => {
         get(route('admin.tracking.index'), {
@@ -52,7 +52,7 @@ const TrackingIndex: React.FC<TrackingIndexProps> = ({ filters = {}, requests = 
         return () => clearTimeout(delayedSearch);
     }, [data.search]);
 
-    if (!canManageUsers()) {
+    if (!canManageRequestIncoming()) {
         return null;
     }
 
