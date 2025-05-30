@@ -52,7 +52,7 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
 
         setLoadingEmployee(true);
         try {
-            const response = await axios.get('/admin/search-by-barcode', {
+            const response = await axios.get(route('admin.users.search-by-barcode'), {
                 params: { barcode },
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
@@ -122,7 +122,7 @@ const DetailTab: React.FC<DetailTabProps> = ({ data, onChange, errors = {}, tech
     // Function to fetch locations by department
     const fetchLocationsByDepartment = async (departmentId: number) => {
         try {
-            const response = await axios.get(route('admin.users.search-by-barcode'), {
+            const response = await axios.get(route('admin.departments.search-departments'), {
                 params: {
                     department_id: departmentId,
                     limit: 10
