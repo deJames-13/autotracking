@@ -76,18 +76,34 @@ class User extends Authenticatable
         return $this->hasMany(Equipment::class, 'employee_id', 'employee_id');
     }
     
+    public function trackIncomingAsTechnician()
+    {
+        return $this->hasMany(TrackIncoming::class, 'technician_id', 'employee_id');
+    }
+    
+    public function trackIncomingAsEmployeeIn()
+    {
+        return $this->hasMany(TrackIncoming::class, 'employee_id_in', 'employee_id');
+    }
+    
+    public function trackOutgoingAsEmployeeOut()
+    {
+        return $this->hasMany(TrackOutgoing::class, 'employee_id_out', 'employee_id');
+    }
+    
+    // Backward compatibility methods (to be deprecated)
     public function trackingRecordsAsTechnician()
     {
-        return $this->hasMany(TrackingRecord::class, 'technician_id', 'employee_id');
+        return $this->trackIncomingAsTechnician();
     }
     
     public function trackingRecordsAsEmployeeIn()
     {
-        return $this->hasMany(TrackingRecord::class, 'employee_id_in', 'employee_id');
+        return $this->trackIncomingAsEmployeeIn();
     }
     
     public function trackingRecordsAsEmployeeOut()
     {
-        return $this->hasMany(TrackingRecord::class, 'employee_id_out', 'employee_id');
+        return $this->trackOutgoingAsEmployeeOut();
     }
 }

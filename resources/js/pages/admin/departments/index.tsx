@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Department, type PaginationData } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -27,6 +27,10 @@ interface DepartmentsIndexProps {
 export default function DepartmentsIndex({ departments: initialDepartments, filters = {} }: DepartmentsIndexProps) {
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+    // Use live page data instead of initial props
+    const { props } = usePage<DepartmentsIndexProps>();
+    const departments = props.departments;
 
     const { data, setData, get, processing } = useForm({
         search: filters.search || '',
@@ -120,17 +124,17 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
 
                 {/* Departments Table */}
                 <DepartmentTable
-                    departments={initialDepartments}
+                    departments={departments}
                     onRefresh={refreshDepartments}
                 />
 
                 {/* Pagination Info */}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div>
-                        Showing {initialDepartments.from || 0} to {initialDepartments.to || 0} of {initialDepartments.total} departments
+                        Showing {departments.from || 0} to {departments.to || 0} of {departments.total} departments
                     </div>
                     <div>
-                        Page {initialDepartments.current_page} of {initialDepartments.last_page}
+                        Page {departments.current_page} of {departments.last_page}
                     </div>
                 </div>
             </div>

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EquipmentRequest;
 use App\Http\Resources\EquipmentResource;
-use App\Http\Resources\TrackingRecordResource;
+use App\Http\Resources\TrackIncomingResource;
 use App\Models\Equipment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,7 +15,7 @@ class EquipmentController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Equipment::with(['user', 'trackingRecords']);
+        $query = Equipment::with(['user', 'trackIncoming']);
 
         if ($request->has('search')) {
             $search = $request->get('search');
@@ -42,21 +42,21 @@ class EquipmentController extends Controller
     public function store(EquipmentRequest $request): EquipmentResource
     {
         $equipment = Equipment::create($request->validated());
-        $equipment->load(['user', 'trackingRecords']);
+        $equipment->load(['user', 'trackIncoming']);
 
         return new EquipmentResource($equipment);
     }
 
     public function show(Equipment $equipment): EquipmentResource
     {
-        $equipment->load(['user', 'trackingRecords']);
+        $equipment->load(['user', 'trackIncoming']);
         return new EquipmentResource($equipment);
     }
 
     public function update(EquipmentRequest $request, Equipment $equipment): EquipmentResource
     {
         $equipment->update($request->validated());
-        $equipment->load(['user', 'trackingRecords']);
+        $equipment->load(['user', 'trackIncoming']);
 
         return new EquipmentResource($equipment);
     }
@@ -69,9 +69,9 @@ class EquipmentController extends Controller
     
     public function trackingRecords(Equipment $equipment): AnonymousResourceCollection
     {
-        return TrackingRecordResource::collection(
-            $equipment->trackingRecords()
-                ->with(['technician', 'location', 'employeeIn', 'employeeOut'])
+        return TrackIncomingResource::collection(
+            $equipment->trackIncoming()
+                ->with(['technician', 'location', 'employeeIn', 'trackOutgoing'])
                 ->paginate(15)
         );
     }
@@ -83,7 +83,7 @@ class EquipmentController extends Controller
         ]);
         
         $equipment->update(['employee_id' => $request->employee_id]);
-        $equipment->load(['user', 'trackingRecords']);
+        $equipment->load(['user', 'trackIncoming']);
         
         return new EquipmentResource($equipment);
     }
@@ -91,7 +91,7 @@ class EquipmentController extends Controller
     public function unassignUser(Equipment $equipment): EquipmentResource
     {
         $equipment->update(['employee_id' => null]);
-        $equipment->load(['user', 'trackingRecords']);
+        $equipment->load(['user', 'trackIncoming']);
         
         return new EquipmentResource($equipment);
     }

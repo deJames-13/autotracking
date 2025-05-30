@@ -17,6 +17,8 @@ class LocationResource extends JsonResource
             'updated_at' => $this->updated_at,
             'department' => new DepartmentResource($this->whenLoaded('department')),
             'tracking_records' => TrackingRecordResource::collection($this->whenLoaded('trackingRecords')),
+            'track_incoming' => TrackIncomingResource::collection($this->whenLoaded('trackIncoming')),
+            'track_outgoing' => TrackOutgoingResource::collection($this->whenLoaded('trackOutgoing')),
         ];
     }
 }

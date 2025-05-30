@@ -5,7 +5,7 @@ import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package, Clock, AlertTriangle } from 'lucide-react';
+import { Plus, Users, Package, Clock, AlertTriangle, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -138,7 +138,7 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>Pending Requests</CardTitle>
                             <Button variant="outline" size="sm" asChild>
-                                <Link href={route('admin.tracking.index')}>View All</Link>
+                                <Link href={route('admin.tracking.incoming.index')}>View All</Link>
                             </Button>
                         </CardHeader>
                         <CardContent>
@@ -166,7 +166,35 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
                 </div>
 
                 {/* Quick Actions */}
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-4">
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                        <Link href={route('admin.tracking.incoming.index')}>
+                            <CardContent className="p-6">
+                                <div className="flex items-center space-x-4">
+                                    <ArrowDownToLine className="h-8 w-8 text-primary" />
+                                    <div>
+                                        <h3 className="font-semibold">Incoming Requests</h3>
+                                        <p className="text-sm text-muted-foreground">Review equipment submissions</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Link>
+                    </Card>
+
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                        <Link href={route('admin.tracking.outgoing.index')}>
+                            <CardContent className="p-6">
+                                <div className="flex items-center space-x-4">
+                                    <ArrowUpFromLine className="h-8 w-8 text-primary" />
+                                    <div>
+                                        <h3 className="font-semibold">Outgoing Completions</h3>
+                                        <p className="text-sm text-muted-foreground">Process completed calibrations</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Link>
+                    </Card>
+
                     <Card className="cursor-pointer hover:shadow-md transition-shadow">
                         <Link href={route('admin.equipment.index')}>
                             <CardContent className="p-6">
@@ -189,20 +217,6 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
                                     <div>
                                         <h3 className="font-semibold">Manage Users</h3>
                                         <p className="text-sm text-muted-foreground">View and manage user accounts</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Link>
-                    </Card>
-
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                        <Link href={route('admin.tracking.index')}>
-                            <CardContent className="p-6">
-                                <div className="flex items-center space-x-4">
-                                    <Clock className="h-8 w-8 text-primary" />
-                                    <div>
-                                        <h3 className="font-semibold">Tracking Records</h3>
-                                        <p className="text-sm text-muted-foreground">View all tracking activities</p>
                                     </div>
                                 </div>
                             </CardContent>

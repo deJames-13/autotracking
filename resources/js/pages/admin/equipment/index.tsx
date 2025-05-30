@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Equipment, type User, type PaginationData } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -31,6 +31,10 @@ interface EquipmentIndexProps {
 export default function EquipmentIndex({ equipment: initialEquipment, users, filters = {} }: EquipmentIndexProps) {
     const { canManageEquipment } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+    // Use live page data instead of initial props
+    const { props } = usePage<EquipmentIndexProps>();
+    const equipment = props.equipment;
 
     const { data, setData, get, processing } = useForm({
         search: filters.search || '',
@@ -160,7 +164,7 @@ export default function EquipmentIndex({ equipment: initialEquipment, users, fil
 
                 {/* Equipment Table */}
                 <EquipmentTable
-                    equipment={initialEquipment}
+                    equipment={equipment}
                     users={users}
                     onRefresh={refreshEquipment}
                 />
@@ -168,10 +172,10 @@ export default function EquipmentIndex({ equipment: initialEquipment, users, fil
                 {/* Pagination Info */}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div>
-                        Showing {initialEquipment.from || 0} to {initialEquipment.to || 0} of {initialEquipment.total} equipment
+                        Showing {equipment.from || 0} to {equipment.to || 0} of {equipment.total} equipment
                     </div>
                     <div>
-                        Page {initialEquipment.current_page} of {initialEquipment.last_page}
+                        Page {equipment.current_page} of {equipment.last_page}
                     </div>
                 </div>
             </div>

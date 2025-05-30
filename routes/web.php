@@ -11,7 +11,8 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Models\User;
 use App\Models\Location;
-use App\Models\TrackingRecord;
+use App\Models\TrackIncoming;
+use App\Models\TrackOutgoing;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -98,7 +99,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('tracking/request/generate-recall', [AdminTrackingController::class, 'generateUniqueRecall'])->name('tracking.request.generate-recall');
         Route::post('tracking/request/confirm-pin', [AdminTrackingController::class, 'confirmRequestPin'])->name('tracking.request.confirm-pin');
         
-        // Additional search routes
+        // New tracking system routes for admin interface
+        Route::get('tracking/incoming', [AdminTrackingController::class, 'trackIncomingIndex'])->name('tracking.incoming.index');
+        Route::get('tracking/outgoing', [AdminTrackingController::class, 'trackOutgoingIndex'])->name('tracking.outgoing.index');
+        Route::get('tracking/incoming/{trackIncoming}', [AdminTrackingController::class, 'trackIncomingShow'])->name('tracking.incoming.show');
+        Route::get('tracking/outgoing/{trackOutgoing}', [AdminTrackingController::class, 'trackOutgoingShow'])->name('tracking.outgoing.show');
+        Route::get('tracking/outgoing/{trackOutgoing}/certificate', [AdminTrackingController::class, 'viewCertificate'])->name('tracking.outgoing.certificate');
+        
+        // Additional search routes for new tracking system
+        Route::get('track-incoming/search', [AdminTrackingController::class, 'searchTrackIncoming'])->name('track-incoming.search');
+        Route::get('track-outgoing/search', [AdminTrackingController::class, 'searchTrackOutgoing'])->name('track-outgoing.search');
+        
+        // Backward compatibility route (will search TrackIncoming)
         Route::get('tracking-records/search', [AdminTrackingController::class, 'searchTrackingRecords'])->name('tracking-records.search');
         
         // Additional routes for searching departments, plants, and locations

@@ -58,9 +58,19 @@ export function AppSidebar() {
     const adminTrackingItems: NavItem[] = [
         ...(canManageRequestIncoming() ? [
             {
-                title: 'Incoming',
+                title: 'Tracking Overview',
                 href: '/admin/tracking',
+                icon: Activity,
+            },
+            {
+                title: 'Incoming Requests',
+                href: '/admin/tracking/incoming',
                 icon: ArrowDownToLine,
+            },
+            {
+                title: 'Outgoing Completions',
+                href: '/admin/tracking/outgoing',
+                icon: ArrowUpFromLine,
             },
         ] : [])
     ];

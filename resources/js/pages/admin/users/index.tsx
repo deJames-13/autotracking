@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Department, type Plant, type Role, type User, type PaginationData } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -33,6 +33,10 @@ interface UsersIndexProps {
 export default function UsersIndex({ users: initialUsers, roles, departments, plants, filters }: UsersIndexProps) {
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+    // Use live page data instead of initial props
+    const { props } = usePage<UsersIndexProps>();
+    const users = props.users;
 
     const { data, setData, get, processing } = useForm({
         search: filters.search || '',
@@ -167,7 +171,7 @@ export default function UsersIndex({ users: initialUsers, roles, departments, pl
 
                 {/* Users Table */}
                 <UserTable
-                    users={initialUsers}
+                    users={users}
                     roles={roles}
                     departments={departments}
                     plants={plants}
@@ -177,10 +181,10 @@ export default function UsersIndex({ users: initialUsers, roles, departments, pl
                 {/* Pagination Info */}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div>
-                        Showing {initialUsers.from || 0} to {initialUsers.to || 0} of {initialUsers.total} users
+                        Showing {users.from || 0} to {users.to || 0} of {users.total} users
                     </div>
                     <div>
-                        Page {initialUsers.current_page} of {initialUsers.last_page}
+                        Page {users.current_page} of {users.last_page}
                     </div>
                 </div>
             </div>

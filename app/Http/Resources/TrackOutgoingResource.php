@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class TrackOutgoingResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'recall_number' => $this->recall_number,
+            'cal_date' => $this->cal_date,
+            'cal_due_date' => $this->cal_due_date,
+            'date_out' => $this->date_out,
+            'employee_id_out' => $this->employee_id_out,
+            'cycle_time' => $this->cycle_time,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'track_incoming' => new TrackIncomingResource($this->whenLoaded('trackIncoming')),
+            'employee_out' => new UserResource($this->whenLoaded('employeeOut')),
+            'equipment' => new EquipmentResource($this->whenLoaded('equipment')),
+            'technician' => new UserResource($this->whenLoaded('technician')),
+        ];
+    }
+}

@@ -43,6 +43,7 @@ class RouteServiceProvider extends ServiceProvider
         Route::model('location', \App\Models\Location::class);
         Route::model('equipment', \App\Models\Equipment::class);
         Route::model('plant', \App\Models\Plant::class);
-        Route::model('trackingRecord', \App\Models\TrackingRecord::class);
+        Route::model('trackIncoming', \App\Models\TrackIncoming::class);
+        Route::model('trackOutgoing', \App\Models\TrackOutgoing::class);
     }
 }

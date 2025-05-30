@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Department, type Location, type PaginationData } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -30,6 +30,10 @@ interface LocationsIndexProps {
 export default function LocationsIndex({ locations: initialLocations, departments, filters = {} }: LocationsIndexProps) {
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+    // Use live page data instead of initial props
+    const { props } = usePage<LocationsIndexProps>();
+    const locations = props.locations;
 
     const { data, setData, get, processing } = useForm({
         search: filters.search || '',
@@ -147,7 +151,7 @@ export default function LocationsIndex({ locations: initialLocations, department
 
                 {/* Locations Table */}
                 <LocationTable
-                    locations={initialLocations}
+                    locations={locations}
                     departments={departments}
                     onRefresh={refreshLocations}
                 />
@@ -155,10 +159,10 @@ export default function LocationsIndex({ locations: initialLocations, department
                 {/* Pagination Info */}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div>
-                        Showing {initialLocations.from || 0} to {initialLocations.to || 0} of {initialLocations.total} locations
+                        Showing {locations.from || 0} to {locations.to || 0} of {locations.total} locations
                     </div>
                     <div>
-                        Page {initialLocations.current_page} of {initialLocations.last_page}
+                        Page {locations.current_page} of {locations.last_page}
                     </div>
                 </div>
             </div>

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Plant, type PaginationData } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -27,6 +27,10 @@ interface PlantsIndexProps {
 export default function PlantsIndex({ plants: initialPlants, filters = {} }: PlantsIndexProps) {
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+    // Use live page data instead of initial props
+    const { props } = usePage<PlantsIndexProps>();
+    const plants = props.plants;
 
     const { data, setData, get, processing } = useForm({
         search: filters.search || '',
@@ -120,17 +124,17 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
 
                 {/* Plants Table */}
                 <PlantTable
-                    plants={initialPlants}
+                    plants={plants}
                     onRefresh={refreshPlants}
                 />
 
                 {/* Pagination Info */}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div>
-                        Showing {initialPlants.from || 0} to {initialPlants.to || 0} of {initialPlants.total} plants
+                        Showing {plants.from || 0} to {plants.to || 0} of {plants.total} plants
                     </div>
                     <div>
-                        Page {initialPlants.current_page} of {initialPlants.last_page}
+                        Page {plants.current_page} of {plants.last_page}
                     </div>
                 </div>
             </div>

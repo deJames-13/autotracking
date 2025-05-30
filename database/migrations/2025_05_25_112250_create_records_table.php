@@ -11,25 +11,28 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tracking_records', function (Blueprint $table) {
-            $table->id('id');
+        Schema::create('track_incoming', function (Blueprint $table) {
+            $table->id();
             $table->string('recall_number')->unique();
             $table->foreignId('technician_id')->constrained('users', 'employee_id')->onDelete('restrict');
             $table->text('description');
             $table->foreignId('equipment_id')->constrained('equipments', 'equipment_id')->onDelete('cascade');
             $table->foreignId('location_id')->constrained('locations', 'location_id')->onDelete('restrict');
-            $table->dateTime('due_date')->useCurrent();
-
-            // INCOMING
+            $table->dateTime('due_date');
             $table->dateTime('date_in');
             $table->foreignId('employee_id_in')->constrained('users', 'employee_id')->onDelete('restrict');
-
-            // CAL
-            $table->date('cal_date')->nullable();
-            $table->date('cal_due_date')->nullable();
-            $table->dateTime('date_out')->nullable();
-            $table->foreignId('employee_id_out')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
-            $table->integer('cycle_time')->nullable();
+            $table->enum('status', ['pending_calibration', 'calibration_in_progress', 'ready_for_pickup'])->default('pending_calibration');
+            $table->timestamps();
+        });
+        Schema::create('track_outgoing', function (Blueprint $table) {
+            $table->id();
+            $table->string('recall_number');
+            $table->foreign('recall_number')->references('recall_number')->on('track_incoming')->onDelete('cascade');
+            $table->date('cal_date');
+            $table->date('cal_due_date');
+            $table->dateTime('date_out');
+            $table->foreignId('employee_id_out')->constrained('users', 'employee_id')->onDelete('restrict');
+            $table->integer('cycle_time');
             $table->timestamps();
         });
     }
@@ -39,7 +42,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Explicitly drop tracking_records to ensure it's dropped before any table it references
-        Schema::dropIfExists('tracking_records');
+        Schema::dropIfExists('track_outgoing');
+        Schema::dropIfExists('track_incoming');
     }
 };

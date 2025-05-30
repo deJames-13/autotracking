@@ -87,7 +87,7 @@ export default function Dashboard({ trackingStats = { activeRequests: 0, equipme
                                 </Button> : 
                                 <Button variant="outline" asChild>
                                     <Link href={route('admin.tracking.index')}>
-                                        View All Tracking Requests
+                                        View Tracking Overview
                                     </Link>
                                 </Button>
                         }

@@ -44,7 +44,7 @@ class EquipmentResource extends JsonResource
                     'location_name' => $this->location->location_name,
                 ];
             }),
-            'tracking_records' => TrackingRecordResource::collection($this->whenLoaded('trackingRecords')),
+            'tracking_records' => TrackIncomingResource::collection($this->whenLoaded('trackIncoming')),
         ];
     }
 }

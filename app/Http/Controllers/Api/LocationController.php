@@ -14,7 +14,7 @@ class LocationController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Location::with(['department', 'trackingRecords']);
+        $query = Location::with(['department', 'trackIncoming', 'trackOutgoing']);
 
         if ($request->has('search')) {
             $search = $request->get('search');
@@ -33,21 +33,21 @@ class LocationController extends Controller
     public function store(LocationRequest $request): LocationResource
     {
         $location = Location::create($request->validated());
-        $location->load(['department', 'trackingRecords']);
+        $location->load(['department', 'trackIncoming', 'trackOutgoing']);
 
         return new LocationResource($location);
     }
 
     public function show(Location $location): LocationResource
     {
-        $location->load(['department', 'trackingRecords']);
+        $location->load(['department', 'trackIncoming', 'trackOutgoing']);
         return new LocationResource($location);
     }
 
     public function update(LocationRequest $request, Location $location): LocationResource
     {
         $location->update($request->validated());
-        $location->load(['department', 'trackingRecords']);
+        $location->load(['department', 'trackIncoming', 'trackOutgoing']);
 
         return new LocationResource($location);
     }

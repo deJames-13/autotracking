@@ -137,6 +137,51 @@ export interface TrackingRecord {
     employeeOut?: User;
 }
 
+// New Track Incoming interface (calibration requests)
+export interface TrackIncoming {
+    track_incoming_id: number;
+    recall_number: string;
+    description: string;
+    equipment_id: number;
+    technician_id: number;
+    location_id: number;
+    received_by: number;
+    serial_number?: string | null;
+    model?: string | null;
+    manufacturer?: string | null;
+    date_in: string;
+    due_date: string;
+    status: 'pending_calibration' | 'calibration_in_progress';
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    equipment?: Equipment;
+    technician?: User;
+    location?: Location;
+    employee_in?: User;
+    track_outgoing?: TrackOutgoing;
+}
+
+// New Track Outgoing interface (calibration completions)
+export interface TrackOutgoing {
+    track_outgoing_id: number;
+    recall_number: string;
+    cal_date: string;
+    cal_due_date: string;
+    date_out: string;
+    employee_out: number;
+    certificate_number?: string | null;
+    cycle_time?: number | null;
+    status: 'ready_for_pickup' | 'completed';
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    track_incoming?: TrackIncoming;
+    employee_out_user?: User;
+    equipment?: Equipment; // Available through hasOneThrough relationship
+    technician?: User; // Available through hasOneThrough relationship
+}
+
 // Pagination types
 export interface PaginationData<T> {
     data: T[];
@@ -196,6 +241,7 @@ export interface EquipmentFormData {
 
 export interface DepartmentFormData {
     department_name: string;
+    [key: string]: any;
 }
 
 export interface LocationFormData {

@@ -22,4 +22,14 @@ class Location extends Model
     {
         return $this->hasMany(TrackingRecord::class, 'location_id', 'location_id');
     }
+
+    public function trackIncoming()
+    {
+        return $this->hasMany(TrackIncoming::class, 'location_id', 'location_id');
+    }
+
+    public function trackOutgoing()
+    {
+        return $this->hasMany(TrackOutgoing::class, 'location_id', 'location_id');
+    }
 }

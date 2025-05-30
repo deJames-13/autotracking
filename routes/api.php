@@ -5,7 +5,8 @@ use App\Http\Controllers\Api\EquipmentController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\PlantController;
 use App\Http\Controllers\Api\RoleController;
-use App\Http\Controllers\Api\TrackingRecordController;
+use App\Http\Controllers\Api\TrackIncomingController;
+use App\Http\Controllers\Api\TrackOutgoingController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -50,11 +51,6 @@ Route::middleware(['auth', 'web'])->prefix('v1')->group(function () {
         'equipment' => 'equipment:equipment_id'
     ]);
     
-    // Tracking Records
-    Route::apiResource('tracking-records', TrackingRecordController::class)->parameters([
-        'tracking-records' => 'trackingRecord:tracking_id'
-    ]);
-    
     // Additional specific endpoints
     Route::prefix('users')->group(function () {
         Route::get('{user}/equipment', [UserController::class, 'equipment'])->name('users.equipment');
@@ -72,11 +68,17 @@ Route::middleware(['auth', 'web'])->prefix('v1')->group(function () {
         Route::get('{department}/locations', [DepartmentController::class, 'locations'])->name('departments.locations');
     });
     
-    Route::prefix('tracking-records')->group(function () {
-        Route::post('{trackingRecord}/check-out', [TrackingRecordController::class, 'checkOut'])->name('tracking-records.check-out');
-        Route::post('{trackingRecord}/recall', [TrackingRecordController::class, 'recall'])->name('tracking-records.recall');
-        Route::get('overdue', [TrackingRecordController::class, 'overdue'])->name('tracking-records.overdue');
-        Route::get('due-soon', [TrackingRecordController::class, 'dueSoon'])->name('tracking-records.due-soon');
+    // New tracking system routes
+    Route::apiResource('track-incoming', \App\Http\Controllers\Api\TrackIncomingController::class);
+    Route::apiResource('track-outgoing', \App\Http\Controllers\Api\TrackOutgoingController::class);
+    
+    Route::prefix('track-incoming')->group(function () {
+        Route::get('pending', [\App\Http\Controllers\Api\TrackIncomingController::class, 'pending'])->name('track-incoming.pending');
+        Route::get('overdue', [\App\Http\Controllers\Api\TrackIncomingController::class, 'overdue'])->name('track-incoming.overdue');
+    });
+    
+    Route::prefix('track-outgoing')->group(function () {
+        Route::get('due-soon', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'dueSoon'])->name('track-outgoing.due-soon');
     });
 });
 

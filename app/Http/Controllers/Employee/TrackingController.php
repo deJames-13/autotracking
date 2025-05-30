@@ -4,7 +4,8 @@ namespace App\Http\Controllers\Employee;
 
 use App\Http\Controllers\Controller;
 use App\Models\Equipment;
-use App\Models\TrackingRecord;
+use App\Models\TrackIncoming;
+use App\Models\TrackOutgoing;
 use App\Models\Location;
 use App\Models\User;
 use App\Models\CalibrationRequest;
@@ -27,15 +28,15 @@ class TrackingController extends Controller
         
         // Get equipment assigned to this employee
         $assignedEquipment = Equipment::where('employee_id', $user->employee_id)
-            ->with(['trackingRecords' => function($query) {
+            ->with(['trackIncoming' => function($query) {
                 $query->latest()->limit(5);
             }])
             ->get();
 
         // Get recent tracking activities for this employee
-        $recentActivities = TrackingRecord::where(function($query) use ($user) {
+        $recentActivities = TrackIncoming::where(function($query) use ($user) {
                 $query->where('employee_id_in', $user->employee_id)
-                      ->orWhere('employee_id_out', $user->employee_id);
+                      ->orWhere('technician_id', $user->employee_id);
             })
             ->with(['equipment', 'location'])
             ->latest()
@@ -44,12 +45,12 @@ class TrackingController extends Controller
 
         // Get overdue equipment assigned to this employee
         $overdueEquipment = Equipment::where('employee_id', $user->employee_id)
-            ->whereHas('trackingRecords', function($query) {
-                $query->where('cal_due_date', '<', now())
-                      ->whereNull('date_in');
+            ->whereHas('trackIncoming', function($query) {
+                $query->where('due_date', '<', now())
+                      ->where('status', '!=', 'ready_for_pickup');
             })
-            ->with(['trackingRecords' => function($query) {
-                $query->whereNull('date_in')->latest();
+            ->with(['trackIncoming' => function($query) {
+                $query->where('status', '!=', 'ready_for_pickup')->latest();
             }])
             ->get();
 
@@ -78,8 +79,8 @@ class TrackingController extends Controller
         }
 
         $equipment->load([
-            'trackingRecords' => function($query) {
-                $query->with(['location', 'employeeIn', 'employeeOut', 'technician'])
+            'trackIncoming' => function($query) {
+                $query->with(['location', 'employeeIn', 'technician'])
                       ->latest();
             }
         ]);
@@ -117,8 +118,8 @@ class TrackingController extends Controller
         }
 
         // Find the latest tracking record for this equipment
-        $latestRecord = TrackingRecord::where('equipment_id', $equipment->equipment_id)
-            ->whereNull('date_in')
+        $latestRecord = TrackIncoming::where('equipment_id', $equipment->equipment_id)
+            ->where('status', '!=', 'ready_for_pickup')
             ->latest()
             ->first();
 
@@ -131,8 +132,9 @@ class TrackingController extends Controller
         // Update the tracking record with check-in information
         $latestRecord->update([
             'date_in' => now(),
-            'location_id_in' => $request->location_id,
+            'location_id' => $request->location_id,
             'employee_id_in' => $user->employee_id,
+            'status' => 'calibration_in_progress'
         ]);
 
         return redirect()->back()->with('success', 'Equipment checked in successfully.');
@@ -164,12 +166,13 @@ class TrackingController extends Controller
         }
 
         // Create new tracking record for check-out
-        TrackingRecord::create([
-            'equipment_id' => $equipment->equipment_id,
-            'employee_id_out' => $user->employee_id,
-            'location_id_out' => $request->location_id,
+        TrackOutgoing::create([
+            'recall_number' => $equipment->recall_number,
+            'cal_date' => now(),
+            'cal_due_date' => now()->addDays(30), // Default 30 days calibration cycle
             'date_out' => now(),
-            'notes' => $request->notes,
+            'employee_id_out' => $user->employee_id,
+            'cycle_time' => 24, // Default 24 hours cycle time
         ]);
 
         return redirect()->back()->with('success', 'Equipment checked out successfully.');
@@ -294,15 +297,16 @@ class TrackingController extends Controller
             }
 
             // Create tracking record for the calibration request
-            TrackingRecord::create([
-                'equipment_id' => $equipment->equipment_id,
-                'employee_id_out' => $user->employee_id,
-                'location_id_out' => $equipment->location_id,
-                'date_out' => now(),
+            TrackIncoming::create([
+                'recall_number' => $equipment->recall_number,
                 'technician_id' => $validated['technician']['employee_id'],
                 'description' => "Calibration request - {$validated['requestType']}",
-                'notes' => "Request submitted by {$user->first_name} {$user->last_name}. Received by employee ID: {$validated['confirmation']['receivedBy']}",
-                'recall' => $validated['requestType'] === 'new' ? false : true, // New equipment doesn't have recall initially
+                'equipment_id' => $equipment->equipment_id,
+                'location_id' => $equipment->location_id,
+                'due_date' => now()->addDays(7), // Default 7 days for calibration
+                'date_in' => now(),
+                'employee_id_in' => $validated['confirmation']['receivedBy'],
+                'status' => 'pending_calibration'
             ]);
 
             return redirect()->route('employee.tracking.index')

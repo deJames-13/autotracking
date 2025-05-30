@@ -112,7 +112,7 @@ class EquipmentController extends Controller
 
     public function show(Equipment $equipment, Request $request): Response|JsonResponse
     {
-        $equipment->load(['user.role', 'user.department', 'plant', 'department', 'location', 'trackingRecords']);
+        $equipment->load(['user.role', 'user.department', 'plant', 'department', 'location', 'trackIncoming']);
         
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {

@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\EquipmentResource;
-use App\Http\Resources\TrackingRecordResource;
+use App\Http\Resources\TrackIncomingResource;
 use App\Models\User;
-use App\Models\TrackingRecord;
+use App\Models\TrackIncoming;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -89,12 +89,11 @@ class UserController extends Controller
     
     public function trackingRecords(User $user): AnonymousResourceCollection
     {
-        $records = TrackingRecord::where('technician_id', $user->employee_id)
+        $records = TrackIncoming::where('technician_id', $user->employee_id)
             ->orWhere('employee_id_in', $user->employee_id)
-            ->orWhere('employee_id_out', $user->employee_id)
-            ->with(['equipment', 'technician', 'location', 'employeeIn', 'employeeOut'])
+            ->with(['equipment', 'technician', 'location', 'employeeIn', 'trackOutgoing'])
             ->paginate(15);
             
-        return TrackingRecordResource::collection($records);
+        return TrackIncomingResource::collection($records);
     }
 }

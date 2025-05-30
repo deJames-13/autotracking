@@ -275,7 +275,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                 // Reset Redux state on successful submission
                 dispatch(resetForm());
                 dispatch(markFormClean());
-                router.visit(route('admin.tracking.index'));
+                router.visit(route('admin.tracking.incoming.index'));
             },
             onError: (errors) => {
                 // Find the first step with errors
@@ -368,9 +368,9 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
     // Add Inertia navigation listener to reset form when navigating away
     useEffect(() => {
         const handleInertiaStart = (event: any) => {
-            const { url } = event.detail;
+            const url = event?.detail?.url;
             // If navigating away from tracking request pages, reset form
-            if (!url.includes('/admin/tracking/request')) {
+            if (url && !url.includes('/admin/tracking/request')) {
                 dispatch(resetForm());
             }
         };

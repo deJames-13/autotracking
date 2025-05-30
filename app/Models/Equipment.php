@@ -49,8 +49,14 @@ class Equipment extends Model
         return $this->belongsTo(Location::class, 'location_id', 'location_id');
     }
     
+    public function trackIncoming()
+    {
+        return $this->hasMany(TrackIncoming::class, 'equipment_id', 'equipment_id');
+    }
+    
+    // Backward compatibility method (to be deprecated)
     public function trackingRecords()
     {
-        return $this->hasMany(TrackingRecord::class, 'equipment_id', 'equipment_id');
+        return $this->trackIncoming();
     }
 }
