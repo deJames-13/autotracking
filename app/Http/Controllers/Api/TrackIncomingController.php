@@ -108,7 +108,7 @@ class TrackIncomingController extends Controller
                 'description' => $data['equipment']['description'],
                 'equipment_id' => $equipment->equipment_id,
                 'location_id' => $data['equipment']['location'],
-                'received_by' => $data['receivedBy']['employee_id'],
+                'received_by_id' => $data['receivedBy']['employee_id'],
                 'serial_number' => $data['equipment']['serialNumber'],
                 'model' => $data['equipment']['model'],
                 'manufacturer' => $data['equipment']['manufacturer'],

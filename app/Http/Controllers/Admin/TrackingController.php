@@ -96,7 +96,7 @@ class TrackingController extends Controller
      */
     public function trackIncomingShow(TrackIncoming $trackIncoming)
     {
-        $trackIncoming->load(['equipment', 'technician', 'location', 'employeeIn', 'trackOutgoing.employeeOut']);
+        $trackIncoming->load(['equipment', 'technician', 'location', 'employeeIn', 'employeeIn.department', 'trackOutgoing.employeeOut']);
         
         return Inertia::render('admin/tracking/incoming/show', [
             'trackIncoming' => $trackIncoming

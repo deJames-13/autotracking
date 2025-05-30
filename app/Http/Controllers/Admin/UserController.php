@@ -213,4 +213,35 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Search users for admin API
+     */
+    public function searchUsers(Request $request): JsonResponse
+    {
+        try {
+            $query = User::with(['department', 'plant']);
+            
+            if ($request->has('employee_id')) {
+                $employeeId = $request->get('employee_id');
+                $users = $query->where('employee_id', $employeeId)->get();
+            } elseif ($request->has('search')) {
+                $search = $request->get('search');
+                $users = $query->where(function ($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                      ->orWhere('last_name', 'like', "%{$search}%")
+                      ->orWhere('employee_id', 'like', "%{$search}%");
+                })->limit(10)->get();
+            } else {
+                $users = collect();
+            }
+            
+            return response()->json($users);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error searching for users'
+            ], 500);
+        }
+    }
 }

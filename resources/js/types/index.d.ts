@@ -139,7 +139,7 @@ export interface TrackingRecord {
 
 // New Track Incoming interface (calibration requests)
 export interface TrackIncoming {
-    track_incoming_id: number;
+    id: number;
     recall_number: string;
     description: string;
     equipment_id: number;
@@ -164,7 +164,7 @@ export interface TrackIncoming {
 
 // New Track Outgoing interface (calibration completions)
 export interface TrackOutgoing {
-    track_outgoing_id: number;
+    id: number;
     recall_number: string;
     cal_date: string;
     cal_due_date: string;

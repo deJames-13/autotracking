@@ -23,7 +23,11 @@ return new class extends Migration
             $table->foreignId('employee_id_in')->constrained('users', 'employee_id')->onDelete('restrict');
             $table->foreignId('received_by_id')->constrained('users', 'employee_id')->onDelete('restrict');
 
-            $table->enum('status', ['pending_calibration', 'calibration_in_progress', 'ready_for_pickup'])->default('pending_calibration');
+            $table->enum('status', ['pending_calibration', 'calibration_in_progress', 'completed'])->default('pending_calibration');
+            $table->string('serial_number')->nullable();
+            $table->string('model')->nullable();
+            $table->string('manufacturer')->nullable();
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
         Schema::create('track_outgoing', function (Blueprint $table) {
@@ -37,6 +41,14 @@ return new class extends Migration
             $table->integer('cycle_time');
             $table->timestamps();
         });
+        // Calculations for Cycle time
+        // 1. Queuing Time - maybe from incoming date to cal date
+        // 2. CT Reqd - required time 
+        // 3. Commit ETC - estimated time to calibrate
+        // 4. Actual ETC - actual time cal
+        // 5. Actual Time of CT - days
+        // 6. Overdue - from due date to current day
+        
     }
 
     /**

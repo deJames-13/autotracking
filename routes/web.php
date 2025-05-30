@@ -55,13 +55,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         
     // Tracking management - API routes (AJAX)
-    Route::prefix('api')->group(function () {
-        Route::get('tracking/request/generate-recall', [ApiTrackingController::class, 'generateUniqueRecall'])->name('api.tracking.request.generate-recall');
-        Route::post('tracking/request', [ApiTrackingController::class, 'store'])->name('api.tracking.request.store');
-        Route::post('tracking/request/confirm-pin', [ApiTrackingController::class, 'confirmRequestPin'])->name('api.tracking.request.confirm-pin');
-        Route::get('track-outgoing/search', [ApiTrackingController::class, 'searchTrackOutgoing'])->name('api.track-outgoing.search');
-        Route::get('track-incoming/search', [ApiTrackingController::class, 'searchTrackIncoming'])->name('api.track-incoming.search');
+    Route::prefix('api')->name('api.')->group(function () {
+        Route::get('tracking/request/generate-recall', [ApiTrackingController::class, 'generateUniqueRecall'])->name('tracking.request.generate-recall');
+        Route::post('tracking/request', [ApiTrackingController::class, 'store'])->name('tracking.request.store');
+        Route::post('tracking/request/confirm-pin', [ApiTrackingController::class, 'confirmRequestPin'])->name('tracking.request.confirm-pin');
+        Route::get('track-outgoing/search', [ApiTrackingController::class, 'searchTrackOutgoing'])->name('track-outgoing.search');
+        Route::get('track-incoming/search', [ApiTrackingController::class, 'searchTrackIncoming'])->name('track-incoming.search');
+        Route::post('track-outgoing', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'store'])->name('track-outgoing.store');
+
+
+        Route::get('users/search', [AdminUserController::class, 'searchUsers'])->name('users.search');
     });
+    
 });
 
 // Admin Authentication Routes

@@ -44,7 +44,7 @@ class TrackOutgoingController extends Controller
         // Update the corresponding incoming record status
         $incoming = TrackIncoming::where('recall_number', $request->recall_number)->first();
         if ($incoming) {
-            $incoming->update(['status' => 'ready_for_pickup']);
+            $incoming->update(['status' => 'completed']);
         }
 
         $record = TrackOutgoing::create($request->validated());

@@ -146,7 +146,7 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
                             </thead>
                             <tbody className="bg-card divide-y divide-border">
                                 {completions.data.map(completion => (
-                                    <tr key={completion.track_outgoing_id} className="hover:bg-muted/50">
+                                    <tr key={completion.id} className="hover:bg-muted/50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             {completion.recall_number}
                                         </td>
@@ -193,7 +193,7 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
                                                 size="sm"
                                                 asChild
                                             >
-                                                <Link href={route('admin.tracking.outgoing.show', completion.track_outgoing_id)}>
+                                                <Link href={route('admin.tracking.outgoing.show', completion.id)}>
                                                     <Eye className="h-3 w-3 mr-1" />
                                                     View
                                                 </Link>
@@ -204,7 +204,7 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
                                                     size="sm"
                                                     asChild
                                                 >
-                                                    <Link href={route('admin.tracking.outgoing.certificate', completion.track_outgoing_id)}>
+                                                    <Link href={route('admin.tracking.outgoing.certificate', completion.id)}>
                                                         <FileText className="h-3 w-3 mr-1" />
                                                         Certificate
                                                     </Link>

@@ -10,10 +10,10 @@ import { ArrowLeft, User, Calendar, Package, FileText, Clock } from 'lucide-reac
 import { format } from 'date-fns';
 
 interface TrackingOutgoingShowProps {
-    completion: TrackOutgoing;
+    trackOutgoing: TrackOutgoing;
 }
 
-const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ completion }) => {
+const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoing }) => {
     const { canManageRequestIncoming } = useRole();
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -26,8 +26,8 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ completion 
             href: '/admin/tracking/outgoing',
         },
         {
-            title: completion.recall_number,
-            href: `/admin/tracking/outgoing/${completion.track_outgoing_id}`,
+            title: trackOutgoing.recall_number,
+            href: `/admin/tracking/outgoing/${trackOutgoing.id}`,
         },
     ];
 
@@ -48,29 +48,29 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ completion 
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Outgoing Completion: ${completion.recall_number}`} />
+            <Head title={`Outgoing Completion: ${trackOutgoing.recall_number}`} />
 
             <div className="space-y-6 p-6">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
                         <Button variant="outline" size="sm" asChild>
                             <Link href={route('admin.tracking.outgoing.index')}>
                                 <ArrowLeft className="h-4 w-4 mr-2" />
                                 Back to Outgoing Completions
                             </Link>
                         </Button>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">
-                                Completion: {completion.recall_number}
+                                Completion: {trackOutgoing.recall_number}
                             </h1>
                             <p className="text-muted-foreground">Calibration completion details</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        {getStatusBadge(completion.status)}
-                        {completion.certificate_number && (
+                        {getStatusBadge(trackOutgoing.status)}
+                        {trackOutgoing.certificate_number && (
                             <Button variant="outline" asChild>
-                                <Link href={route('admin.tracking.outgoing.certificate', completion.track_outgoing_id)}>
+                                <Link href={route('admin.tracking.outgoing.certificate', trackOutgoing.id)}>
                                     <FileText className="h-3 w-3 mr-1" />
                                     View Certificate
                                 </Link>
@@ -92,45 +92,45 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ completion 
                             <div>
                                 <Label className="text-sm font-medium">Calibration Date</Label>
                                 <p className="text-sm text-muted-foreground">
-                                    {format(new Date(completion.cal_date), 'MMMM dd, yyyy')}
+                                    {format(new Date(trackOutgoing.cal_date), 'MMMM dd, yyyy')}
                                 </p>
                             </div>
 
                             <div>
                                 <Label className="text-sm font-medium">Next Due Date</Label>
                                 <p className="text-sm text-muted-foreground">
-                                    {format(new Date(completion.cal_due_date), 'MMMM dd, yyyy')}
+                                    {format(new Date(trackOutgoing.cal_due_date), 'MMMM dd, yyyy')}
                                 </p>
                             </div>
 
                             <div>
                                 <Label className="text-sm font-medium">Date Out</Label>
                                 <p className="text-sm text-muted-foreground">
-                                    {format(new Date(completion.date_out), 'MMMM dd, yyyy HH:mm')}
+                                    {format(new Date(trackOutgoing.date_out), 'MMMM dd, yyyy HH:mm')}
                                 </p>
                             </div>
 
-                            {completion.certificate_number && (
+                            {trackOutgoing.certificate_number && (
                                 <div>
                                     <Label className="text-sm font-medium">Certificate Number</Label>
                                     <p className="text-sm font-medium text-primary">
-                                        {completion.certificate_number}
+                                        {trackOutgoing.certificate_number}
                                     </p>
                                 </div>
                             )}
 
-                            {completion.cycle_time && (
+                            {trackOutgoing.cycle_time && (
                                 <div>
                                     <Label className="text-sm font-medium">Cycle Time</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        {completion.cycle_time} days
+                                        {trackOutgoing.cycle_time} days
                                     </p>
                                 </div>
                             )}
 
                             <div>
                                 <Label className="text-sm font-medium">Status</Label>
-                                <div>{getStatusBadge(completion.status)}</div>
+                                <div>{getStatusBadge(trackOutgoing.status)}</div>
                             </div>
                         </CardContent>
                     </Card>
@@ -144,38 +144,38 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ completion 
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {completion.track_incoming && (
+                            {trackOutgoing.track_incoming && (
                                 <>
                                     <div>
                                         <Label className="text-sm font-medium">Description</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            {completion.track_incoming.description}
+                                            {trackOutgoing.track_incoming.description}
                                         </p>
                                     </div>
 
-                                    {completion.track_incoming.serial_number && (
+                                    {trackOutgoing.track_incoming.serial_number && (
                                         <div>
                                             <Label className="text-sm font-medium">Serial Number</Label>
                                             <p className="text-sm text-muted-foreground">
-                                                {completion.track_incoming.serial_number}
+                                                {trackOutgoing.track_incoming.serial_number}
                                             </p>
                                         </div>
                                     )}
 
-                                    {completion.track_incoming.manufacturer && (
+                                    {trackOutgoing.track_incoming.manufacturer && (
                                         <div>
                                             <Label className="text-sm font-medium">Manufacturer</Label>
                                             <p className="text-sm text-muted-foreground">
-                                                {completion.track_incoming.manufacturer}
+                                                {trackOutgoing.track_incoming.manufacturer}
                                             </p>
                                         </div>
                                     )}
 
-                                    {completion.track_incoming.model && (
+                                    {trackOutgoing.track_incoming.model && (
                                         <div>
                                             <Label className="text-sm font-medium">Model</Label>
                                             <p className="text-sm text-muted-foreground">
-                                                {completion.track_incoming.model}
+                                                {trackOutgoing.track_incoming.model}
                                             </p>
                                         </div>
                                     )}
@@ -193,25 +193,25 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ completion 
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {completion.technician && (
+                            {trackOutgoing.technician && (
                                 <div>
                                     <Label className="text-sm font-medium">Technician</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        {completion.technician.first_name} {completion.technician.last_name}
+                                        {trackOutgoing.technician.first_name} {trackOutgoing.technician.last_name}
                                     </p>
-                                    {completion.technician.email && (
+                                    {trackOutgoing.technician.email && (
                                         <p className="text-xs text-muted-foreground">
-                                            {completion.technician.email}
+                                            {trackOutgoing.technician.email}
                                         </p>
                                     )}
                                 </div>
                             )}
 
-                            {completion.employee_out_user && (
+                            {trackOutgoing.employee_out_user && (
                                 <div>
                                     <Label className="text-sm font-medium">Released By</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        {completion.employee_out_user.first_name} {completion.employee_out_user.last_name}
+                                        {trackOutgoing.employee_out_user.first_name} {trackOutgoing.employee_out_user.last_name}
                                     </p>
                                 </div>
                             )}
@@ -227,19 +227,19 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ completion 
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {completion.track_incoming && (
+                            {trackOutgoing.track_incoming && (
                                 <>
                                     <div>
                                         <Label className="text-sm font-medium">Request Received</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            {format(new Date(completion.track_incoming.date_in), 'MMMM dd, yyyy HH:mm')}
+                                            {format(new Date(trackOutgoing.track_incoming.date_in), 'MMMM dd, yyyy HH:mm')}
                                         </p>
                                     </div>
 
                                     <div>
                                         <Label className="text-sm font-medium">Original Due Date</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            {format(new Date(completion.track_incoming.due_date), 'MMMM dd, yyyy')}
+                                            {format(new Date(trackOutgoing.track_incoming.due_date), 'MMMM dd, yyyy')}
                                         </p>
                                     </div>
                                 </>
@@ -248,14 +248,14 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ completion 
                             <div>
                                 <Label className="text-sm font-medium">Calibration Completed</Label>
                                 <p className="text-sm text-muted-foreground">
-                                    {format(new Date(completion.cal_date), 'MMMM dd, yyyy')}
+                                    {format(new Date(trackOutgoing.cal_date), 'MMMM dd, yyyy')}
                                 </p>
                             </div>
 
                             <div>
                                 <Label className="text-sm font-medium">Released for Pickup</Label>
                                 <p className="text-sm text-muted-foreground">
-                                    {format(new Date(completion.date_out), 'MMMM dd, yyyy HH:mm')}
+                                    {format(new Date(trackOutgoing.date_out), 'MMMM dd, yyyy HH:mm')}
                                 </p>
                             </div>
                         </CardContent>
@@ -263,19 +263,19 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ completion 
                 </div>
 
                 {/* Notes */}
-                {completion.notes && (
+                {trackOutgoing.notes && (
                     <Card>
                         <CardHeader>
                             <CardTitle>Notes</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-sm text-muted-foreground">{completion.notes}</p>
+                            <p className="text-sm text-muted-foreground">{trackOutgoing.notes}</p>
                         </CardContent>
                     </Card>
                 )}
 
                 {/* Original Request Information */}
-                {completion.track_incoming && (
+                {trackOutgoing.track_incoming && (
                     <Card>
                         <CardHeader>
                             <CardTitle>Related Request</CardTitle>
@@ -287,14 +287,14 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ completion 
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="font-medium">
-                                        Incoming Request: {completion.track_incoming.recall_number}
+                                        Incoming Request: {trackOutgoing.track_incoming.recall_number}
                                     </p>
                                     <p className="text-sm text-muted-foreground">
-                                        Status: {completion.track_incoming.status}
+                                        Status: {trackOutgoing.track_incoming.status}
                                     </p>
                                 </div>
                                 <Button variant="outline" asChild>
-                                    <Link href={route('admin.tracking.incoming.show', completion.track_incoming.track_incoming_id)}>
+                                    <Link href={route('admin.tracking.incoming.show', trackOutgoing.track_incoming.id)}>
                                         View Request Details
                                     </Link>
                                 </Button>

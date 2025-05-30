@@ -5,9 +5,11 @@ import { Label } from '@/components/ui/label';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackIncoming } from '@/types';
-import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, User, MapPin, Calendar, Package, FileText } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft, User, MapPin, Calendar, Package, FileText, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { useState } from 'react';
+import { OutgoingCalibrationModal } from '@/components/admin/outgoing/outgoing-calibration-modal';
 
 interface TrackingIncomingShowProps {
     trackIncoming: TrackIncoming;
@@ -15,6 +17,7 @@ interface TrackingIncomingShowProps {
 
 const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ trackIncoming }) => {
     const { canManageRequestIncoming } = useRole();
+    const [showCalibrationModal, setShowCalibrationModal] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -53,14 +56,14 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ trackIncomi
             <Head title={`Incoming Request: ${trackIncoming.recall_number}`} />
 
             <div className="space-y-6 p-6">
+                <Button variant="outline" size="sm" asChild>
+                    <Link href={route('admin.tracking.incoming.index')}>
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to Incoming Requests
+                    </Link>
+                </Button>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={route('admin.tracking.incoming.index')}>
-                                <ArrowLeft className="h-4 w-4 mr-2" />
-                                Back to Incoming Requests
-                            </Link>
-                        </Button>
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">
                                 Request: {trackIncoming.recall_number}
@@ -72,6 +75,16 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ trackIncomi
                         {getStatusBadge(trackIncoming.status)}
                         {isOverdue && (
                             <Badge variant="destructive">Overdue</Badge>
+                        )}
+                        {(trackIncoming.status === 'pending_calibration' || trackIncoming.status === 'calibration_in_progress') && !trackIncoming.trackOutgoing && (
+                            <Button
+                                onClick={() => setShowCalibrationModal(true)}
+                                size="sm"
+                                className="ml-2"
+                            >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Complete Calibration
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -284,6 +297,18 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ trackIncomi
                     </Card>
                 )}
             </div>
+
+            {/* Outgoing Calibration Modal */}
+            <OutgoingCalibrationModal
+                incomingRecord={trackIncoming}
+                open={showCalibrationModal}
+                onOpenChange={setShowCalibrationModal}
+                onSuccess={() => {
+                    setShowCalibrationModal(false);
+                    // Refresh the page to show updated data
+                    router.reload();
+                }}
+            />
         </AppLayout>
     );
 };

@@ -59,4 +59,17 @@ class TrackOutgoing extends Model
             'technician_id'
         );
     }
+    
+    // Access location through incoming record
+    public function location()
+    {
+        return $this->hasOneThrough(
+            Location::class,
+            TrackIncoming::class,
+            'recall_number',
+            'location_id',
+            'recall_number',
+            'location_id'
+        );
+    }
 }

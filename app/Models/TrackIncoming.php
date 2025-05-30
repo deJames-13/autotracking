@@ -14,7 +14,7 @@ class TrackIncoming extends Model
         'description',
         'equipment_id',
         'location_id',
-        'received_by',
+        'received_by_id',
         'serial_number',
         'model',
         'manufacturer',

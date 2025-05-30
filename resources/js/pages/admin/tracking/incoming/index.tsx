@@ -5,9 +5,10 @@ import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackIncoming, type PaginationData } from '@/types';
 import { Head, router, useForm, Link } from '@inertiajs/react';
-import { Plus, Search, Eye, FileText } from 'lucide-react';
-import { useEffect } from 'react';
+import { Plus, Search, Eye, FileText, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
+import { OutgoingCalibrationModal } from '@/components/admin/outgoing/outgoing-calibration-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -34,6 +35,10 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
 }) => {
     const { canManageRequestIncoming } = useRole();
 
+    // State for outgoing calibration modal
+    const [selectedRequest, setSelectedRequest] = useState<TrackIncoming | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const { data, setData, get, processing } = useForm({
         search: filters.search || '',
         status: filters.status || '',
@@ -51,6 +56,18 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
             preserveState: true,
             replace: true,
         });
+    };
+
+    const handleCompleteCalibration = (request: TrackIncoming) => {
+        setSelectedRequest(request);
+        setIsModalOpen(true);
+    };
+
+    const handleModalSuccess = () => {
+        setIsModalOpen(false);
+        setSelectedRequest(null);
+        // Refresh the data
+        handleFilterChange();
     };
 
     useEffect(() => {
@@ -150,7 +167,7 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
                             </thead>
                             <tbody className="bg-card divide-y divide-border">
                                 {requests.data.map(request => (
-                                    <tr key={request.track_incoming_id} className="hover:bg-muted/50">
+                                    <tr key={request.id} className="hover:bg-muted/50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             {request.recall_number}
                                         </td>
@@ -193,11 +210,21 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
                                                 size="sm"
                                                 asChild
                                             >
-                                                <Link href={route('admin.tracking.incoming.show', request.id || request.track_incoming_id)}>
+                                                <Link href={route('admin.tracking.incoming.show', request.id)}>
                                                     <Eye className="h-3 w-3 mr-1" />
                                                     View
                                                 </Link>
                                             </Button>
+                                            {request.status === 'calibration_in_progress' && (
+                                                <Button
+                                                    variant="default"
+                                                    size="sm"
+                                                    onClick={() => handleCompleteCalibration(request)}
+                                                >
+                                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                                    Complete
+                                                </Button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -221,6 +248,14 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
                     </div>
                 )}
             </div>
+
+            {/* Outgoing Calibration Modal */}
+            <OutgoingCalibrationModal
+                incomingRecord={selectedRequest}
+                open={isModalOpen}
+                onOpenChange={setIsModalOpen}
+                onSuccess={handleModalSuccess}
+            />
         </AppLayout>
     );
 };
