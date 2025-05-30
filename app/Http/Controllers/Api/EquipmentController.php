@@ -67,7 +67,7 @@ class EquipmentController extends Controller
         return response()->json(['message' => 'Equipment deleted successfully']);
     }
     
-    public function trackingRecords(Equipment $equipment): AnonymousResourceCollection
+    public function trackIncoming(Equipment $equipment): AnonymousResourceCollection
     {
         return TrackIncomingResource::collection(
             $equipment->trackIncoming()

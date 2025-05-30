@@ -73,7 +73,7 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
                             )}
                             <div className="space-y-1">
                                 <label className="text-sm font-medium text-muted-foreground">Total Records</label>
-                                <p className="text-sm">{equipment.tracking_records?.length || 0} tracking records</p>
+                                <p className="text-sm">{equipment.track_incoming?.length || 0} tracking records</p>
                             </div>
                             <div className="space-y-1">
                                 <label className="text-sm font-medium text-muted-foreground">Created</label>

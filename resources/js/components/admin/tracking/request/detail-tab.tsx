@@ -61,12 +61,14 @@ const DetailTab: React.FC<DetailTabProps> = ({
     const [scannedEmployee, setScannedEmployee] = useState<User | null>(null);
     const [loadingEmployee, setLoadingEmployee] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
+    const [barcodeError, setBarcodeError] = useState<string>('');
 
     // Function to fetch employee by barcode
     const fetchEmployeeByBarcode = async (barcode: string) => {
         if (!barcode) return;
 
         setLoadingEmployee(true);
+        setBarcodeError(''); // Clear any previous error
         try {
             const response = await axios.get(route('admin.users.search-by-barcode'), {
                 params: { barcode },
@@ -102,7 +104,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
 
                 toast.success(`Employee found: ${employee.first_name} ${employee.last_name}`);
             } else {
-                toast.error('Employee not found with this barcode');
+                setBarcodeError('Employee not found with this barcode');
                 setScannedEmployee(null);
                 if (onScannedEmployeeChange) {
                     onScannedEmployeeChange(null);
@@ -110,7 +112,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
             }
         } catch (error) {
             console.error('Error fetching employee by barcode:', error);
-            toast.error('Error searching for employee');
+            setBarcodeError('Error searching for employee');
             setScannedEmployee(null);
             if (onScannedEmployeeChange) {
                 onScannedEmployeeChange(null);
@@ -123,6 +125,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
     // Handle barcode input change
     const handleBarcodeChange = (value: string) => {
         setEmployeeBarcode(value);
+        setBarcodeError(''); // Clear error when user starts typing
         if (value.length >= 1) { // Employee ID can be just 1 digit
             fetchEmployeeByBarcode(value);
         } else {
@@ -159,10 +162,9 @@ const DetailTab: React.FC<DetailTabProps> = ({
                 },
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-
-            const departmentLocations = response.data.data.data.map((location: any) => ({
-                label: location.location_name,
-                value: location.location_id
+            const departmentLocations = response.data.map((location: any) => ({
+                label: location.label,
+                value: location.value
             }));
 
             setLocations(departmentLocations);
@@ -417,8 +419,8 @@ const DetailTab: React.FC<DetailTabProps> = ({
     }, [receivedBy, onReceivedByChange, currentUser]);
 
     // DONT REMOVE
-    console.log('Equipment data:', data)
-    console.log('Technician data:', technician)
+    // console.log('Equipment data:', data)
+    // console.log('Technician data:', technician)
 
     return (
         <div className="space-y-6">
@@ -447,6 +449,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     disabled={loadingEmployee}
                                 />
                                 {errors.employeeBarcode && <p className="text-sm text-destructive mt-1">{errors.employeeBarcode}</p>}
+                                {barcodeError && <span className="text-sm text-red-600 mt-1 block">{barcodeError}</span>}
                             </div>
                             <div>
                                 <Dialog open={showScanner} onOpenChange={setShowScanner}>

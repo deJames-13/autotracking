@@ -193,7 +193,7 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
                                                 size="sm"
                                                 asChild
                                             >
-                                                <Link href={route('admin.tracking.incoming.show', request.track_incoming_id)}>
+                                                <Link href={route('admin.tracking.incoming.show', request.id || request.track_incoming_id)}>
                                                     <Eye className="h-3 w-3 mr-1" />
                                                     View
                                                 </Link>

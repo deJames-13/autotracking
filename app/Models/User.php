@@ -90,20 +90,4 @@ class User extends Authenticatable
     {
         return $this->hasMany(TrackOutgoing::class, 'employee_id_out', 'employee_id');
     }
-    
-    // Backward compatibility methods (to be deprecated)
-    public function trackingRecordsAsTechnician()
-    {
-        return $this->trackIncomingAsTechnician();
-    }
-    
-    public function trackingRecordsAsEmployeeIn()
-    {
-        return $this->trackIncomingAsEmployeeIn();
-    }
-    
-    public function trackingRecordsAsEmployeeOut()
-    {
-        return $this->trackOutgoingAsEmployeeOut();
-    }
 }

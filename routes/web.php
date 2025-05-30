@@ -1,14 +1,17 @@
 <?php
 
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\DepartmentController as AdminDepartmentController;
 use App\Http\Controllers\Admin\LocationController as AdminLocationController;
 use App\Http\Controllers\Admin\EquipmentController as AdminEquipmentController;
 use App\Http\Controllers\Admin\PlantController as AdminPlantController;
-use App\Http\Controllers\Admin\TrackingController as AdminTrackingController;
 use App\Http\Controllers\Admin\Auth\AdminLoginController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Admin\TrackingController as AdminTrackingController;
+
+use App\Http\Controllers\Api\TrackIncomingController as ApiTrackingController;
 use App\Models\User;
 use App\Models\Location;
 use App\Models\TrackIncoming;
@@ -49,6 +52,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
+
+        
+    // Tracking management - API routes (AJAX)
+    Route::prefix('api')->group(function () {
+        Route::get('tracking/request/generate-recall', [ApiTrackingController::class, 'generateUniqueRecall'])->name('api.tracking.request.generate-recall');
+        Route::post('tracking/request', [ApiTrackingController::class, 'store'])->name('api.tracking.request.store');
+        Route::post('tracking/request/confirm-pin', [ApiTrackingController::class, 'confirmRequestPin'])->name('api.tracking.request.confirm-pin');
+        Route::get('track-outgoing/search', [ApiTrackingController::class, 'searchTrackOutgoing'])->name('api.track-outgoing.search');
+        Route::get('track-incoming/search', [ApiTrackingController::class, 'searchTrackIncoming'])->name('api.track-incoming.search');
+    });
 });
 
 // Admin Authentication Routes
@@ -93,26 +106,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'plants' => 'plant:plant_id'
         ]);
         
-        // Tracking management
+        // Tracking management - Web routes (rendering)
         Route::get('tracking', [AdminTrackingController::class, 'index'])->name('tracking.index');
         Route::get('tracking/request', [AdminTrackingController::class, 'requestIndex'])->name('tracking.request.index');
-        Route::get('tracking/request/generate-recall', [AdminTrackingController::class, 'generateUniqueRecall'])->name('tracking.request.generate-recall');
-        Route::post('tracking/request/confirm-pin', [AdminTrackingController::class, 'confirmRequestPin'])->name('tracking.request.confirm-pin');
-        
-        // New tracking system routes for admin interface
+        Route::get('tracking/request/{id}', [AdminTrackingController::class, 'requestShow'])->name('tracking.request.show');
         Route::get('tracking/incoming', [AdminTrackingController::class, 'trackIncomingIndex'])->name('tracking.incoming.index');
-        Route::get('tracking/outgoing', [AdminTrackingController::class, 'trackOutgoingIndex'])->name('tracking.outgoing.index');
         Route::get('tracking/incoming/{trackIncoming}', [AdminTrackingController::class, 'trackIncomingShow'])->name('tracking.incoming.show');
+        Route::get('tracking/outgoing', [AdminTrackingController::class, 'trackOutgoingIndex'])->name('tracking.outgoing.index');
         Route::get('tracking/outgoing/{trackOutgoing}', [AdminTrackingController::class, 'trackOutgoingShow'])->name('tracking.outgoing.show');
         Route::get('tracking/outgoing/{trackOutgoing}/certificate', [AdminTrackingController::class, 'viewCertificate'])->name('tracking.outgoing.certificate');
-        
-        // Additional search routes for new tracking system
-        Route::get('track-incoming/search', [AdminTrackingController::class, 'searchTrackIncoming'])->name('track-incoming.search');
-        Route::get('track-outgoing/search', [AdminTrackingController::class, 'searchTrackOutgoing'])->name('track-outgoing.search');
-        
-        // Backward compatibility route (will search TrackIncoming)
-        Route::get('tracking-records/search', [AdminTrackingController::class, 'searchTrackingRecords'])->name('tracking-records.search');
-        
+    
         // Additional routes for searching departments, plants, and locations
         Route::get('search/departments/', [AdminDepartmentController::class, 'searchDepartments'])->name('departments.search-departments');
         Route::post('departments/create', [AdminDepartmentController::class, 'createDepartment'])->name('departments.create-department');

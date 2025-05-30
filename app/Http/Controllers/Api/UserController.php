@@ -87,7 +87,7 @@ class UserController extends Controller
         return EquipmentResource::collection($user->equipments()->paginate(15));
     }
     
-    public function trackingRecords(User $user): AnonymousResourceCollection
+    public function trackIncoming(User $user): AnonymousResourceCollection
     {
         $records = TrackIncoming::where('technician_id', $user->employee_id)
             ->orWhere('employee_id_in', $user->employee_id)

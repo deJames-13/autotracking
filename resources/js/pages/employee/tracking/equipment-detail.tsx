@@ -27,7 +27,7 @@ interface Equipment {
     description: string;
     manufacturer?: string;
     model?: string;
-    tracking_records: TrackingRecord[];
+    track_incoming: TrackingRecord[];
 }
 
 interface TrackingRecord {
@@ -89,7 +89,7 @@ const EquipmentDetail: React.FC<EquipmentDetailProps> = ({ equipment, locations 
         notes: '',
     });
 
-    const latestRecord = equipment.tracking_records[0];
+    const latestRecord = equipment.track_incoming[0];
     const isCheckedOut = latestRecord && latestRecord.date_out && !latestRecord.date_in;
 
     const handleCheckIn = () => {
@@ -191,9 +191,9 @@ const EquipmentDetail: React.FC<EquipmentDetailProps> = ({ equipment, locations 
                                 <CardDescription>Complete history of this equipment's tracking records</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {equipment.tracking_records.length > 0 ? (
+                                {equipment.track_incoming.length > 0 ? (
                                     <div className="space-y-4">
-                                        {equipment.tracking_records.map(record => (
+                                        {equipment.track_incoming.map(record => (
                                             <div key={record.tracking_id} className="border rounded-md p-4">
                                                 <div className="flex items-center justify-between mb-3">
                                                     <div className="flex items-center gap-2">

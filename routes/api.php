@@ -54,11 +54,11 @@ Route::middleware(['auth', 'web'])->prefix('v1')->group(function () {
     // Additional specific endpoints
     Route::prefix('users')->group(function () {
         Route::get('{user}/equipment', [UserController::class, 'equipment'])->name('users.equipment');
-        Route::get('{user}/tracking-records', [UserController::class, 'trackingRecords'])->name('users.tracking-records');
+        Route::get('{user}/track-incoming', [UserController::class, 'trackIncoming'])->name('users.track-incoming');
     });
     
     Route::prefix('equipment')->group(function () {
-        Route::get('{equipment}/tracking-records', [EquipmentController::class, 'trackingRecords'])->name('equipment.tracking-records');
+        Route::get('{equipment}/track-incoming', [EquipmentController::class, 'trackIncoming'])->name('equipment.track-incoming');
         Route::post('{equipment}/assign-user', [EquipmentController::class, 'assignUser'])->name('equipment.assign-user');
         Route::delete('{equipment}/unassign-user', [EquipmentController::class, 'unassignUser'])->name('equipment.unassign-user');
     });

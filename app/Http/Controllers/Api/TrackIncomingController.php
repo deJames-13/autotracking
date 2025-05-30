@@ -4,11 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TrackIncomingRequest;
-use App\Http\Resources\TrackIncomingResource;
+
 use App\Models\TrackIncoming;
+use App\Models\TrackOutgoing;
+use App\Models\Equipment;
+use App\Models\User;
+use App\Models\Department;
+
+use App\Http\Resources\TrackIncomingResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+
 
 class TrackIncomingController extends Controller
 {
@@ -51,13 +61,271 @@ class TrackIncomingController extends Controller
         return TrackIncomingResource::collection($records);
     }
 
-    public function store(TrackIncomingRequest $request): TrackIncomingResource
-    {
-        $record = TrackIncoming::create($request->validated());
-        $record->load(['equipment', 'technician', 'location', 'employeeIn', 'trackOutgoing']);
 
-        return new TrackIncomingResource($record);
+    /**
+     * Store a new tracking request
+     *
+     * @param \App\Http\Requests\TrackIncomingRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function store(TrackIncomingRequest $request): JsonResponse
+    {
+        try {
+            $data = $request->validated()['data'];
+            
+            // Generate unique recall number if not provided
+            $recallNumber = $data['equipment']['recallNumber'] ?? TrackIncoming::generateUniqueRecallNumber();
+            
+            // Check if equipment with this recall number already exists
+            $equipment = Equipment::where('recall_number', $recallNumber)->first();
+            
+            if (!$equipment) {
+                // Create new equipment record
+                $equipment = Equipment::create([
+                    'employee_id' => $data['technician']['employee_id'],
+                    'recall_number' => $recallNumber,
+                    'serial_number' => $data['equipment']['serialNumber'],
+                    'description' => $data['equipment']['description'],
+                    'model' => $data['equipment']['model'],
+                    'manufacturer' => $data['equipment']['manufacturer'],
+                    'plant_id' => $data['equipment']['plant'],
+                    'department_id' => $data['equipment']['department'],
+                    'location_id' => $data['equipment']['location'],
+                    'status' => 'active',
+                    'next_calibration_due' => $data['equipment']['dueDate'],
+                ]);
+            } else {
+                // Update existing equipment with new calibration due date if needed
+                $equipment->update([
+                    'next_calibration_due' => $data['equipment']['dueDate'],
+                ]);
+            }
+            
+            // Create track incoming record
+            $trackIncoming = TrackIncoming::create([
+                'recall_number' => $recallNumber,
+                'technician_id' => $data['technician']['employee_id'],
+                'description' => $data['equipment']['description'],
+                'equipment_id' => $equipment->equipment_id,
+                'location_id' => $data['equipment']['location'],
+                'received_by' => $data['receivedBy']['employee_id'],
+                'serial_number' => $data['equipment']['serialNumber'],
+                'model' => $data['equipment']['model'],
+                'manufacturer' => $data['equipment']['manufacturer'],
+                'due_date' => $data['equipment']['dueDate'],
+                'date_in' => now(),
+                'employee_id_in' => $data['receivedBy']['employee_id'],
+                'status' => 'pending_calibration',
+                'notes' => 'Created via tracking request system',
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Tracking request created successfully with recall number: ' . $recallNumber,
+                'data' => [
+                    'track_incoming' => $trackIncoming,
+                    'equipment' => $equipment,
+                    'recall_number' => $recallNumber
+                ]
+            ], 201);
+                
+        } catch (\Exception $e) {
+            \Log::error('Error creating tracking request: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create tracking request. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
+
+
+    /**
+     * Generate a unique recall number for tracking requests
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function generateUniqueRecall(): JsonResponse
+    {
+        try {
+            $recallNumber = TrackIncoming::generateUniqueRecallNumber();
+            
+            return response()->json([
+                'success' => true,
+                'recall_number' => $recallNumber
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error generating unique recall number: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate recall number. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Confirm employee PIN for tracking request
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function confirmRequestPin(Request $request): JsonResponse
+    {
+        $request->validate([
+            'employee_id' => 'required|numeric',
+            'pin' => 'required|string|min:4',
+        ]);
+
+        try {
+            // Find the employee by employee_id
+            $employee = User::where('employee_id', $request->employee_id)->first();
+
+            if (!$employee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employee not found.'
+                ], 404);
+            }
+
+            // Check if employee has a PIN set - using password field as PIN
+            if (!$employee->password) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employee PIN is not set. Please contact administrator.'
+                ], 400);
+            }
+
+            // Verify the PIN - assuming PIN is stored in password field
+            if (!Hash::check($request->pin, $employee->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid PIN. Please try again.'
+                ], 401);
+            }
+
+            // PIN is correct
+            return response()->json([
+                'success' => true,
+                'message' => 'PIN confirmed successfully.',
+                'employee' => [
+                    'employee_id' => $employee->employee_id,
+                    'first_name' => $employee->first_name,
+                    'last_name' => $employee->last_name,
+                    'department' => $employee->department ? [
+                        'department_id' => $employee->department->department_id,
+                        'department_name' => $employee->department->department_name,
+                    ] : null,
+                    'plant' => $employee->plant ? [
+                        'plant_id' => $employee->plant->plant_id,
+                        'plant_name' => $employee->plant->plant_name,
+                    ] : null,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error confirming request PIN: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while confirming PIN. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Search track incoming records for admin interface
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function searchTrackIncoming(Request $request): JsonResponse
+    {
+        $query = TrackIncoming::with(['equipment', 'technician', 'location', 'employeeIn', 'trackOutgoing']);
+
+        // Apply filters
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('recall_number', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('equipment', function($eq) use ($search) {
+                      $eq->where('serial_number', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->get('status'));
+        }
+
+        if ($request->filled('technician_id')) {
+            $query->where('technician_id', $request->get('technician_id'));
+        }
+
+        if ($request->filled('location_id')) {
+            $query->where('location_id', $request->get('location_id'));
+        }
+
+        if ($request->filled('date_from')) {
+            $query->where('date_in', '>=', $request->get('date_from'));
+        }
+
+        if ($request->filled('date_to')) {
+            $query->where('date_in', '<=', $request->get('date_to'));
+        }
+
+        $trackIncomingRecords = $query->latest()
+            ->paginate($request->get('per_page', 15))
+            ->through(function ($record) {
+                return [
+                    'id' => $record->id,
+                    'recall_number' => $record->recall_number,
+                    'status' => $record->status,
+                    'date_in' => $record->date_in?->format('Y-m-d H:i:s'),
+                    'due_date' => $record->due_date?->format('Y-m-d'),
+                    'description' => $record->description,
+                    'equipment' => $record->equipment ? [
+                        'equipment_id' => $record->equipment->equipment_id,
+                        'serial_number' => $record->equipment->serial_number,
+                        'description' => $record->equipment->description,
+                    ] : null,
+                    'location' => $record->location ? [
+                        'location_id' => $record->location->location_id,
+                        'location_name' => $record->location->location_name,
+                    ] : null,
+                    'technician' => $record->technician ? [
+                        'employee_id' => $record->technician->employee_id,
+                        'first_name' => $record->technician->first_name,
+                        'last_name' => $record->technician->last_name,
+                    ] : null,
+                    'employee_in' => $record->employeeIn ? [
+                        'employee_id' => $record->employeeIn->employee_id,
+                        'first_name' => $record->employeeIn->first_name,
+                        'last_name' => $record->employeeIn->last_name,
+                    ] : null,
+                    'track_outgoing' => $record->trackOutgoing ? [
+                        'id' => $record->trackOutgoing->id,
+                        'date_out' => $record->trackOutgoing->date_out?->format('Y-m-d H:i:s'),
+                        'cal_due_date' => $record->trackOutgoing->cal_due_date?->format('Y-m-d'),
+                    ] : null,
+                ];
+            });
+
+        return response()->json([
+            'data' => $trackIncomingRecords->items(),
+            'meta' => [
+                'current_page' => $trackIncomingRecords->currentPage(),
+                'last_page' => $trackIncomingRecords->lastPage(),
+                'per_page' => $trackIncomingRecords->perPage(),
+                'total' => $trackIncomingRecords->total(),
+            ],
+        ]);
+    }
+
 
     public function show(TrackIncoming $trackIncoming): TrackIncomingResource
     {
@@ -98,5 +366,164 @@ class TrackIncomingController extends Controller
         $records = $query->orderBy('due_date', 'asc')->paginate($request->get('per_page', 15));
         
         return TrackIncomingResource::collection($records);
+    }
+    
+    /**
+     * Search track incoming records for employee requests
+     */
+    public function searchTrackingRecords(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        
+        $query = TrackIncoming::with(['equipment', 'technician', 'employeeIn'])
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($query) use ($search) {
+                    $query->where('recall_number', 'like', "%{$search}%")
+                          ->orWhere('description', 'like', "%{$search}%")
+                          ->orWhereHas('equipment', function ($eq) use ($search) {
+                              $eq->where('recall_number', 'like', "%{$search}%")
+                                ->orWhere('description', 'like', "%{$search}%")
+                                ->orWhere('serial_number', 'like', "%{$search}%");
+                          });
+                });
+            });
+
+        // Filter by department if user has department restriction
+        if ($request->department_id) {
+            $query->whereHas('equipment', function ($q) use ($request) {
+                $q->where('department_id', $request->department_id);
+            });
+        } elseif ($user->department_id) {
+            // If no specific department requested, default to user's department
+            $query->whereHas('equipment', function ($q) use ($user) {
+                $q->where('department_id', $user->department_id);
+            });
+        }
+
+        $trackingRecords = $query->latest()
+            ->limit($request->limit ?? 10)
+            ->get()
+            ->map(function ($record) {
+                return [
+                    'id' => $record->id,
+                    'recall_number' => $record->recall_number,
+                    'description' => $record->description,
+                    'status' => $record->status,
+                    'created_at' => $record->created_at,
+                    'equipment' => $record->equipment ? [
+                        'equipment_id' => $record->equipment->equipment_id,
+                        'recall_number' => $record->equipment->recall_number,
+                        'description' => $record->equipment->description,
+                        'serial_number' => $record->equipment->serial_number,
+                        'model' => $record->equipment->model,
+                        'manufacturer' => $record->equipment->manufacturer,
+                    ] : null,
+                    'technician' => $record->technician ? [
+                        'employee_id' => $record->technician->employee_id,
+                        'first_name' => $record->technician->first_name,
+                        'last_name' => $record->technician->last_name,
+                    ] : null,
+                ];
+            });
+
+        return response()->json([
+            'data' => $trackingRecords,
+            'total' => $trackingRecords->count(),
+        ]);
+    }
+
+    /**
+     * Search track outgoing records for admin interface
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function searchTrackOutgoing(Request $request): JsonResponse
+    {
+        $query = TrackOutgoing::with(['equipment', 'technician', 'location', 'employeeOut', 'trackIncoming']);
+
+        // Apply filters
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('recall_number', 'like', "%{$search}%")
+                  ->orWhereHas('equipment', function($eq) use ($search) {
+                      $eq->where('serial_number', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->filled('technician_id')) {
+            $query->where('technician_id', $request->get('technician_id'));
+        }
+
+        if ($request->filled('location_id')) {
+            $query->where('location_id', $request->get('location_id'));
+        }
+
+        if ($request->filled('date_from')) {
+            $query->where('date_out', '>=', $request->get('date_from'));
+        }
+
+        if ($request->filled('date_to')) {
+            $query->where('date_out', '<=', $request->get('date_to'));
+        }
+
+        if ($request->filled('cal_due_from')) {
+            $query->where('cal_due_date', '>=', $request->get('cal_due_from'));
+        }
+
+        if ($request->filled('cal_due_to')) {
+            $query->where('cal_due_date', '<=', $request->get('cal_due_to'));
+        }
+
+        $trackOutgoingRecords = $query->latest('date_out')
+            ->paginate($request->get('per_page', 15))
+            ->through(function ($record) {
+                return [
+                    'id' => $record->id,
+                    'recall_number' => $record->recall_number,
+                    'date_out' => $record->date_out?->format('Y-m-d H:i:s'),
+                    'cal_date' => $record->cal_date?->format('Y-m-d'),
+                    'cal_due_date' => $record->cal_due_date?->format('Y-m-d'),
+                    'cycle_time' => $record->cycle_time,
+                    'equipment' => $record->equipment ? [
+                        'equipment_id' => $record->equipment->equipment_id,
+                        'serial_number' => $record->equipment->serial_number,
+                        'description' => $record->equipment->description,
+                    ] : null,
+                    'location' => $record->location ? [
+                        'location_id' => $record->location->location_id,
+                        'location_name' => $record->location->location_name,
+                    ] : null,
+                    'technician' => $record->technician ? [
+                        'employee_id' => $record->technician->employee_id,
+                        'first_name' => $record->technician->first_name,
+                        'last_name' => $record->technician->last_name,
+                    ] : null,
+                    'employee_out' => $record->employeeOut ? [
+                        'employee_id' => $record->employeeOut->employee_id,
+                        'first_name' => $record->employeeOut->first_name,
+                        'last_name' => $record->employeeOut->last_name,
+                    ] : null,
+                    'track_incoming' => $record->trackIncoming ? [
+                        'id' => $record->trackIncoming->id,
+                        'status' => $record->trackIncoming->status,
+                        'date_in' => $record->trackIncoming->date_in?->format('Y-m-d H:i:s'),
+                        'description' => $record->trackIncoming->description,
+                    ] : null,
+                ];
+            });
+
+        return response()->json([
+            'data' => $trackOutgoingRecords->items(),
+            'meta' => [
+                'current_page' => $trackOutgoingRecords->currentPage(),
+                'last_page' => $trackOutgoingRecords->lastPage(),
+                'per_page' => $trackOutgoingRecords->perPage(),
+                'total' => $trackOutgoingRecords->total(),
+            ],
+        ]);
     }
 }

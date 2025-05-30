@@ -20,7 +20,7 @@ interface Equipment {
     description: string;
     manufacturer?: string;
     model?: string;
-    tracking_records: TrackingRecord[];
+    track_incoming: TrackingRecord[];
 }
 
 interface TrackingRecord {
@@ -52,7 +52,7 @@ const EmployeeTrackingIndex: React.FC<EmployeeTrackingIndexProps> = ({
     stats
 }) => {
     const getStatusBadge = (equipment: Equipment) => {
-        const latestRecord = equipment.tracking_records[0];
+        const latestRecord = equipment.track_incoming[0];
 
         if (!latestRecord) {
             return <Badge variant="secondary">No Activity</Badge>;
@@ -74,7 +74,7 @@ const EmployeeTrackingIndex: React.FC<EmployeeTrackingIndexProps> = ({
     };
 
     const isOverdue = (equipment: Equipment) => {
-        const latestRecord = equipment.tracking_records[0];
+        const latestRecord = equipment.track_incoming[0];
         return latestRecord?.cal_due_date && new Date(latestRecord.cal_due_date) < new Date();
     };
 
@@ -156,9 +156,9 @@ const EmployeeTrackingIndex: React.FC<EmployeeTrackingIndexProps> = ({
                                         </div>
                                         <div className="text-right">
                                             <Badge variant="destructive">Overdue</Badge>
-                                            {equipment.tracking_records[0]?.cal_due_date && (
+                                            {equipment.track_incoming[0]?.cal_due_date && (
                                                 <p className="text-sm text-muted-foreground mt-1">
-                                                    Due: {format(new Date(equipment.tracking_records[0].cal_due_date), 'MMM dd, yyyy')}
+                                                    Due: {format(new Date(equipment.track_incoming[0].cal_due_date), 'MMM dd, yyyy')}
                                                 </p>
                                             )}
                                         </div>
@@ -194,11 +194,11 @@ const EmployeeTrackingIndex: React.FC<EmployeeTrackingIndexProps> = ({
                                                         {equipment.manufacturer} {equipment.model}
                                                     </p>
                                                 )}
-                                                {equipment.tracking_records[0]?.cal_due_date && (
+                                                {equipment.track_incoming[0]?.cal_due_date && (
                                                     <div className="flex items-center gap-1 mt-1">
                                                         <Calendar className="h-3 w-3 text-muted-foreground" />
                                                         <p className={`text-xs ${isOverdue(equipment) ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                                            Due: {format(new Date(equipment.tracking_records[0].cal_due_date), 'MMM dd, yyyy')}
+                                                            Due: {format(new Date(equipment.track_incoming[0].cal_due_date), 'MMM dd, yyyy')}
                                                         </p>
                                                     </div>
                                                 )}

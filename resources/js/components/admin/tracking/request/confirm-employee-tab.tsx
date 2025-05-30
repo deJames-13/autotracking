@@ -32,12 +32,13 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
         const fetchUniqueRecallNumber = async () => {
             setRecallLoading(true);
             try {
-                const response = await axios.get('/admin/tracking/request/generate-recall', {
+                const response = await axios.get(route('api.tracking.request.generate-recall'), {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
 
                 if (response.data.success) {
                     setRecallNumber(response.data.recall_number);
+                    onChange('equipment', { ...data.equipment, recallNumber })
                 } else {
                     console.error('Failed to generate recall number:', response.data.message);
                     // Fallback to local generation if backend fails
@@ -208,7 +209,7 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                                     type="password"
                                     placeholder="Enter PIN"
                                     value={data.confirmation_pin}
-                                    onChange={(e) => onChange(e.target.value)}
+                                    onChange={(e) => onChange('confirmation_pin', e.target.value)}
                                     className={errors.pin ? 'border-destructive' : ''}
                                 />
                                 {errors.pin && <p className="text-sm text-destructive mt-1">{errors.pin}</p>}

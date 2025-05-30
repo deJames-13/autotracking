@@ -56,7 +56,7 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
                                 (equipment.user.full_name || `${equipment.user.first_name} ${equipment.user.last_name}`) :
                                 'Unassigned'
                             }</div>
-                            <div>Records: {equipment.tracking_records?.length || 0}</div>
+                            <div>Records: {equipment.track_incoming?.length || 0}</div>
                         </div>
                     </div>
                     <div className="flex justify-end gap-3">

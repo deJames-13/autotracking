@@ -21,6 +21,8 @@ return new class extends Migration
             $table->dateTime('due_date');
             $table->dateTime('date_in');
             $table->foreignId('employee_id_in')->constrained('users', 'employee_id')->onDelete('restrict');
+            $table->foreignId('received_by_id')->constrained('users', 'employee_id')->onDelete('restrict');
+
             $table->enum('status', ['pending_calibration', 'calibration_in_progress', 'ready_for_pickup'])->default('pending_calibration');
             $table->timestamps();
         });

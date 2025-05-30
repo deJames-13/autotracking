@@ -51,7 +51,7 @@ export function LocationDeleteDialog({ location, open, onOpenChange, onSuccess }
                         <div className="text-sm text-muted-foreground mt-1">
                             <div>ID: {location.location_id}</div>
                             <div>Department: {location.department?.department_name || 'No department'}</div>
-                            <div>Tracking Records: {location.tracking_records?.length || 0}</div>
+                            <div>Track Incoming: {location.track_incoming?.length || 0}</div>
                         </div>
                     </div>
                     <div className="flex justify-end gap-3">

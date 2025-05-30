@@ -13,13 +13,13 @@ export default function Welcome() {
             </Head>
             <div
                 className="relative flex min-h-screen flex-col items-center p-6 text-[#1b1b18] lg:justify-center lg:p-8 dark:bg-[#0a0a0a]"
-                style={{
-                    backgroundImage: `url(${bg_display})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundColor: '#FDFDFC'
-                }}
+                // style={{
+                //     backgroundImage: `url(${bg_display})`,
+                //     backgroundSize: 'cover',
+                //     backgroundPosition: 'center',
+                //     backgroundRepeat: 'no-repeat',
+                //     backgroundColor: '#FDFDFC'
+                // }}
             >
                 {/* Overlay with blur and color blend */}
                 <div

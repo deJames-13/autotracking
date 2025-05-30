@@ -53,10 +53,4 @@ class Equipment extends Model
     {
         return $this->hasMany(TrackIncoming::class, 'equipment_id', 'equipment_id');
     }
-    
-    // Backward compatibility method (to be deprecated)
-    public function trackingRecords()
-    {
-        return $this->trackIncoming();
-    }
 }

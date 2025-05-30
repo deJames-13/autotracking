@@ -100,9 +100,8 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
         clearErrors();
         setValidationMessage(null);
 
-        // Add debugging
-        console.log('Validating step:', currentStep);
-        console.log('Current equipment state:', equipment);
+        // console.log('Validating step:', currentStep);
+        // console.log('Current equipment state:', equipment);
 
         if (currentStep === 'technician') {
             if (!requestType) {
@@ -218,7 +217,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
             }
 
             // Send request to verify PIN using Axios or fetch with proper CSRF handling
-            const response = await axios.post(route('admin.tracking.request.confirm-pin'), {
+            const response = await axios.post(route('api.tracking.request.confirm-pin'), {
                 employee_id: currentState.scannedEmployee.employee_id,
                 pin: currentState.confirmation_pin
             });
@@ -260,41 +259,79 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
         const currentState = store.getState().trackingRequest;
         console.log(currentState);
 
-        // Submit the form with current Redux data
-        post(route('admin.tracking.request.store'), {
-            data: {
-                requestType: currentState.requestType,
-                technician: currentState.technician,
-                equipment: currentState.equipment,
-                calibration: currentState.calibration,
-                confirmation_pin: currentState.confirmation_pin,
-                scannedEmployee: currentState.scannedEmployee,
-                receivedBy: currentState.receivedBy
-            },
-            onSuccess: () => {
+        try {
+            // Submit the form with current Redux data using axios
+            const response = await axios.post(route('api.tracking.request.store'), {
+                data: {
+                    requestType: currentState.requestType,
+                    technician: currentState.technician,
+                    equipment: currentState.equipment,
+                    calibration: currentState.calibration,
+                    confirmation_pin: currentState.confirmation_pin,
+                    scannedEmployee: currentState.scannedEmployee,
+                    receivedBy: currentState.receivedBy
+                }
+            });
+
+            // Check if the response indicates success
+            if (response.data.success) {
+                // Show success message
+                toast.success(response.data.message || 'Tracking request created successfully!');
+
                 // Reset Redux state on successful submission
                 dispatch(resetForm());
                 dispatch(markFormClean());
-                router.visit(route('admin.tracking.incoming.index'));
-            },
-            onError: (errors) => {
-                // Find the first step with errors
-                if (errors.technician) {
-                    dispatch(setCurrentStep('technician'));
-                } else if (errors.equipment || Object.keys(errors).some(key => key.startsWith('equipment.'))) {
-                    dispatch(setCurrentStep('details'));
-                } else if (errors.calibration || Object.keys(errors).some(key => key.startsWith('calibration.'))) {
-                    dispatch(setCurrentStep('calibration'));
-                } else if (errors.confirmation_pin) {
-                    dispatch(setCurrentStep('confirmation'));
-                }
 
-                // Set a validation message for the general error
-                if (Object.keys(errors).length > 0) {
-                    setValidationMessage('Please fix the validation errors to continue.');
-                }
+                // Redirect to incoming table using Inertia router
+                router.visit(route('admin.tracking.incoming.index'), {
+                    onSuccess: () => {
+                        // Additional success handling if needed
+                        console.log('Successfully navigated to incoming index');
+                    }
+                });
+            } else {
+                // Handle unsuccessful response
+                toast.error(response.data.message || 'Failed to create tracking request');
             }
-        });
+
+        } catch (error) {
+            console.error('Error submitting form:', error);
+
+            if (axios.isAxiosError(error) && error.response) {
+                const errorData = error.response.data;
+
+                // Handle validation errors
+                if (error.response.status === 422 && errorData.errors) {
+                    const validationErrors = errorData.errors;
+
+                    // Find the first step with errors - handle nested validation structure
+                    if (validationErrors['data.technician'] || validationErrors['data.technician.employee_id']) {
+                        dispatch(setCurrentStep('technician'));
+                    } else if (
+                        validationErrors['data.equipment'] ||
+                        Object.keys(validationErrors).some(key => key.startsWith('data.equipment.')) ||
+                        validationErrors['data.receivedBy'] ||
+                        Object.keys(validationErrors).some(key => key.startsWith('data.receivedBy.'))
+                    ) {
+                        dispatch(setCurrentStep('details'));
+                    } else if (validationErrors['data.confirmation_pin']) {
+                        dispatch(setCurrentStep('confirmation'));
+                    }
+
+                    // Set a validation message for the general error
+                    setValidationMessage('Please fix the validation errors to continue.');
+
+                    // Show specific error message
+                    toast.error('Please check the form for validation errors');
+                } else {
+                    // Handle other server errors
+                    toast.error(errorData.message || 'Failed to create tracking request. Please try again.');
+                }
+            } else {
+                // Handle network or other errors
+                toast.error('An error occurred while submitting the request. Please try again.');
+            }
+        }
     };
 
     // Get errors for a specific field
@@ -475,7 +512,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                                     scannedEmployee,
                                     receivedBy
                                 }}
-                                onChange={(pin) => dispatch(updateConfirmationPin(pin))}
+                                onChange={updateNestedData}
                                 errors={{ pin: getError('confirmation_pin') }}
                             />
                         )}

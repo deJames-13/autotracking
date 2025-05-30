@@ -10,10 +10,10 @@ import { ArrowLeft, User, MapPin, Calendar, Package, FileText } from 'lucide-rea
 import { format } from 'date-fns';
 
 interface TrackingIncomingShowProps {
-    request: TrackIncoming;
+    trackIncoming: TrackIncoming;
 }
 
-const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ request }) => {
+const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ trackIncoming }) => {
     const { canManageRequestIncoming } = useRole();
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -26,8 +26,8 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ request }) 
             href: '/admin/tracking/incoming',
         },
         {
-            title: request.recall_number,
-            href: `/admin/tracking/incoming/${request.track_incoming_id}`,
+            title: trackIncoming.recall_number,
+            href: `/admin/tracking/incoming/${trackIncoming.id}`,
         },
     ];
 
@@ -46,11 +46,11 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ request }) 
         }
     };
 
-    const isOverdue = new Date(request.due_date) < new Date();
+    const isOverdue = new Date(trackIncoming.due_date) < new Date();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Incoming Request: ${request.recall_number}`} />
+            <Head title={`Incoming Request: ${trackIncoming.recall_number}`} />
 
             <div className="space-y-6 p-6">
                 <div className="flex items-center justify-between">
@@ -63,13 +63,13 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ request }) 
                         </Button>
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">
-                                Request: {request.recall_number}
+                                Request: {trackIncoming.recall_number}
                             </h1>
                             <p className="text-muted-foreground">Incoming calibration request details</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        {getStatusBadge(request.status)}
+                        {getStatusBadge(trackIncoming.status)}
                         {isOverdue && (
                             <Badge variant="destructive">Overdue</Badge>
                         )}
@@ -88,34 +88,34 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ request }) 
                         <CardContent className="space-y-4">
                             <div>
                                 <Label className="text-sm font-medium">Description</Label>
-                                <p className="text-sm text-muted-foreground">{request.description}</p>
+                                <p className="text-sm text-muted-foreground">{trackIncoming.description}</p>
                             </div>
 
-                            {request.serial_number && (
+                            {trackIncoming.serial_number && (
                                 <div>
                                     <Label className="text-sm font-medium">Serial Number</Label>
-                                    <p className="text-sm text-muted-foreground">{request.serial_number}</p>
+                                    <p className="text-sm text-muted-foreground">{trackIncoming.serial_number}</p>
                                 </div>
                             )}
 
-                            {request.manufacturer && (
+                            {trackIncoming.manufacturer && (
                                 <div>
                                     <Label className="text-sm font-medium">Manufacturer</Label>
-                                    <p className="text-sm text-muted-foreground">{request.manufacturer}</p>
+                                    <p className="text-sm text-muted-foreground">{trackIncoming.manufacturer}</p>
                                 </div>
                             )}
 
-                            {request.model && (
+                            {trackIncoming.model && (
                                 <div>
                                     <Label className="text-sm font-medium">Model</Label>
-                                    <p className="text-sm text-muted-foreground">{request.model}</p>
+                                    <p className="text-sm text-muted-foreground">{trackIncoming.model}</p>
                                 </div>
                             )}
 
-                            {request.equipment && (
+                            {trackIncoming.equipment && (
                                 <div>
                                     <Label className="text-sm font-medium">Equipment Status</Label>
-                                    <Badge variant="outline">{request.equipment.status}</Badge>
+                                    <Badge variant="outline">{trackIncoming.equipment.status}</Badge>
                                 </div>
                             )}
                         </CardContent>
@@ -133,26 +133,26 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ request }) 
                             <div>
                                 <Label className="text-sm font-medium">Date Received</Label>
                                 <p className="text-sm text-muted-foreground">
-                                    {format(new Date(request.date_in), 'MMMM dd, yyyy HH:mm')}
+                                    {format(new Date(trackIncoming.date_in), 'MMMM dd, yyyy HH:mm')}
                                 </p>
                             </div>
 
                             <div>
                                 <Label className="text-sm font-medium">Due Date</Label>
                                 <p className={`text-sm ${isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                                    {format(new Date(request.due_date), 'MMMM dd, yyyy')}
+                                    {format(new Date(trackIncoming.due_date), 'MMMM dd, yyyy')}
                                 </p>
                             </div>
 
                             <div>
                                 <Label className="text-sm font-medium">Status</Label>
-                                <div>{getStatusBadge(request.status)}</div>
+                                <div>{getStatusBadge(trackIncoming.status)}</div>
                             </div>
 
-                            {request.notes && (
+                            {trackIncoming.notes && (
                                 <div>
                                     <Label className="text-sm font-medium">Notes</Label>
-                                    <p className="text-sm text-muted-foreground">{request.notes}</p>
+                                    <p className="text-sm text-muted-foreground">{trackIncoming.notes}</p>
                                 </div>
                             )}
                         </CardContent>
@@ -167,23 +167,23 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ request }) 
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {request.technician && (
+                            {trackIncoming.technician && (
                                 <div>
                                     <Label className="text-sm font-medium">Assigned Technician</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        {request.technician.first_name} {request.technician.last_name}
+                                        {trackIncoming.technician.first_name} {trackIncoming.technician.last_name}
                                     </p>
-                                    {request.technician.email && (
-                                        <p className="text-xs text-muted-foreground">{request.technician.email}</p>
+                                    {trackIncoming.technician.email && (
+                                        <p className="text-xs text-muted-foreground">{trackIncoming.technician.email}</p>
                                     )}
                                 </div>
                             )}
 
-                            {request.employee_in && (
+                            {trackIncoming.employeeIn && (
                                 <div>
                                     <Label className="text-sm font-medium">Received By</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        {request.employee_in.first_name} {request.employee_in.last_name}
+                                        {trackIncoming.employeeIn.first_name} {trackIncoming.employeeIn.last_name}
                                     </p>
                                 </div>
                             )}
@@ -199,13 +199,13 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ request }) 
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {request.location && (
+                            {trackIncoming.location && (
                                 <div>
                                     <Label className="text-sm font-medium">Current Location</Label>
-                                    <p className="text-sm text-muted-foreground">{request.location.location_name}</p>
-                                    {request.location.department && (
+                                    <p className="text-sm text-muted-foreground">{trackIncoming.location.location_name}</p>
+                                    {trackIncoming.location.department && (
                                         <p className="text-xs text-muted-foreground">
-                                            Department: {request.location.department.department_name}
+                                            Department: {trackIncoming.location.department.department_name}
                                         </p>
                                     )}
                                 </div>
@@ -215,7 +215,7 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ request }) 
                 </div>
 
                 {/* Completion Information */}
-                {request.track_outgoing && (
+                {trackIncoming.trackOutgoing && (
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -228,46 +228,52 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ request }) 
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 md:grid-cols-3">
-                                <div>
-                                    <Label className="text-sm font-medium">Calibration Date</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {format(new Date(request.track_outgoing.cal_date), 'MMMM dd, yyyy')}
-                                    </p>
-                                </div>
+                                {trackIncoming.trackOutgoing.cal_date && (
+                                    <div>
+                                        <Label className="text-sm font-medium">Calibration Date</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            {format(new Date(trackIncoming.trackOutgoing.cal_date), 'MMMM dd, yyyy')}
+                                        </p>
+                                    </div>
+                                )}
 
-                                <div>
-                                    <Label className="text-sm font-medium">Next Due Date</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {format(new Date(request.track_outgoing.cal_due_date), 'MMMM dd, yyyy')}
-                                    </p>
-                                </div>
+                                {trackIncoming.trackOutgoing.cal_due_date && (
+                                    <div>
+                                        <Label className="text-sm font-medium">Next Due Date</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            {format(new Date(trackIncoming.trackOutgoing.cal_due_date), 'MMMM dd, yyyy')}
+                                        </p>
+                                    </div>
+                                )}
 
-                                <div>
-                                    <Label className="text-sm font-medium">Date Out</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {format(new Date(request.track_outgoing.date_out), 'MMMM dd, yyyy')}
-                                    </p>
-                                </div>
+                                {trackIncoming.trackOutgoing.date_out && (
+                                    <div>
+                                        <Label className="text-sm font-medium">Date Out</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            {format(new Date(trackIncoming.trackOutgoing.date_out), 'MMMM dd, yyyy')}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
-                            {request.track_outgoing.certificate_number && (
+                            {trackIncoming.trackOutgoing.certificate_number && (
                                 <div>
                                     <Label className="text-sm font-medium">Certificate Number</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        {request.track_outgoing.certificate_number}
+                                        {trackIncoming.trackOutgoing.certificate_number}
                                     </p>
                                 </div>
                             )}
 
                             <div className="flex gap-2 pt-4">
                                 <Button variant="outline" asChild>
-                                    <Link href={route('admin.tracking.outgoing.show', request.track_outgoing.track_outgoing_id)}>
+                                    <Link href={route('admin.tracking.outgoing.show', trackIncoming.trackOutgoing.id)}>
                                         View Completion Details
                                     </Link>
                                 </Button>
-                                {request.track_outgoing.certificate_number && (
+                                {trackIncoming.trackOutgoing.certificate_number && (
                                     <Button variant="outline" asChild>
-                                        <Link href={route('admin.tracking.outgoing.certificate', request.track_outgoing.track_outgoing_id)}>
+                                        <Link href={route('admin.tracking.outgoing.certificate', trackIncoming.trackOutgoing.id)}>
                                             <FileText className="h-3 w-3 mr-1" />
                                             View Certificate
                                         </Link>
