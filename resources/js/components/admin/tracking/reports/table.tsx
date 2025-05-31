@@ -526,6 +526,13 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
             // Build the URL with format in path and filters as query params
             const url = `/api/reports/table/export/${exportFormat}?${queryParams.toString()}`;
 
+            // For PDF format, open in new window for preview
+            if (exportFormat === 'pdf') {
+                window.open(url, '_blank');
+                return;
+            }
+
+            // For other formats (Excel, CSV), download the file
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
