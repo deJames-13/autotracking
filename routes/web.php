@@ -126,6 +126,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('tracking/incoming/{trackIncoming}', [AdminTrackingController::class, 'trackIncomingShow'])->name('tracking.incoming.show');
         Route::get('tracking/outgoing', [AdminTrackingController::class, 'trackOutgoingIndex'])->name('tracking.outgoing.index');
         Route::get('tracking/outgoing/{trackOutgoing}', [AdminTrackingController::class, 'trackOutgoingShow'])->name('tracking.outgoing.show');
+        Route::get('tracking/outgoing/{trackOutgoing}/edit', [AdminTrackingController::class, 'trackOutgoingEdit'])->name('tracking.outgoing.edit');
         Route::get('tracking/outgoing/{trackOutgoing}/certificate', [AdminTrackingController::class, 'viewCertificate'])->name('tracking.outgoing.certificate');
     
         // Additional routes for searching departments, plants, and locations

@@ -120,9 +120,11 @@ const RequestInfoModal: React.FC<{ record: TrackingRecord }> = ({ record }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="text-sm font-medium text-muted-foreground">Status</label>
+                            <div>
                             <Badge variant={record.status === 'completed' ? 'default' : 'secondary'}>
                                 {record.status.replace('_', ' ').toUpperCase()}
                             </Badge>
+                            </div>
                         </div>
                         {record.date_in && (
                             <div>

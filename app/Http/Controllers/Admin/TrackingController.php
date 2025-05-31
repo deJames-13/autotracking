@@ -196,6 +196,27 @@ class TrackingController extends Controller
     }
 
     /**
+     * Show the edit form for a track outgoing record.
+     *
+     * @param \App\Models\TrackOutgoing $trackOutgoing
+     * @return \Inertia\Response
+     */
+    public function trackOutgoingEdit(TrackOutgoing $trackOutgoing)
+    {
+        $trackOutgoing->load([
+            'equipment', 
+            'technician', 
+            'location', 
+            'employeeOut', 
+            'trackIncoming.employeeIn',
+        ]);
+        
+        return Inertia::render('admin/tracking/outgoing/edit', [
+            'trackOutgoing' => $trackOutgoing
+        ]);
+    }
+
+    /**
      * View calibration certificate for a track outgoing record.
      *
      * @param \App\Models\TrackOutgoing $trackOutgoing

@@ -6,7 +6,7 @@ import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackOutgoing } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, User, Calendar, Package, FileText, Clock } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Package, Clock, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TrackingOutgoingShowProps {
@@ -72,14 +72,12 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                     </div>
                     <div className="flex items-center gap-2">
                         {getStatusBadge()}
-                        {trackOutgoing.certificate_number && (
-                            <Button variant="outline" asChild>
-                                <Link href={route('admin.tracking.outgoing.certificate', trackOutgoing.id)}>
-                                    <FileText className="h-3 w-3 mr-1" />
-                                    View Certificate
-                                </Link>
-                            </Button>
-                        )}
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href={route('admin.tracking.outgoing.edit', trackOutgoing.id)}>
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                            </Link>
+                        </Button>
                     </div>
                 </div>
 
@@ -113,15 +111,6 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                                     {format(new Date(trackOutgoing.date_out), 'MMMM dd, yyyy HH:mm')}
                                 </p>
                             </div>
-
-                            {trackOutgoing.certificate_number && (
-                                <div>
-                                    <Label className="text-sm font-medium">Certificate Number</Label>
-                                    <p className="text-sm font-medium text-primary">
-                                        {trackOutgoing.certificate_number}
-                                    </p>
-                                </div>
-                            )}
 
                             {trackOutgoing.cycle_time && (
                                 <div>
@@ -282,18 +271,6 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                         </CardContent>
                     </Card>
                 </div>
-
-                {/* Notes */}
-                {trackOutgoing.notes && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Notes</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground">{trackOutgoing.notes}</p>
-                        </CardContent>
-                    </Card>
-                )}
 
                 {/* Original Request Information */}
                 {trackOutgoing.track_incoming && (
