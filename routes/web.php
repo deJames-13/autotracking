@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
+// ADMIN
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\DepartmentController as AdminDepartmentController;
 use App\Http\Controllers\Admin\LocationController as AdminLocationController;
@@ -11,14 +14,20 @@ use App\Http\Controllers\Admin\Auth\AdminLoginController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\TrackingController as AdminTrackingController;
 
+
+//EMPLOYEE
+
+
+
+// API
 use App\Http\Controllers\Api\TrackIncomingController as ApiTrackingController;
 use App\Http\Controllers\Api\ReportTableController;
+
+// MODELS
 use App\Models\User;
 use App\Models\Location;
 use App\Models\TrackIncoming;
 use App\Models\TrackOutgoing;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -31,21 +40,8 @@ Route::middleware('auth')->group(function () {
 
 // Employee Routes (authenticated)
 Route::prefix('employee')->name('employee.')->middleware('auth')->group(function () {
-    // Employee Tracking Routes
-    Route::get('tracking', [\App\Http\Controllers\Employee\TrackingController::class, 'index'])
-        ->name('tracking.index');
-    Route::get('tracking/equipment/{equipment}', [\App\Http\Controllers\Employee\TrackingController::class, 'show'])
-        ->name('tracking.equipment.show');
-    Route::post('tracking/equipment/{equipment}/check-in', [\App\Http\Controllers\Employee\TrackingController::class, 'checkIn'])
-        ->name('tracking.equipment.check-in');
-    Route::post('tracking/equipment/{equipment}/check-out', [\App\Http\Controllers\Employee\TrackingController::class, 'checkOut'])
-        ->name('tracking.equipment.check-out');
+
     
-    // Employee Tracking Request Routes
-    Route::get('tracking/request', [\App\Http\Controllers\Employee\TrackingController::class, 'requestIndex'])
-        ->name('tracking.request.index');
-    Route::post('tracking/request', [\App\Http\Controllers\Employee\TrackingController::class, 'requestStore'])
-        ->name('tracking.request.store');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

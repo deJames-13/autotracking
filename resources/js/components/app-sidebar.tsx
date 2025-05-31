@@ -78,16 +78,7 @@ export function AppSidebar() {
     // Employee tracking items
     const employeeTrackingItems: NavItem[] = [
         ...(canViewEmployeeTracking() ? [
-            {
-                title: 'My Equipment',
-                href: '/employee/tracking',
-                icon: Package,
-            },
-            {
-                title: 'Request Calibration',
-                href: '/employee/tracking/request',
-                icon: Calendar,
-            },
+
         ] : [])
     ];
 

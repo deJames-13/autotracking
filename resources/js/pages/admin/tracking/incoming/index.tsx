@@ -8,7 +8,7 @@ import { Head, router, useForm, Link } from '@inertiajs/react';
 import { Plus, Search, Eye, FileText, CheckCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { OutgoingCalibrationModal } from '@/components/admin/outgoing/outgoing-calibration-modal';
+import { OutgoingCalibrationModal } from '@/components/admin/tracking/outgoing/outgoing-calibration-modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

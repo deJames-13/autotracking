@@ -9,7 +9,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, User, MapPin, Calendar, Package, FileText, CheckCircle, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
-import { OutgoingCalibrationModal } from '@/components/admin/outgoing/outgoing-calibration-modal';
+import { OutgoingCalibrationModal } from '@/components/admin/tracking/outgoing/outgoing-calibration-modal';
 import { useAppDispatch } from '@/store/hooks';
 import {
     setRequestType,
