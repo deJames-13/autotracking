@@ -44,7 +44,7 @@ export interface DataTableFilter {
 
 export interface DataTableExport {
     label: string;
-    format: 'excel' | 'csv' | 'pdf';
+    format: 'xlsx' | 'csv' | 'pdf';
 }
 
 export interface DataTableProps<T = any> {
@@ -356,7 +356,7 @@ export function DataTable<T = any>({
                                 size="sm"
                                 onClick={() => handleExport(exportOption.format)}
                             >
-                                {exportOption.format === 'excel' && <FileSpreadsheet className="h-4 w-4 mr-2" />}
+                                {exportOption.format === 'xlsx' && <FileSpreadsheet className="h-4 w-4 mr-2" />}
                                 {exportOption.format === 'csv' && <File className="h-4 w-4 mr-2" />}
                                 {exportOption.format === 'pdf' && <FileText className="h-4 w-4 mr-2" />}
                                 {exportOption.label}

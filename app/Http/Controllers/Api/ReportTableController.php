@@ -184,7 +184,7 @@ class ReportTableController extends Controller
         $filters = $request->all();
         
         switch ($format) {
-            case 'excel':
+            case 'xlsx':
                 return $this->exportExcel($filters);
             case 'csv':
                 return $this->exportCsv($filters);
@@ -200,7 +200,7 @@ class ReportTableController extends Controller
      */
     private function exportExcel(array $filters)
     {
-        return Excel::download(new TrackingReportExport($filters), 'tracking-reports-' . date('Y-m-d') . '.xlsx');
+        return Excel::download(new TrackingReportExport($filters), 'tracking_reports_' . date('Y_m_d') . '.xlsx');
     }
 
     /**
@@ -208,7 +208,7 @@ class ReportTableController extends Controller
      */
     private function exportCsv(array $filters)
     {
-        return Excel::download(new TrackingReportExport($filters), 'tracking-reports-' . date('Y-m-d') . '.csv', \Maatwebsite\Excel\Excel::CSV);
+        return Excel::download(new TrackingReportExport($filters), 'tracking_reports_' . date('Y_m_d') . '.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     /**
@@ -216,22 +216,20 @@ class ReportTableController extends Controller
      */
     private function exportPdf(array $filters)
     {
-        $query = TrackIncoming::with([
-            'equipment', 
-            'technician', 
-            'location', 
-            'employeeIn', 
-            'trackOutgoing.employeeOut'
-        ]);
-
-        // Apply the same filters as in index method
-        $this->applyFilters($query, $filters);
-
-        $reports = $query->orderBy('date_in', 'desc')->get();
-
-        $pdf = Pdf::loadView('exports.tracking-reports-pdf', compact('reports', 'filters'));
+        // Use Laravel Excel with DOMPDF for PDF generation
+        $export = new TrackingReportExport($filters, 'pdf');
         
-        return $pdf->download('tracking-reports-' . date('Y-m-d') . '.pdf');
+        // Generate the PDF content
+        $pdf = Excel::raw($export, \Maatwebsite\Excel\Excel::DOMPDF);
+        
+        // Stream the PDF for inline viewing (preview mode)
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="tracking_reports_' . date('Y_m_d') . '.pdf"',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0'
+        ]);
     }
 
     /**

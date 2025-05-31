@@ -477,7 +477,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
     const exportOptions = useMemo(() => [
         {
             label: 'Export Excel',
-            format: 'excel' as const,
+            format: 'xlsx' as const,
         },
         {
             label: 'Export CSV',
@@ -511,7 +511,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
         fetchData({ ...filters, per_page: perPage, page: 1 });
     }, [filters]);
 
-    const handleExport = useCallback(async (format: string, exportFilters: Record<string, any>) => {
+    const handleExport = useCallback(async (exportFormat: string, exportFilters: Record<string, any>) => {
         try {
             // Build query parameters from filters
             const queryParams = new URLSearchParams();
@@ -524,7 +524,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
             });
 
             // Build the URL with format in path and filters as query params
-            const url = `/api/reports/table/export/${format}?${queryParams.toString()}`;
+            const url = `/api/reports/table/export/${exportFormat}?${queryParams.toString()}`;
 
             const response = await fetch(url, {
                 method: 'GET',
@@ -542,7 +542,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = downloadUrl;
-                a.download = `tracking-reports.${format}`;
+                a.download = `tracking-reports-${format(new Date(), 'MMM_dd_yyyy_HH_mm')}.${exportFormat}`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(downloadUrl);

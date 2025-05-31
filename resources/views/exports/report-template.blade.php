@@ -1,128 +1,107 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Tracking Reports Export</title>
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #000;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #4F46E5;
-            color: white;
-            font-weight: bold;
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .date {
-            font-size: 12px;
-            color: #666;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="title">Equipment Tracking Reports</div>
-        <div class="date">Generated on {{ date('F j, Y \a\t g:i A') }}</div>
-    </div>
-
-    <table>
-        <thead>
+<table style="font-family: 'Arial';"> 
+    <thead>
+        <!-- Main title row -->
+        <tr>
+            <th colspan="18" align="center" style="font-weight: bold; font-size: 8px; text-transform: uppercase;">INCOMING/OUTGOING LOGSHEET</th>
+        </tr>
+        <tr>
+            <th colspan="18" align="center" style="font-weight: bold; font-size: 8px; text-transform: uppercase;">
+                {{ now()->format('F j, Y g:i A') }}
+            </th>
+        </tr>
+        <tr>
+            <th colspan="4" align="center" style="font-weight: bold; font-size: 8px; text-transform: uppercase;">TECHNICIAN</th>
+            <th colspan="3" align="center" style="font-weight: bold; font-size: 8px; text-transform: uppercase;">INCOMING</th>
+            <th colspan="5" align="center" style="font-weight: bold; font-size: 8px; text-transform: uppercase;">OUTGOING</th>
+            <th colspan="6" align="center" style="font-weight: bold; font-size: 8px; text-transform: uppercase;">CYCLE TIME</th>
+        </tr>
+        <!-- Sub-header row -->
+        <tr>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Recall #</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Description</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Location</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Due Date</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Date In</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Name</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Employee #</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Recall #</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Cal Date</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Due Date</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Date Out</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Employee #</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Queuing Time<br>(1 Day) Date</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">CT Reqd<br>(Days)</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Commit ETC</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Actual ETC</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Actual # of<br>CT (Days)</th>
+            <th align="center" style="vertical-align: center; text-align: center; font-weight: bold; font-size: 8px;">Overdue ETC</th>
+        </tr>
+    </thead>
+    <tbody>
+        @forelse($reports ?? [] as $report)
             <tr>
-                <th>Recall Number</th>
-                <th>Equipment Description</th>
-                <th>Serial Number</th>
-                <th>Model</th>
-                <th>Manufacturer</th>
-                <th>Status</th>
-                <th>Date In</th>
-                <th>Due Date</th>
-                <th>Technician</th>
-                <th>Location</th>
-                <th>Received By</th>
-                <th>Calibration Date</th>
-                <th>Calibration Due Date</th>
-                <th>Date Out</th>
-                <th>Completed By</th>
-                <th>Cycle Time (hrs)</th>
-                <th>Notes</th>
+                <!-- TECHNICIAN Section -->
+                <td style="vertical-align: center; text-align: center; width: 90px">{{ $report->recall_number }}</td>
+                <td style="vertical-align: center; text-align: center; width: 90px">{{ $report->equipment ? $report->equipment->description : $report->description }}</td>
+                <td style="vertical-align: center; text-align: center; width: 90px">
+                    @if($report->location)
+                        {{ $report->location->location_name }}
+                    @endif
+                </td>
+                <td style="vertical-align: center; text-align: center; width: 90px">{{ $report->due_date?->format('m/d/Y') }}</td>
+                
+                <!-- INCOMING Section -->
+                <td style="vertical-align: center; text-align: center; width: 90px">{{ $report->date_in?->format('m/d/Y') }}</td>
+                <td style="vertical-align: center; text-align: center; width: 90px">
+                    @if($report->employeeIn)
+                        {{ $report->employeeIn->first_name }} {{ $report->employeeIn->last_name }}
+                    @endif
+                </td>
+                <td style="vertical-align: center; text-align: center; width: 60px">
+                    @if($report->employeeIn)
+                        {{ $report->employeeIn->employee_id }}
+                    @endif
+                </td>
+                
+                <!-- OUTGOING Section -->
+                <td style="vertical-align: center; text-align: center; width: 30px">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->recall_number }}
+                    @endif
+                </td>
+                <td style="vertical-align: center; text-align: center; width: 90px">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->cal_date?->format('m/d/Y') }}
+                    @endif
+                </td>
+                <td style="vertical-align: center; text-align: center; width: 90px">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->cal_due_date?->format('m/d/Y') }}
+                    @endif
+                </td>
+                <td style="vertical-align: center; text-align: center; width: 90px">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->date_out?->format('m/d/Y') }}
+                    @endif
+                </td>
+                <td style="vertical-align: center; text-align: center; width: 60px">
+                    @if($report->trackOutgoing && $report->trackOutgoing->employeeOut)
+                        {{ $report->trackOutgoing->employeeOut->employee_id }}
+                    @endif
+                </td>
+                
+                <!-- CYCLE TIME Section (all empty for now) -->
+                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- Queuing Time -->
+                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- CT Required -->
+                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- Commit ETC -->
+                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- Actual ETC -->
+                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- Actual # of CT -->
+                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- Overdue ETC -->
             </tr>
-        </thead>
-        <tbody>
-            @forelse($reports ?? [] as $report)
-                <tr>
-                    <td>{{ $report->recall_number }}</td>
-                    <td>{{ $report->equipment ? $report->equipment->description : $report->description }}</td>
-                    <td>{{ $report->equipment ? $report->equipment->serial_number : $report->serial_number }}</td>
-                    <td>{{ $report->equipment ? $report->equipment->model : $report->model }}</td>
-                    <td>{{ $report->equipment ? $report->equipment->manufacturer : $report->manufacturer }}</td>
-                    <td>{{ ucfirst(str_replace('_', ' ', $report->status)) }}</td>
-                    <td>{{ $report->date_in?->format('Y-m-d H:i') }}</td>
-                    <td>{{ $report->due_date?->format('Y-m-d') }}</td>
-                    <td>
-                        @if($report->technician)
-                            {{ $report->technician->first_name }} {{ $report->technician->last_name }}
-                        @endif
-                    </td>
-                    <td>
-                        @if($report->location)
-                            {{ $report->location->location_name }}
-                        @endif
-                    </td>
-                    <td>
-                        @if($report->employeeIn)
-                            {{ $report->employeeIn->first_name }} {{ $report->employeeIn->last_name }}
-                        @endif
-                    </td>
-                    <td>
-                        @if($report->trackOutgoing)
-                            {{ $report->trackOutgoing->cal_date?->format('Y-m-d') }}
-                        @endif
-                    </td>
-                    <td>
-                        @if($report->trackOutgoing)
-                            {{ $report->trackOutgoing->cal_due_date?->format('Y-m-d') }}
-                        @endif
-                    </td>
-                    <td>
-                        @if($report->trackOutgoing)
-                            {{ $report->trackOutgoing->date_out?->format('Y-m-d H:i') }}
-                        @endif
-                    </td>
-                    <td>
-                        @if($report->trackOutgoing && $report->trackOutgoing->employeeOut)
-                            {{ $report->trackOutgoing->employeeOut->first_name }} {{ $report->trackOutgoing->employeeOut->last_name }}
-                        @endif
-                    </td>
-                    <td>
-                        @if($report->trackOutgoing)
-                            {{ $report->trackOutgoing->cycle_time }}
-                        @endif
-                    </td>
-                    <td>{{ $report->notes ?: '' }}</td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="17" style="text-align: center;">No data available</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
-</body>
-</html>
+        @empty
+            <tr>
+                <td colspan="18" style="text-align: center;">No data available</td>
+            </tr>
+        @endforelse
+    </tbody>
+</table>

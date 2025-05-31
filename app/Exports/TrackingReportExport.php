@@ -3,130 +3,69 @@
 namespace App\Exports;
 
 use App\Models\TrackIncoming;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\WithStyles;
+use App\Models\TrackOutgoing;
+use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\BeforeSheet;
+use Illuminate\Contracts\View\View;
 
-class TrackingReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithTitle
+class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
 {
     protected $filters;
 
-    public function __construct(array $filters = [])
+    public function __construct(array $filters = [], $type = NULL)
     {
         $this->filters = $filters;
+        $this->type = $type;
     }
 
-    public function collection()
+    public function view(): View
     {
+        // Load TrackIncoming with basic relationships first
         $query = TrackIncoming::with([
             'equipment', 
             'technician', 
             'location', 
-            'employeeIn', 
-            'trackOutgoing.employeeOut'
+            'employeeIn'
         ]);
 
         // Apply filters
         $this->applyFilters($query);
 
-        return $query->orderBy('date_in', 'desc')->get();
-    }
+        $incomingRecords = $query->orderBy('date_in', 'desc')->get();
+        
+        // Get recall numbers to fetch outgoing records separately
+        $recallNumbers = $incomingRecords->pluck('recall_number')->filter();
+        
+        // Load outgoing records separately to avoid circular reference
+        $outgoingRecords = TrackOutgoing::whereIn('recall_number', $recallNumbers)
+            ->with(['employeeOut' => function($query) {
+                $query->select(['employee_id', 'first_name', 'last_name']);
+            }])
+            ->get()
+            ->keyBy('recall_number');
+        
+        // Manually attach outgoing records to incoming records
+        $incomingRecords->each(function($record) use ($outgoingRecords) {
+            if (isset($outgoingRecords[$record->recall_number])) {
+                $record->setRelation('trackOutgoing', $outgoingRecords[$record->recall_number]);
+            }
+        });
 
-    public function headings(): array
-    {
-        return [
-            'Recall Number',
-            'Equipment Description',
-            'Serial Number',
-            'Model',
-            'Manufacturer',
-            'Status',
-            'Date In',
-            'Due Date',
-            'Technician',
-            'Location',
-            'Received By',
-            'Calibration Date',
-            'Calibration Due Date',
-            'Date Out',
-            'Completed By',
-            'Cycle Time (hrs)',
-            'Notes'
-        ];
-    }
+        switch ($this->type) {
+            case 'pdf':
+                return view('exports.report-template', [
+                    'reports' => $incomingRecords
+                ]);
+            
+            default:
+                return view('exports.report-template-xlsx', [
+                    'reports' => $incomingRecords
+                ]);
+        }
 
-    public function map($record): array
-    {
-        return [
-            $record->recall_number,
-            $record->equipment ? $record->equipment->description : $record->description,
-            $record->equipment ? $record->equipment->serial_number : $record->serial_number,
-            $record->equipment ? $record->equipment->model : $record->model,
-            $record->equipment ? $record->equipment->manufacturer : $record->manufacturer,
-            ucfirst(str_replace('_', ' ', $record->status)),
-            $record->date_in?->format('Y-m-d H:i'),
-            $record->due_date?->format('Y-m-d'),
-            $record->technician ? $record->technician->first_name . ' ' . $record->technician->last_name : '',
-            $record->location ? $record->location->location_name : '',
-            $record->employeeIn ? $record->employeeIn->first_name . ' ' . $record->employeeIn->last_name : '',
-            $record->trackOutgoing ? $record->trackOutgoing->cal_date?->format('Y-m-d') : '',
-            $record->trackOutgoing ? $record->trackOutgoing->cal_due_date?->format('Y-m-d') : '',
-            $record->trackOutgoing ? $record->trackOutgoing->date_out?->format('Y-m-d H:i') : '',
-            $record->trackOutgoing && $record->trackOutgoing->employeeOut ? 
-                $record->trackOutgoing->employeeOut->first_name . ' ' . $record->trackOutgoing->employeeOut->last_name : '',
-            $record->trackOutgoing ? $record->trackOutgoing->cycle_time : '',
-            $record->notes ?: '',
-        ];
-    }
 
-    public function styles(Worksheet $sheet)
-    {
-        return [
-            // Style the header row
-            1 => [
-                'font' => [
-                    'bold' => true,
-                    'color' => ['rgb' => 'FFFFFF'],
-                ],
-                'fill' => [
-                    'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '4F46E5'],
-                ],
-                'alignment' => [
-                    'horizontal' => Alignment::HORIZONTAL_CENTER,
-                ],
-                'borders' => [
-                    'allBorders' => [
-                        'borderStyle' => Border::BORDER_THIN,
-                        'color' => ['rgb' => '000000'],
-                    ],
-                ],
-            ],
-            // Style all cells
-            'A:Q' => [
-                'borders' => [
-                    'allBorders' => [
-                        'borderStyle' => Border::BORDER_THIN,
-                        'color' => ['rgb' => 'CCCCCC'],
-                    ],
-                ],
-                'alignment' => [
-                    'vertical' => Alignment::VERTICAL_TOP,
-                ],
-            ],
-        ];
-    }
-
-    public function title(): string
-    {
-        return 'Tracking Reports';
     }
 
     private function applyFilters($query)
@@ -174,5 +113,20 @@ class TrackingReportExport implements FromCollection, WithHeadings, WithMapping,
         if (!empty($this->filters['date_to'])) {
             $query->where('date_in', '<=', $this->filters['date_to'] . ' 23:59:59');
         }
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            BeforeSheet::class => function (BeforeSheet $event) {
+                $event->sheet
+                    ->getPageSetup()
+                    ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE)
+                    ->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_LEGAL)
+                    ->setFitToPage(true)
+                    ->setFitToWidth(1)
+                    ->setFitToHeight(0); 
+            },
+        ];
     }
 }
