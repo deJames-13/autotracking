@@ -20,6 +20,10 @@ class TrackIncomingRequest extends FormRequest
             // Technician validation
             'data.technician' => ['required', 'array'],
             'data.technician.employee_id' => ['required', 'exists:users,employee_id'],
+
+            // Employee validation
+            'data.scannedEmployee' => ['required', 'array'],
+            'data.scannedEmployee.employee_id' => ['required', 'exists:users,employee_id'],
             
             // Equipment validation
             'data.equipment' => ['required', 'array'],

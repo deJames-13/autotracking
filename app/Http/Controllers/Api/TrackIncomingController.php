@@ -175,7 +175,7 @@ class TrackIncomingController extends Controller
                 'manufacturer' => $data['equipment']['manufacturer'],
                 'due_date' => $data['equipment']['dueDate'],
                 'date_in' => now(),
-                'employee_id_in' => $data['receivedBy']['employee_id'],
+                'employee_id_in' => $data['scannedEmployee']['employee_id'],
                 'status' => 'pending_calibration',
                 'notes' => 'Created via tracking request system',
             ]);
@@ -586,5 +586,49 @@ class TrackIncomingController extends Controller
                 'total' => $trackOutgoingRecords->total(),
             ],
         ]);
+    }
+
+    /**
+     * Confirm employee request - change status from for_confirmation to pending_calibration
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\TrackIncoming $trackIncoming
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function confirmEmployeeRequest(Request $request, TrackIncoming $trackIncoming): JsonResponse
+    {
+        try {
+            // Only allow confirmation if status is for_confirmation
+            if ($trackIncoming->status !== 'for_confirmation') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This request cannot be confirmed as it is not in for_confirmation status.'
+                ], 400);
+            }
+
+            // If received_by_id is provided, update it
+            if ($request->filled('received_by_id')) {
+                $trackIncoming->received_by_id = $request->input('received_by_id');
+            }
+
+            // Update status to pending_calibration
+            $trackIncoming->update(['status' => 'pending_calibration']);
+            
+            $trackIncoming->load(['equipment', 'technician', 'location', 'employeeIn', 'receivedBy', 'trackOutgoing']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Employee request confirmed successfully. Equipment handover verified.',
+                'data' => new TrackIncomingResource($trackIncoming)
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error confirming employee request: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while confirming the request. Please try again.'
+            ], 500);
+        }
     }
 }

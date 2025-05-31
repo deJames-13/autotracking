@@ -23,6 +23,8 @@ import {
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from '@/store';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 interface TrackingIncomingShowProps {
     trackIncoming: TrackIncoming;
@@ -54,10 +56,14 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
 
     const getStatusBadge = (status: string) => {
         switch (status) {
+            case 'for_confirmation':
+                return <Badge variant="warning">Awaiting Confirmation</Badge>;
             case 'pending_calibration':
                 return <Badge variant="secondary">Pending Calibration</Badge>;
+            case 'completed':
+                return <Badge variant="default">Completed</Badge>;
             default:
-                return <Badge variant="default">{status}</Badge>;
+                return <Badge variant="outline">{status}</Badge>;
         }
     };
 
@@ -86,7 +92,6 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
             plant: trackIncoming.equipment?.plant_id || '',
             department: trackIncoming.equipment?.department_id || '',
             location: trackIncoming.location?.location_id || '',
-            location: trackIncoming.location?.location_name || '',
             description: trackIncoming.description || '',
             serialNumber: trackIncoming.serial_number || '',
             recallNumber: trackIncoming.recall_number || '',
@@ -134,6 +139,16 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
         router.visit(route('admin.tracking.request.index', { edit: trackIncoming.id }));
     };
 
+    // Function to confirm employee request
+    const handleConfirmRequest = async () => {
+        try {
+            handleEditRequest()
+        } catch (error: any) {
+            console.error('Error confirming request:', error);
+            toast.error(error.response?.data?.message || 'An error occurred while confirming the request');
+        }
+    };
+
     console.log(trackIncoming)
 
     return (
@@ -160,6 +175,16 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
                         {getStatusBadge(trackIncoming.status)}
                         {isOverdue && (
                             <Badge variant="destructive">Overdue</Badge>
+                        )}
+                        {(trackIncoming.status === 'for_confirmation') && (
+                            <Button
+                                onClick={handleConfirmRequest}
+                                size="sm"
+                                className="ml-2"
+                            >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Confirm Request
+                            </Button>
                         )}
                         {(trackIncoming.status === 'pending_calibration') && (
                             <Button

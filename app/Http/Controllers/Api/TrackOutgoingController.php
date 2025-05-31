@@ -47,7 +47,10 @@ class TrackOutgoingController extends Controller
             $incoming->update(['status' => 'completed']);
         }
 
-        $record = TrackOutgoing::create($request->validated());
+        $validatedData = $request->validated();
+        $validatedData['status'] = 'for_pickup'; // Set initial status to for_pickup
+
+        $record = TrackOutgoing::create($validatedData);
         $record->load(['trackIncoming', 'employeeOut', 'equipment', 'technician']);
 
         return new TrackOutgoingResource($record);

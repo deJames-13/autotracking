@@ -3,10 +3,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type TrackIncoming, type PaginationData } from '@/types';
+import { type BreadcrumbItem, type TrackOutgoing, type PaginationData } from '@/types';
 import { Head, router, useForm, Link } from '@inertiajs/react';
-import { Plus, Search, Eye, Edit, ArrowLeft } from 'lucide-react';
-import { useEffect } from 'react';
+import { Search, Eye, Calendar, ArrowLeft, Package } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -15,22 +15,22 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/employee/tracking',
     },
     {
-        title: 'My Requests',
-        href: '/employee/tracking/incoming',
+        title: 'Ready for Pickup',
+        href: '/employee/tracking/outgoing',
     },
 ];
 
-interface EmployeeTrackingIncomingIndexProps {
+interface EmployeeTrackingOutgoingIndexProps {
     filters?: {
         search?: string;
         status?: string;
     };
-    requests: PaginationData<TrackIncoming>;
+    requests?: PaginationData<TrackOutgoing>; // Change prop name from completions to requests for consistency
 }
 
-const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps> = ({
+const EmployeeTrackingOutgoingIndex: React.FC<EmployeeTrackingOutgoingIndexProps> = ({
     filters = {},
-    requests = { data: [], meta: {}, links: {} } as unknown as PaginationData<TrackIncoming>
+    requests = { data: [], from: 0, to: 0, total: 0, current_page: 1, last_page: 1 } // Provide default value
 }) => {
     const { canSubmitCalibrationRequest } = useRole();
 
@@ -47,7 +47,7 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
     }, [canSubmitCalibrationRequest]);
 
     const handleFilterChange = () => {
-        get(route('employee.tracking.incoming.index'), {
+        get(route('employee.tracking.outgoing.index'), {
             preserveState: true,
             replace: true,
         });
@@ -69,24 +69,26 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'for_confirmation':
-                return <Badge variant="secondary">Awaiting Admin Confirmation</Badge>;
-            case 'pending_calibration':
-                return <Badge variant="default">Confirmed - In Progress</Badge>;
+            case 'for_pickup':
+                return <Badge variant="secondary">Ready for Pickup</Badge>;
             case 'completed':
-                return <Badge variant="success">Completed</Badge>;
+                return <Badge variant="default">Picked Up</Badge>;
             default:
                 return <Badge variant="outline">{status}</Badge>;
         }
     };
 
-    const canEditRequest = (request: TrackIncoming) => {
-        return request.status === 'for_confirmation';
+    const isRecalibrationDue = (calDueDate: string) => {
+        if (!calDueDate) return false;
+        return new Date(calDueDate) <= new Date();
     };
+
+    // Make sure requests.data exists before accessing it
+    const requestsData = requests?.data || [];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="My Calibration Requests" />
+            <Head title="Equipment Ready for Pickup" />
 
             <div className="space-y-6 p-6">
                 <Button variant="outline" size="sm" asChild>
@@ -98,13 +100,9 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
 
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">My Calibration Requests</h1>
-                        <p className="text-muted-foreground">View and manage your submitted calibration requests</p>
+                        <h1 className="text-3xl font-bold tracking-tight">Equipment Ready for Pickup</h1>
+                        <p className="text-muted-foreground">View your completed calibrations ready for pickup</p>
                     </div>
-                    <Button onClick={() => router.visit(route('employee.tracking.request.index'))}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Request
-                    </Button>
                 </div>
 
                 {/* Filters */}
@@ -112,7 +110,7 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search by recall number, description, or serial number..."
+                            placeholder="Search by recall number or certificate number..."
                             value={data.search}
                             onChange={(e) => setData('search', e.target.value)}
                             className="pl-10"
@@ -124,15 +122,14 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                         className="px-3 py-2 border border-border rounded-md bg-background"
                     >
                         <option value="">All Statuses</option>
-                        <option value="for_confirmation">Awaiting Confirmation</option>
-                        <option value="pending_calibration">In Progress</option>
-                        <option value="completed">Completed</option>
+                        <option value="for_pickup">Ready for Pickup</option>
+                        <option value="completed">Picked Up</option>
                     </select>
                 </div>
 
-                {/* Requests Table */}
-                {requests && requests.data && requests.data.length > 0 ? (
-                    <div className="border rounded-md overflow-scroll">
+                {/* Completions Table */}
+                {requestsData.length > 0 ? (
+                    <div className="border rounded-md overflow-hidden">
                         <table className="min-w-full divide-y divide-border">
                             <thead className="bg-muted">
                                 <tr>
@@ -143,16 +140,13 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                                         Equipment
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Serial Number
+                                        Calibration Date
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Technician
+                                        Next Due Date
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Date Submitted
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Due Date
+                                        Certificate #
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                         Status
@@ -163,43 +157,51 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                                 </tr>
                             </thead>
                             <tbody className="bg-card divide-y divide-border">
-                                {requests.data.map(request => (
-                                    <tr key={request.id} className="hover:bg-muted/50" onDoubleClick={() => router.visit(route('employee.tracking.incoming.show', request.id))}>
+                                {requestsData.map(completion => (
+                                    <tr key={completion.id} className="hover:bg-muted/50" onDoubleClick={() => router.visit(route('employee.tracking.outgoing.show', completion.id))}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            {request.recall_number}
+                                            <div className="flex items-center gap-2">
+                                                {completion.recall_number}
+                                                {isRecalibrationDue(completion.cal_due_date) && (
+                                                    <Badge variant="destructive" className="text-xs">
+                                                        Recal Due
+                                                    </Badge>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <div>
-                                                <div className="font-medium">{request.description}</div>
-                                                {request.manufacturer && request.model && (
+                                                <div className="font-medium">
+                                                    {completion.track_incoming?.description ||
+                                                        completion.equipment?.description || 'N/A'}
+                                                </div>
+                                                {completion.track_incoming && (
                                                     <div className="text-xs text-muted-foreground">
-                                                        {request.manufacturer} {request.model}
+                                                        {completion.track_incoming.manufacturer} {completion.track_incoming.model}
                                                     </div>
                                                 )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                            {request.serial_number || 'N/A'}
+                                            {completion.cal_date ? format(new Date(completion.cal_date), 'MMM dd, yyyy') : 'N/A'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            {request.technician ? (
-                                                `${request.technician.first_name} ${request.technician.last_name}`
-                                            ) : 'Unassigned'}
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="h-3 w-3 text-muted-foreground" />
+                                                <span className={
+                                                    isRecalibrationDue(completion.cal_due_date)
+                                                        ? 'text-destructive font-medium'
+                                                        : 'text-muted-foreground'
+                                                }>
+                                                    {completion.cal_due_date ? format(new Date(completion.cal_due_date), 'MMM dd, yyyy') : 'N/A'}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                            {format(new Date(request.date_in), 'MMM dd, yyyy')}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <span className={
-                                                new Date(request.due_date) < new Date()
-                                                    ? 'text-destructive font-medium'
-                                                    : 'text-muted-foreground'
-                                            }>
-                                                {format(new Date(request.due_date), 'MMM dd, yyyy')}
-                                            </span>
+                                            {completion.certificate_number || 'N/A'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {getStatusBadge(request.status)}
+                                            {getStatusBadge(completion.status)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                                             <Button
@@ -207,24 +209,11 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                                                 size="sm"
                                                 asChild
                                             >
-                                                <Link href={route('employee.tracking.incoming.show', request.id)}>
+                                                <Link href={route('employee.tracking.outgoing.show', completion.id)}>
                                                     <Eye className="h-3 w-3 mr-1" />
                                                     View
                                                 </Link>
                                             </Button>
-
-                                            {canEditRequest(request) && (
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    asChild
-                                                >
-                                                    <Link href={route('employee.tracking.request.index', { edit: request.id })}>
-                                                        <Edit className="h-3 w-3 mr-1" />
-                                                        Edit
-                                                    </Link>
-                                                </Button>
-                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -232,7 +221,7 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                         </table>
 
                         {/* Pagination */}
-                        {requests && requests.last_page && requests.last_page > 1 && (
+                        {requests.last_page > 1 && (
                             <div className="px-6 py-3 bg-muted text-center text-sm text-muted-foreground">
                                 Showing {requests.from} to {requests.to} of {requests.total} results
                             </div>
@@ -240,11 +229,35 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                     </div>
                 ) : (
                     <div className="text-center py-12">
-                        <p className="text-muted-foreground">You haven't submitted any calibration requests yet.</p>
-                        <Button className="mt-4" onClick={() => router.visit(route('employee.tracking.request.index'))}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Submit Your First Request
-                        </Button>
+                        <Package className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <p className="text-muted-foreground mt-4">No equipment ready for pickup.</p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                            Equipment will appear here once calibration is completed.
+                        </p>
+                    </div>
+                )}
+
+                {/* Summary Cards */}
+                {requestsData.length > 0 && (
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <div className="bg-card rounded-lg border p-4">
+                            <h3 className="font-medium text-sm text-muted-foreground">Ready for Pickup</h3>
+                            <p className="text-2xl font-bold">
+                                {requestsData.filter(c => c.status === 'for_pickup').length}
+                            </p>
+                        </div>
+                        <div className="bg-card rounded-lg border p-4">
+                            <h3 className="font-medium text-sm text-muted-foreground">Picked Up</h3>
+                            <p className="text-2xl font-bold">
+                                {requestsData.filter(c => c.status === 'completed').length}
+                            </p>
+                        </div>
+                        <div className="bg-card rounded-lg border p-4">
+                            <h3 className="font-medium text-sm text-muted-foreground">Recalibration Due</h3>
+                            <p className="text-2xl font-bold text-destructive">
+                                {requestsData.filter(c => isRecalibrationDue(c.cal_due_date)).length}
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>
@@ -252,4 +265,4 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
     );
 };
 
-export default EmployeeTrackingIncomingIndex;
+export default EmployeeTrackingOutgoingIndex;

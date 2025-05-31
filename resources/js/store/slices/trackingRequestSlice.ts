@@ -30,6 +30,9 @@ export interface EquipmentState {
     manufacturer: string
     dueDate: string
     receivedBy: string | number
+    location_name?: string // Optional field for location name display
+    equipment_id?: number | null // Optional field for existing equipment
+    existing?: boolean // Flag to indicate if equipment already exists
 }
 
 export interface CalibrationState {
@@ -53,8 +56,7 @@ export interface TrackingRequestState {
 
 const initialState: TrackingRequestState = {
     requestType: 'new',
-    technician: null,
-    equipment: {
+    technician: null, equipment: {
         plant: '',
         department: '',
         location: '',
@@ -65,7 +67,9 @@ const initialState: TrackingRequestState = {
         manufacturer: '',
         dueDate: '',
         receivedBy: '',
-        location_name: ''
+        location_name: '',
+        equipment_id: null,
+        existing: false
     },
     calibration: {
         calibrationDate: '',
@@ -175,6 +179,17 @@ const trackingRequestSlice = createSlice({
             state.receivedBy = action.payload.receivedBy;
             state.isFormDirty = false; // Important: don't mark as dirty when loading existing data
         },
+        autoFillEmployeeData: (state, action: PayloadAction<TechnicianState>) => {
+            // Auto-fill both scannedEmployee and receivedBy with current employee data
+            state.scannedEmployee = action.payload;
+            state.receivedBy = action.payload;
+
+            // Also update the equipment receivedBy field
+            state.equipment.receivedBy = action.payload.employee_id || action.payload.user_id || '';
+
+            // Don't mark as dirty since this is automatic initialization
+            state.isFormDirty = false;
+        },
     }
 })
 
@@ -193,7 +208,8 @@ export const {
     markFormClean,
     setScannedEmployee,
     setReceivedBy,
-    loadExistingData
+    loadExistingData,
+    autoFillEmployeeData
 } = trackingRequestSlice.actions
 
 export default trackingRequestSlice.reducer

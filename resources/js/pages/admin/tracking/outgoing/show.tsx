@@ -36,16 +36,24 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
     }
 
     const getStatusBadge = () => {
+        switch (trackOutgoing.status) {
+            case 'for_pickup':
+                return <Badge variant="warning">Ready for Pickup</Badge>;
+            case 'completed':
+                return <Badge variant="default">Picked Up</Badge>;
+            default:
+                // Fallback based on dates if status is not set
+                if (trackOutgoing.cal_date && trackOutgoing.cal_due_date) {
+                    const calDate = new Date(trackOutgoing.cal_date);
+                    const dueDDate = new Date(trackOutgoing.cal_due_date);
 
-        if (trackOutgoing.cal_date && trackOutgoing.cal_due_date) {
-            const calDate = new Date(trackOutgoing.cal_date);
-            const dueDDate = new Date(trackOutgoing.cal_due_date);
-
-            if (calDate < dueDDate) {
-                return <Badge variant="default">Completed</Badge>;
-            } else {
-                return <Badge variant="secondary">For Routine Calibration</Badge>;
-            }
+                    if (calDate < dueDDate) {
+                        return <Badge variant="default">Completed</Badge>;
+                    } else {
+                        return <Badge variant="secondary">For Routine Calibration</Badge>;
+                    }
+                }
+                return <Badge variant="outline">Unknown</Badge>;
         }
     };
 
@@ -72,12 +80,14 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                     </div>
                     <div className="flex items-center gap-2">
                         {getStatusBadge()}
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={route('admin.tracking.outgoing.edit', trackOutgoing.id)}>
-                                <Edit className="h-3 w-3 mr-1" />
-                                Edit
-                            </Link>
-                        </Button>
+                        {(trackOutgoing.status === 'for_pickup') && (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href={route('admin.tracking.outgoing.edit', trackOutgoing.id)}>
+                                    <Edit className="h-3 w-3 mr-1" />
+                                    Edit
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 </div>
 

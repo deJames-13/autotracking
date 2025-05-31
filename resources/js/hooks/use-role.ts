@@ -29,6 +29,10 @@ export function useRole() {
         return user.role?.role_name !== 'employee';
     };
 
+    const canSubmitCalibrationRequest = () => {
+        return ['employee', 'technician', 'admin'].includes(user.role?.role_name || '');
+    };
+
     const isAdmin = () => {
         return user.role?.role_name === 'admin';
     };
@@ -52,6 +56,7 @@ export function useRole() {
         canManageRequestIncoming,
         canViewEmployeeTracking,
         canCheckInOut,
+        canSubmitCalibrationRequest,
         isAdmin,
         isEmployee,
         isPersonnelInCharge,

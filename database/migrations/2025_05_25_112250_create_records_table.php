@@ -21,7 +21,7 @@ return new class extends Migration
             $table->dateTime('due_date');
             $table->dateTime('date_in');
             $table->foreignId('employee_id_in')->constrained('users', 'employee_id')->onDelete('restrict');
-            $table->foreignId('received_by_id')->constrained('users', 'employee_id')->onDelete('restrict');
+            $table->foreignId('received_by_id')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
 
             $table->enum('status', ['for_confirmation', 'pending_calibration','completed'])->default('pending_calibration');
             $table->string('serial_number')->nullable();

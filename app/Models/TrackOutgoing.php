@@ -14,7 +14,8 @@ class TrackOutgoing extends Model
         'cal_due_date',
         'date_out',
         'employee_id_out',
-        'cycle_time'
+        'cycle_time',
+        'status'
     ];
     
     protected $casts = [

@@ -40,16 +40,19 @@ interface TrackingRequestIndexProps {
     errors?: Record<string, string>;
     edit?: number; // ID of the record being edited
     editData?: any; // Data for the record being edited
+    confirm?: boolean; // Flag to indicate confirmation mode
 }
 
 const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
     errors: serverErrors = {},
     edit,
-    editData
+    editData,
+    confirm
 }) => {
     const { canManageRequestIncoming } = useRole();
     const dispatch = useAppDispatch();
     const [isEditMode] = useState(!!edit);
+    const [isConfirmMode] = useState(!!confirm);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -57,7 +60,9 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
             href: '/admin/tracking',
         },
         {
-            title: edit ? 'Edit Tracking Request' : 'New Tracking Request',
+            title: isConfirmMode
+                ? 'Confirm Employee Request'
+                : (edit ? 'Edit Tracking Request' : 'New Tracking Request'),
             href: '/admin/tracking/request',
         },
     ];
@@ -150,18 +155,36 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
             }
 
             // Set scannedData
-            if (editData.scannedEmployee) {
+            if (editData.employee_in) {
                 dispatch(setScannedEmployee({
-                    ...editData.scannedEmployee
+                    employee_id: editData.employee_in.employee_id,
+                    first_name: editData.employee_in.first_name,
+                    last_name: editData.employee_in.last_name,
+                    full_name: `${editData.employee_in.first_name} ${editData.employee_in.last_name}`,
+                    email: editData.employee_in.email || '',
+                    department_id: editData.employee_in.department?.department_id,
+                    plant_id: editData.employee_in.plant?.plant_id,
+                    department: editData.employee_in.department ? {
+                        department_id: editData.employee_in.department.department_id,
+                        department_name: editData.employee_in.department.department_name
+                    } : undefined,
+                    plant: editData.employee_in.plant ? {
+                        plant_id: editData.employee_in.plant.plant_id,
+                        plant_name: editData.employee_in.plant.plant_name
+                    } : undefined
                 }));
             }
 
-
+            // If in confirm mode, set initial step to 'details' since we need to update receivedBy
+            if (isConfirmMode) {
+                dispatch(setCurrentStep('details'));
+                dispatch(addCompletedStep('technician'));
+            }
 
             // Mark form as clean since we're loading existing data
             dispatch(markFormClean());
         }
-    }, [edit, editData, dispatch]);
+    }, [edit, editData, dispatch, isConfirmMode]);
 
     // Validate the current step using Inertia's validation
     const validateCurrentStep = (): boolean => {
@@ -319,8 +342,8 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
     const handleSubmit = async () => {
         if (!validateCurrentStep()) return;
 
-        // First confirm PIN before proceeding with submission
-        const isPinConfirmed = await handleConfirmPin();
+        // First confirm PIN before proceeding with submission (skip in confirm mode)
+        const isPinConfirmed = isConfirmMode || await handleConfirmPin();
         if (!isPinConfirmed) return;
 
         // Get current Redux state for submission
@@ -328,26 +351,41 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
         console.log(currentState);
 
         try {
+            // For confirm mode, we need to send a specific flag
+            const endpoint = isConfirmMode
+                ? route('api.tracking.incoming.confirm-employee-request', edit)
+                : route('api.tracking.request.store');
+
+            const payload = isConfirmMode
+                ? {
+                    received_by_id: currentState.receivedBy?.employee_id,
+                    employee_id_in: currentState.scannedEmployee?.employee_id
+                }
+                : {
+                    data: {
+                        requestType: currentState.requestType,
+                        technician: currentState.technician,
+                        equipment: currentState.equipment,
+                        calibration: currentState.calibration,
+                        confirmation_pin: currentState.confirmation_pin,
+                        scannedEmployee: currentState.scannedEmployee,
+                        receivedBy: currentState.receivedBy
+                    },
+                    edit_id: edit
+                };
+
             // Submit the form with current Redux data using axios
-            const response = await axios.post(route('api.tracking.request.store'), {
-                data: {
-                    requestType: currentState.requestType,
-                    technician: currentState.technician,
-                    equipment: currentState.equipment,
-                    calibration: currentState.calibration,
-                    confirmation_pin: currentState.confirmation_pin,
-                    scannedEmployee: currentState.scannedEmployee,
-                    receivedBy: currentState.receivedBy
-                },
-                edit_id: edit // Pass edit ID if in edit mode
-            });
+            const response = await axios.post(endpoint, payload);
 
             // Check if the response indicates success
             if (response.data.success) {
                 // Show success message
-                const successMessage = edit
-                    ? (response.data.message || 'Tracking request updated successfully!')
-                    : (response.data.message || 'Tracking request created successfully!');
+                const successMessage = isConfirmMode
+                    ? 'Employee request confirmed successfully!'
+                    : (edit
+                        ? (response.data.message || 'Tracking request updated successfully!')
+                        : (response.data.message || 'Tracking request created successfully!'));
+
                 toast.success(successMessage);
 
                 // Reset Redux state on successful submission
@@ -363,9 +401,12 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                 });
             } else {
                 // Handle unsuccessful response
-                const errorMessage = edit
-                    ? (response.data.message || 'Failed to update tracking request')
-                    : (response.data.message || 'Failed to create tracking request');
+                const errorMessage = isConfirmMode
+                    ? 'Failed to confirm employee request'
+                    : (edit
+                        ? (response.data.message || 'Failed to update tracking request')
+                        : (response.data.message || 'Failed to create tracking request'));
+
                 toast.error(errorMessage);
             }
 
@@ -502,49 +543,64 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={edit ? 'Edit Tracking Request' : 'New Tracking Request'} />
+            <Head title={isConfirmMode
+                ? 'Confirm Employee Request'
+                : (edit ? 'Edit Tracking Request' : 'New Tracking Request')}
+            />
 
             <div className="space-y-6 p-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">
-                        {edit ? 'Edit Tracking Request' : 'New Tracking Request'}
+                        {isConfirmMode
+                            ? 'Confirm Employee Request'
+                            : (edit ? 'Edit Tracking Request' : 'New Tracking Request')}
                     </h1>
                     <p className="text-muted-foreground">
-                        {edit ? 'Modify existing equipment tracking request' : 'Create a new equipment tracking request'}
+                        {isConfirmMode
+                            ? 'Confirm and verify employee equipment request details'
+                            : (edit ? 'Modify existing equipment tracking request' : 'Create a new equipment tracking request')}
                     </p>
                 </div>
 
-                {/* Request Type Selection */}
-                <Tabs
-                    defaultValue="new"
-                    value={requestType}
-                    onValueChange={handleRequestTypeChange}
-                    className="w-full"
-                >
-                    <TabsList className="grid w-full grid-cols-2 bg-muted">
-                        <TabsTrigger
-                            value="new"
-                            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                            disabled={currentStep === 'confirmation'}
-                        >
-                            New Equipment
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="routine"
-                            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                            disabled={currentStep === 'confirmation'}
-                        >
-                            Routine Calibration
-                        </TabsTrigger>
-                    </TabsList>
-                </Tabs>
+                {/* Request Type Selection - Hide in confirm mode */}
+                {!isConfirmMode && (
+                    <Tabs
+                        defaultValue="new"
+                        value={requestType}
+                        onValueChange={handleRequestTypeChange}
+                        className="w-full"
+                    >
+                        <TabsList className="grid w-full grid-cols-2 bg-muted">
+                            <TabsTrigger
+                                value="new"
+                                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                                disabled={currentStep === 'confirmation'}
+                            >
+                                New Equipment
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="routine"
+                                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                                disabled={currentStep === 'confirmation'}
+                            >
+                                Routine Calibration
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                )}
+
                 {errors.requestType && (
                     <p className="text-sm text-destructive mt-1">{errors.requestType}</p>
                 )}
 
-                {/* Steps Indicator */}
+                {/* Steps Indicator - Custom steps for confirm mode */}
                 <StepIndicator
-                    steps={steps}
+                    steps={isConfirmMode ?
+                        [
+                            { id: 'technician', name: 'Technician', icon: <UserCircle2 className="h-5 w-5" /> },
+                            { id: 'details', name: 'Equipment Details', icon: <Wrench className="h-5 w-5" /> }
+                        ] : steps
+                    }
                     currentStep={currentStep}
                     completedSteps={completedSteps}
                 />
@@ -606,14 +662,20 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                         )}
 
                         <div className="ml-auto">
-                            {currentStep !== 'confirmation' ? (
-                                <Button onClick={handleNext} disabled={processing}>
-                                    Next
+                            {isConfirmMode && currentStep === 'details' ? (
+                                <Button onClick={handleSubmit} disabled={processing}>
+                                    Confirm Request
                                 </Button>
                             ) : (
-                                <Button onClick={handleSubmit} disabled={processing}>
-                                    Submit Request
-                                </Button>
+                                currentStep !== 'confirmation' ? (
+                                    <Button onClick={handleNext} disabled={processing}>
+                                        Next
+                                    </Button>
+                                ) : (
+                                    <Button onClick={handleSubmit} disabled={processing}>
+                                        Submit Request
+                                    </Button>
+                                        )
                             )}
                         </div>
                     </div>

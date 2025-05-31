@@ -23,7 +23,8 @@ import {
     Package,
     CheckCircle,
     LogOut,
-    Calendar
+    Calendar,
+    Plus
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -78,7 +79,26 @@ export function AppSidebar() {
     // Employee tracking items
     const employeeTrackingItems: NavItem[] = [
         ...(canViewEmployeeTracking() ? [
-
+            {
+                title: 'Equipment Tracking',
+                href: '/employee/tracking',
+                icon: Activity,
+            },
+            {
+                title: 'Submit Request',
+                href: '/employee/tracking/request',
+                icon: Plus,
+            },
+            {
+                title: 'My Requests',
+                href: '/employee/tracking/incoming',
+                icon: ArrowDownToLine,
+            },
+            {
+                title: 'Ready for Pickup',
+                href: '/employee/tracking/outgoing',
+                icon: ArrowUpFromLine,
+            },
         ] : [])
     ];
 

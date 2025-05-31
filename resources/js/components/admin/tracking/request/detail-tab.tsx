@@ -39,6 +39,7 @@ interface DetailTabProps {
     errors?: Record<string, string>;
     technician?: User | null;
     receivedBy?: User | null;
+    hideReceivedBy?: boolean; // Added to hide receivedBy field for employee context
 }
 
 const DetailTab: React.FC<DetailTabProps> = ({
@@ -48,7 +49,8 @@ const DetailTab: React.FC<DetailTabProps> = ({
     onReceivedByChange,
     errors = {},
     technician,
-    receivedBy
+    receivedBy,
+    hideReceivedBy = false
 }) => {
     const { auth } = usePage<SharedData>().props;
     const currentUser = auth.user;
@@ -426,7 +428,8 @@ const DetailTab: React.FC<DetailTabProps> = ({
 
     // Auto-fill receivedBy to current user when component mounts
     useEffect(() => {
-        if (!receivedBy && currentUser && onReceivedByChange) {
+        // Skip if hideReceivedBy is true
+        if (!hideReceivedBy && !receivedBy && currentUser && onReceivedByChange) {
             // Set the current user as receivedBy
             onReceivedByChange(currentUser);
             // Also update the equipment receivedBy field
@@ -435,7 +438,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
     }, [receivedBy, onReceivedByChange, currentUser]);
 
     // DONT REMOVE
-    console.log(data.location_name)
+    console.log(scannedEmployee)
 
     return (
         <div className="space-y-6">
@@ -694,30 +697,32 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 )}
                             </div>
 
-                            <div>
-                                <Label htmlFor="receivedBy" className={errors.receivedBy ? 'text-destructive' : ''}>
-                                    Received By
-                                </Label>
-                                <InertiaSmartSelect
-                                    name="receivedBy"
-                                    value={data.receivedBy.employee_id}
-                                    label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : undefined}
-                                    onChange={(value) => handleChange('receivedBy', value as string)}
-                                    loadOptions={loadUserOptions}
-                                    placeholder="Select user"
-                                    error={errors.receivedBy}
-                                    className={errors.receivedBy ? 'border-destructive' : ''}
-                                    cacheOptions={true}
-                                    defaultOptions={true}
-                                    minSearchLength={2}
-                                />
-                                {errors.receivedBy && <p className="text-sm text-destructive mt-1">{errors.receivedBy}</p>}
-                                {receivedBy && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Auto-filled to current user: {receivedBy.first_name} {receivedBy.last_name}
-                                    </p>
-                                )}
-                            </div>
+                            {!hideReceivedBy && (
+                                <div>
+                                    <Label htmlFor="receivedBy" className={errors.receivedBy ? 'text-destructive' : ''}>
+                                        Received By
+                                    </Label>
+                                    <InertiaSmartSelect
+                                        name="receivedBy"
+                                        value={data.receivedBy.employee_id}
+                                        label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : undefined}
+                                        onChange={(value) => handleChange('receivedBy', value as string)}
+                                        loadOptions={loadUserOptions}
+                                        placeholder="Select user"
+                                        error={errors.receivedBy}
+                                        className={errors.receivedBy ? 'border-destructive' : ''}
+                                        cacheOptions={true}
+                                        defaultOptions={true}
+                                        minSearchLength={2}
+                                    />
+                                    {errors.receivedBy && <p className="text-sm text-destructive mt-1">{errors.receivedBy}</p>}
+                                    {receivedBy && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            Auto-filled to current user: {receivedBy.first_name} {receivedBy.last_name}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </CardContent>

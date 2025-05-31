@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\TrackingController as AdminTrackingController;
 
 
 //EMPLOYEE
+use App\Http\Controllers\Employee\TrackingController as EmployeeTrackingController;
 
 
 
@@ -40,8 +41,39 @@ Route::middleware('auth')->group(function () {
 
 // Employee Routes (authenticated)
 Route::prefix('employee')->name('employee.')->middleware('auth')->group(function () {
-
-    
+    // Employee tracking routes
+    Route::prefix('tracking')->name('tracking.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Employee\TrackingController::class, 'index'])->name('index');
+        
+        // Request routes
+        Route::get('request', [\App\Http\Controllers\Employee\TrackingController::class, 'requestIndex'])->name('request.index');
+        
+        // Incoming routes
+        Route::get('incoming', [\App\Http\Controllers\Employee\TrackingController::class, 'trackIncomingIndex'])->name('incoming.index');
+        Route::get('incoming/{trackIncoming}', [\App\Http\Controllers\Employee\TrackingController::class, 'trackIncomingShow'])->name('incoming.show');
+        
+        // Outgoing routes
+        Route::get('outgoing', [\App\Http\Controllers\Employee\TrackingController::class, 'trackOutgoingIndex'])->name('outgoing.index');
+        Route::get('outgoing/{trackOutgoing}', [\App\Http\Controllers\Employee\TrackingController::class, 'trackOutgoingShow'])->name('outgoing.show');
+        
+        // API routes for employee tracking
+        Route::prefix('api')->name('api.')->group(function () {
+            // Incoming API routes
+            Route::get('incoming', [\App\Http\Controllers\Api\Employee\TrackIncomingController::class, 'index'])->name('incoming.index');
+            Route::post('incoming', [\App\Http\Controllers\Api\Employee\TrackIncomingController::class, 'store'])->name('incoming.store');
+            Route::get('incoming/{trackIncoming}', [\App\Http\Controllers\Api\Employee\TrackIncomingController::class, 'show'])->name('incoming.show');
+            Route::put('incoming/{trackIncoming}', [\App\Http\Controllers\Api\Employee\TrackIncomingController::class, 'update'])->name('incoming.update');
+            Route::get('incoming/pending/confirmation', [\App\Http\Controllers\Api\Employee\TrackIncomingController::class, 'pendingConfirmation'])->name('incoming.pending-confirmation');
+            
+            // Outgoing API routes
+            Route::get('outgoing', [\App\Http\Controllers\Api\Employee\TrackOutgoingController::class, 'index'])->name('outgoing.index');
+            Route::get('outgoing/{trackOutgoing}', [\App\Http\Controllers\Api\Employee\TrackOutgoingController::class, 'show'])->name('outgoing.show');
+            Route::get('outgoing/ready/pickup', [\App\Http\Controllers\Api\Employee\TrackOutgoingController::class, 'readyForPickup'])->name('outgoing.ready-pickup');
+            Route::get('outgoing/completed', [\App\Http\Controllers\Api\Employee\TrackOutgoingController::class, 'completed'])->name('outgoing.completed');
+            Route::get('outgoing/due/recalibration', [\App\Http\Controllers\Api\Employee\TrackOutgoingController::class, 'dueForRecalibration'])->name('outgoing.due-recalibration');
+            Route::post('outgoing/{trackOutgoing}/confirm-pickup', [\App\Http\Controllers\Api\Employee\TrackOutgoingController::class, 'confirmPickup'])->name('outgoing.confirm-pickup');
+        });
+    });
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -56,6 +88,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('tracking/request/generate-recall', [ApiTrackingController::class, 'generateUniqueRecall'])->name('tracking.request.generate-recall');
         Route::post('tracking/request', [ApiTrackingController::class, 'store'])->name('tracking.request.store');
         Route::post('tracking/request/confirm-pin', [ApiTrackingController::class, 'confirmRequestPin'])->name('tracking.request.confirm-pin');
+        Route::post('tracking/incoming/{trackIncoming}/confirm', [ApiTrackingController::class, 'confirmEmployeeRequest'])->name('tracking.incoming.confirm');
         Route::get('track-outgoing/search', [ApiTrackingController::class, 'searchTrackOutgoing'])->name('track-outgoing.search');
         Route::get('track-incoming/search', [ApiTrackingController::class, 'searchTrackIncoming'])->name('track-incoming.search');
         Route::post('track-outgoing', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'store'])->name('track-outgoing.store');

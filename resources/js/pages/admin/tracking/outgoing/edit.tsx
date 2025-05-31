@@ -49,6 +49,34 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
         return null;
     }
 
+    // Prevent editing if equipment has already been picked up
+    if (trackOutgoing.status === 'completed') {
+        return (
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title={`Edit Outgoing Completion: ${trackOutgoing.recall_number}`} />
+                <div className="space-y-6 p-6">
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={`/admin/tracking/outgoing/${trackOutgoing.id}`}>
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Back to Completion Details
+                        </Link>
+                    </Button>
+                    <div className="text-center py-8">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Cannot Edit Completed Record</h2>
+                        <p className="text-gray-600 mb-6">
+                            This equipment has already been picked up and cannot be edited.
+                        </p>
+                        <Button asChild>
+                            <Link href={`/admin/tracking/outgoing/${trackOutgoing.id}`}>
+                                View Details
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+            </AppLayout>
+        );
+    }
+
     const handleSubmit: FormEventHandler = async (e) => {
         e.preventDefault();
 
