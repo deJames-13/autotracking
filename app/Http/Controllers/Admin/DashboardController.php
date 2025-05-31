@@ -29,11 +29,11 @@ class DashboardController extends Controller
         // Get dashboard statistics
         $stats = [
             'total_equipment' => Equipment::count(),
-            'active_requests' => TrackIncoming::where('status', '!=', 'ready_for_pickup')->count(),
+            'active_requests' => TrackIncoming::where('status', '!=', 'completed')->count(),
             'equipment_tracked' => TrackIncoming::count(),
             'total_users' => User::count(),
             'overdue_equipment' => TrackIncoming::where('due_date', '<', now())
-                ->where('status', '!=', 'ready_for_pickup')
+                ->where('status', '!=', 'completed')
                 ->count(),
             'recent_updates' => TrackIncoming::where('created_at', '>=', now()->subDays(7))->count(),
         ];
@@ -59,7 +59,7 @@ class DashboardController extends Controller
 
         // Get pending tracking requests (equipment in calibration but not ready for pickup)
         $pendingRequests = TrackIncoming::with(['equipment', 'employeeIn', 'technician'])
-            ->where('status', '!=', 'ready_for_pickup')
+            ->where('status', '!=', 'completed')
             ->latest()
             ->limit(5)
             ->get()

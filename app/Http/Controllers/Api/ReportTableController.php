@@ -165,7 +165,6 @@ class ReportTableController extends Controller
 
         $statuses = [
             ['value' => 'pending_calibration', 'label' => 'Pending Calibration'],
-            ['value' => 'calibration_in_progress', 'label' => 'Calibration In Progress'],
             ['value' => 'completed', 'label' => 'Completed'],
         ];
 

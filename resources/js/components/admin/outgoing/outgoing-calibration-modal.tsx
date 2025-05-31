@@ -28,6 +28,7 @@ interface OutgoingFormData {
     date_out: string;
     employee_id_out: string;
     cycle_time: number;
+    confirmation_pin: string;
 }
 
 export function OutgoingCalibrationModal({
@@ -56,7 +57,8 @@ export function OutgoingCalibrationModal({
         cal_due_date: '',
         date_out: '',
         employee_id_out: '',
-        cycle_time: 0
+        cycle_time: 0,
+        confirmation_pin: ''
     });
 
     // Initialize form data when incoming record changes
@@ -75,7 +77,8 @@ export function OutgoingCalibrationModal({
                 cal_due_date: format(oneYearLater, 'yyyy-MM-dd'),
                 date_out: format(currentDate, 'yyyy-MM-dd HH:mm:ss'),
                 employee_id_out: '',
-                cycle_time: calculateCycleTime(incomingRecord.date_in, currentDate)
+                cycle_time: calculateCycleTime(incomingRecord.date_in, currentDate),
+                confirmation_pin: ''
             });
         }
     }, [incomingRecord, open]);
@@ -273,6 +276,11 @@ export function OutgoingCalibrationModal({
             return;
         }
 
+        if (!data.confirmation_pin) {
+            toast.error('Please enter your confirmation PIN');
+            return;
+        }
+
         if (!departmentValidation.isValid) {
             toast.error('Cannot complete calibration: Department validation failed');
             return;
@@ -288,7 +296,8 @@ export function OutgoingCalibrationModal({
                 cal_due_date: data.cal_due_date,
                 date_out: data.date_out,
                 employee_id_out: data.employee_id_out,
-                cycle_time: data.cycle_time
+                cycle_time: data.cycle_time,
+                confirmation_pin: data.confirmation_pin
             });
 
             // Check if the response indicates success
@@ -304,6 +313,7 @@ export function OutgoingCalibrationModal({
                 setCalDate(undefined);
                 setCalDueDate(undefined);
                 setDateOut(undefined);
+                setData('confirmation_pin', '');
                 onOpenChange(false);
                 onSuccess();
 
@@ -344,6 +354,7 @@ export function OutgoingCalibrationModal({
         setCalDate(undefined);
         setCalDueDate(undefined);
         setDateOut(undefined);
+        setData('confirmation_pin', '');
         onOpenChange(false);
     };
 
@@ -551,6 +562,25 @@ export function OutgoingCalibrationModal({
                         </div>
                     </div>
 
+                    {/* Employee PIN Confirmation */}
+                    <div className="space-y-2">
+                        <Label htmlFor="confirmation_pin">Employee PIN Confirmation *</Label>
+                        <Input
+                            id="confirmation_pin"
+                            type="password"
+                            placeholder="Enter your PIN to confirm completion"
+                            value={data.confirmation_pin}
+                            onChange={(e) => setData('confirmation_pin', e.target.value)}
+                            className={errors.confirmation_pin ? 'border-destructive' : ''}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Enter your PIN to confirm you are completing this calibration
+                        </p>
+                        {errors.confirmation_pin && (
+                            <p className="text-sm text-destructive">{errors.confirmation_pin}</p>
+                        )}
+                    </div>
+
                     {/* Scanner Modal */}
                     {showScanner && (
                         <Dialog open={showScanner} onOpenChange={setShowScanner}>
@@ -591,7 +621,7 @@ export function OutgoingCalibrationModal({
                         <Button type="button" variant="outline" onClick={handleCancel}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={submitting || !data.employee_id_out || !departmentValidation.isValid}>
+                        <Button type="submit" disabled={submitting || !data.employee_id_out || !data.confirmation_pin || !departmentValidation.isValid}>
                             {submitting ? 'Recording...' : 'Complete Calibration'}
                         </Button>
                     </div>

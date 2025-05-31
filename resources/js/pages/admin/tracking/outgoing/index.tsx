@@ -69,10 +69,8 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'ready_for_pickup':
-                return <Badge variant="default">Ready for Pickup</Badge>;
             case 'completed':
-                return <Badge variant="secondary">Completed</Badge>;
+                return <Badge variant="default">Completed</Badge>;
             default:
                 return <Badge variant="outline">{status}</Badge>;
         }
@@ -109,7 +107,6 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
                         className="px-3 py-2 border border-border rounded-md bg-background"
                     >
                         <option value="">All Statuses</option>
-                        <option value="ready_for_pickup">Ready for Pickup</option>
                         <option value="completed">Completed</option>
                     </select>
                 </div>
@@ -145,7 +142,7 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
                             </thead>
                             <tbody className="bg-card divide-y divide-border">
                                 {completions.data.map(completion => (
-                                    <tr key={completion.id} className="hover:bg-muted/50">
+                                    <tr key={completion.id} className="hover:bg-muted/50" onDoubleClick={() => router.visit(route('admin.tracking.outgoing.show', completion.id))}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             {completion.recall_number}
                                         </td>

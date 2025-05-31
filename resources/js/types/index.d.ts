@@ -151,7 +151,7 @@ export interface TrackIncoming {
     manufacturer?: string | null;
     date_in: string;
     due_date: string;
-    status: 'pending_calibration' | 'calibration_in_progress';
+    status: 'pending_calibration' | 'completed';
     notes?: string | null;
     created_at: string;
     updated_at: string;
@@ -172,7 +172,7 @@ export interface TrackOutgoing {
     employee_out: number;
     certificate_number?: string | null;
     cycle_time?: number | null;
-    status: 'ready_for_pickup' | 'completed';
+    status: 'completed';
     notes?: string | null;
     created_at: string;
     updated_at: string;

@@ -35,14 +35,16 @@ class TrackIncoming extends Model
     {
         $timestamp = now()->format('ymdHis');
         $random = mt_rand(10000, 99999);
-        $recallNumber = "RCL-{$timestamp}-{$random}";
+        $combined = $timestamp * $random;
+        $first6 = substr($combined, 0, 6);
+        $recallNumber = "RCL-{$first6}";
         
-        // Ensure uniqueness by checking if it already exists
         while (self::where('recall_number', $recallNumber)->exists()) {
             $random = mt_rand(10000, 99999);
-            $recallNumber = "RCL-{$timestamp}-{$random}";
+            $combined = $timestamp * $random;
+            $first6 = substr($combined, 0, 6);
+            $recallNumber = "RCL-{$first6}";
         }
-        
         return $recallNumber;
     }
     
@@ -66,6 +68,11 @@ class TrackIncoming extends Model
     {
         return $this->belongsTo(User::class, 'employee_id_in', 'employee_id');
     }
+    public function receivedBy()
+    {
+        return $this->belongsTo(User::class, 'received_by_id', 'employee_id');
+    }
+    
     
     public function trackOutgoing()
     {

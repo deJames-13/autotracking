@@ -23,7 +23,7 @@ return new class extends Migration
             $table->foreignId('employee_id_in')->constrained('users', 'employee_id')->onDelete('restrict');
             $table->foreignId('received_by_id')->constrained('users', 'employee_id')->onDelete('restrict');
 
-            $table->enum('status', ['pending_calibration', 'calibration_in_progress', 'completed'])->default('pending_calibration');
+            $table->enum('status', ['pending_calibration','completed'])->default('pending_calibration');
             $table->string('serial_number')->nullable();
             $table->string('model')->nullable();
             $table->string('manufacturer')->nullable();

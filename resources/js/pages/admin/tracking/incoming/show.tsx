@@ -6,18 +6,32 @@ import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackIncoming } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, User, MapPin, Calendar, Package, FileText, CheckCircle } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Calendar, Package, FileText, CheckCircle, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { OutgoingCalibrationModal } from '@/components/admin/outgoing/outgoing-calibration-modal';
+import { useAppDispatch } from '@/store/hooks';
+import {
+    setRequestType,
+    setTechnician,
+    setEquipment,
+    setReceivedBy,
+    setScannedEmployee,
+    resetForm,
+    markFormClean
+} from '@/store/slices/trackingRequestSlice';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from '@/store';
 
 interface TrackingIncomingShowProps {
     trackIncoming: TrackIncoming;
 }
 
-const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ trackIncoming }) => {
+const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trackIncoming }) => {
     const { canManageRequestIncoming } = useRole();
     const [showCalibrationModal, setShowCalibrationModal] = useState(false);
+    const dispatch = useAppDispatch();
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -42,14 +56,85 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ trackIncomi
         switch (status) {
             case 'pending_calibration':
                 return <Badge variant="secondary">Pending Calibration</Badge>;
-            case 'calibration_in_progress':
-                return <Badge variant="default">Calibration in Progress</Badge>;
             default:
-                return <Badge variant="outline">{status}</Badge>;
+                return <Badge variant="default">{status}</Badge>;
         }
     };
 
     const isOverdue = new Date(trackIncoming.due_date) < new Date();
+
+    const handleEditRequest = () => {
+        // Reset the form first
+        dispatch(resetForm());
+
+        // Populate form data from existing record (excluding PIN)
+        dispatch(setRequestType('routine')); // Assume editing is always routine
+
+        // Set technician data
+        if (trackIncoming.technician) {
+            dispatch(setTechnician({
+                employee_id: trackIncoming.technician.employee_id,
+                first_name: trackIncoming.technician.first_name,
+                last_name: trackIncoming.technician.last_name,
+                full_name: `${trackIncoming.technician.first_name} ${trackIncoming.technician.last_name}`,
+                email: trackIncoming.technician.email,
+            }));
+        }
+
+        // Set equipment data
+        dispatch(setEquipment({
+            plant: trackIncoming.equipment?.plant_id || '',
+            department: trackIncoming.equipment?.department_id || '',
+            location: trackIncoming.location?.location_id || '',
+            location: trackIncoming.location?.location_name || '',
+            description: trackIncoming.description || '',
+            serialNumber: trackIncoming.serial_number || '',
+            recallNumber: trackIncoming.recall_number || '',
+            model: trackIncoming.model || '',
+            manufacturer: trackIncoming.manufacturer || '',
+            dueDate: trackIncoming.due_date ? format(new Date(trackIncoming.due_date), 'yyyy-MM-dd') : '',
+            receivedBy: ''
+        }));
+
+        // Set received by data
+        if (trackIncoming.employee_in) {
+            dispatch(setReceivedBy({
+                employee_id: trackIncoming.employee_in.employee_id,
+                first_name: trackIncoming.employee_in.first_name,
+                last_name: trackIncoming.employee_in.last_name,
+                full_name: `${trackIncoming.employee_in.first_name} ${trackIncoming.employee_in.last_name}`,
+            }));
+        }
+
+        // Set scanned employee data (employee who originally registered the request)
+        if (trackIncoming.employee_in) {
+            dispatch(setScannedEmployee({
+                employee_id: trackIncoming.employee_in.employee_id,
+                first_name: trackIncoming.employee_in.first_name,
+                last_name: trackIncoming.employee_in.last_name,
+                full_name: `${trackIncoming.employee_in.first_name} ${trackIncoming.employee_in.last_name}`,
+                email: trackIncoming.employee_in.email,
+                department_id: trackIncoming.employee_in.department?.department_id,
+                plant_id: trackIncoming.employee_in.plant?.plant_id,
+                department: trackIncoming.employee_in.department ? {
+                    department_id: trackIncoming.employee_in.department.department_id,
+                    department_name: trackIncoming.employee_in.department.department_name
+                } : undefined,
+                plant: trackIncoming.employee_in.plant ? {
+                    plant_id: trackIncoming.employee_in.plant.plant_id,
+                    plant_name: trackIncoming.employee_in.plant.plant_name
+                } : undefined
+            }));
+        }
+
+        // Mark form as clean since we're loading existing data
+        dispatch(markFormClean());
+
+        // Navigate to edit mode in request creation flow
+        router.visit(route('admin.tracking.request.index', { edit: trackIncoming.id }));
+    };
+
+    console.log(trackIncoming)
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -76,7 +161,18 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ trackIncomi
                         {isOverdue && (
                             <Badge variant="destructive">Overdue</Badge>
                         )}
-                        {(trackIncoming.status === 'pending_calibration' || trackIncoming.status === 'calibration_in_progress') && !trackIncoming.trackOutgoing && (
+                        {(trackIncoming.status === 'pending_calibration') && (
+                            <Button
+                                onClick={handleEditRequest}
+                                variant="outline"
+                                size="sm"
+                                className="ml-2"
+                            >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Request
+                            </Button>
+                        )}
+                        {(trackIncoming.status === 'pending_calibration') && !trackIncoming.trackOutgoing && (
                             <Button
                                 onClick={() => setShowCalibrationModal(true)}
                                 size="sm"
@@ -128,7 +224,9 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ trackIncomi
                             {trackIncoming.equipment && (
                                 <div>
                                     <Label className="text-sm font-medium">Equipment Status</Label>
-                                    <Badge variant="outline">{trackIncoming.equipment.status}</Badge>
+                                    <div>
+                                        <Badge variant="outline">{trackIncoming.equipment.status}</Badge>
+                                    </div>
                                 </div>
                             )}
                         </CardContent>
@@ -192,11 +290,11 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ trackIncomi
                                 </div>
                             )}
 
-                            {trackIncoming.employeeIn && (
+                            {trackIncoming.employee_in && (
                                 <div>
                                     <Label className="text-sm font-medium">Received By</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        {trackIncoming.employeeIn.first_name} {trackIncoming.employeeIn.last_name}
+                                        {trackIncoming.employee_in.first_name} {trackIncoming.employee_in.last_name}
                                     </p>
                                 </div>
                             )}
@@ -310,6 +408,17 @@ const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = ({ trackIncomi
                 }}
             />
         </AppLayout>
+    );
+};
+
+// Main component wrapped with Redux providers
+const TrackingIncomingShow: React.FC<TrackingIncomingShowProps> = (props) => {
+    return (
+        <Provider store={store}>
+            <PersistGate loading={<div>Loading...</div>} persistor={persistor}>
+                <TrackingIncomingShowContent {...props} />
+            </PersistGate>
+        </Provider>
     );
 };
 

@@ -69,12 +69,6 @@ class TrackOutgoingController extends Controller
 
     public function destroy(TrackOutgoing $trackOutgoing): JsonResponse
     {
-        // Update the corresponding incoming record status back to calibration_in_progress
-        $incoming = TrackIncoming::where('recall_number', $trackOutgoing->recall_number)->first();
-        if ($incoming) {
-            $incoming->update(['status' => 'calibration_in_progress']);
-        }
-
         $trackOutgoing->delete();
         return response()->json(['message' => 'Track outgoing record deleted successfully']);
     }

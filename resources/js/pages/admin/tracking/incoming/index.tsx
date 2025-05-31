@@ -88,10 +88,8 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
         switch (status) {
             case 'pending_calibration':
                 return <Badge variant="secondary">Pending</Badge>;
-            case 'calibration_in_progress':
-                return <Badge variant="default">In Progress</Badge>;
             default:
-                return <Badge variant="outline">{status}</Badge>;
+                return <Badge variant="default">{status}</Badge>;
         }
     };
 
@@ -129,7 +127,6 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
                     >
                         <option value="">All Statuses</option>
                         <option value="pending_calibration">Pending Calibration</option>
-                        <option value="calibration_in_progress">In Progress</option>
                     </select>
                 </div>
 
@@ -167,7 +164,7 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
                             </thead>
                             <tbody className="bg-card divide-y divide-border">
                                 {requests.data.map(request => (
-                                    <tr key={request.id} className="hover:bg-muted/50">
+                                    <tr key={request.id} className="hover:bg-muted/50" onDoubleClick={() => router.visit(route('admin.tracking.incoming.show', request.id))}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             {request.recall_number}
                                         </td>
@@ -215,16 +212,6 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
                                                     View
                                                 </Link>
                                             </Button>
-                                            {request.status === 'calibration_in_progress' && (
-                                                <Button
-                                                    variant="default"
-                                                    size="sm"
-                                                    onClick={() => handleCompleteCalibration(request)}
-                                                >
-                                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                                    Complete
-                                                </Button>
-                                            )}
                                         </td>
                                     </tr>
                                 ))}

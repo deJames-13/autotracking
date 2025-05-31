@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import TechnicianTab from '@/components/admin/tracking/request/technician-tab';
 import DetailTab from '@/components/admin/tracking/request/detail-tab';
@@ -34,25 +35,32 @@ import { store, persistor } from '@/store'
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Tracking Management',
-        href: '/admin/tracking',
-    },
-    {
-        title: 'New Tracking Request',
-        href: '/admin/tracking/request',
-    },
-];
-
 interface TrackingRequestIndexProps {
     // Props needed for the request creation process
     errors?: Record<string, string>;
+    edit?: number; // ID of the record being edited
+    editData?: any; // Data for the record being edited
 }
 
-const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: serverErrors = {} }) => {
+const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
+    errors: serverErrors = {},
+    edit,
+    editData
+}) => {
     const { canManageRequestIncoming } = useRole();
-    const dispatch = useAppDispatch()
+    const dispatch = useAppDispatch();
+    const [isEditMode] = useState(!!edit);
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Tracking Management',
+            href: '/admin/tracking',
+        },
+        {
+            title: edit ? 'Edit Tracking Request' : 'New Tracking Request',
+            href: '/admin/tracking/request',
+        },
+    ];
 
     // Get state from Redux
     const {
@@ -94,6 +102,66 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
             });
         }
     }, [serverErrors]);
+
+    // Load edit data when in edit mode
+    useEffect(() => {
+        if (edit && editData) {
+            // Set request type to routine for edits
+            dispatch(setRequestType('routine'));
+
+            // Set technician data
+            if (editData.technician) {
+                dispatch(setTechnician({
+                    employee_id: editData.technician.employee_id,
+                    first_name: editData.technician.first_name,
+                    last_name: editData.technician.last_name,
+                    full_name: `${editData.technician.first_name} ${editData.technician.last_name}`,
+                    email: editData.technician.email || '',
+                }));
+            }
+
+            // Set equipment data
+            if (editData.equipment) {
+                dispatch(updateEquipment({
+                    plant: editData.equipment.plant_id || '',
+                    department: editData.equipment.department_id || '',
+                    location: editData.location?.location_id || '',
+                    location_name: editData.location?.location_name || '',
+                    description: editData.description || '',
+                    serialNumber: editData.equipment.serial_number || '',
+                    recallNumber: editData.recall_number || '',
+                    model: editData.equipment.model || '',
+                    manufacturer: editData.equipment.manufacturer || '',
+                    dueDate: editData.equipment.next_calibration_due ?
+                        format(new Date(editData.equipment.next_calibration_due), 'yyyy-MM-dd') : '',
+                    receivedBy: ''
+                }));
+            }
+
+            // Set received by data
+            if (editData.received_by) {
+                dispatch(setReceivedBy({
+                    employee_id: editData.received_by.employee_id,
+                    first_name: editData.received_by.first_name,
+                    last_name: editData.received_by.last_name,
+                    full_name: `${editData.received_by.first_name} ${editData.received_by.last_name}`,
+                    email: editData.received_by.email || '',
+                }));
+            }
+
+            // Set scannedData
+            if (editData.scannedEmployee) {
+                dispatch(setScannedEmployee({
+                    ...editData.scannedEmployee
+                }));
+            }
+
+
+
+            // Mark form as clean since we're loading existing data
+            dispatch(markFormClean());
+        }
+    }, [edit, editData, dispatch]);
 
     // Validate the current step using Inertia's validation
     const validateCurrentStep = (): boolean => {
@@ -270,13 +338,17 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                     confirmation_pin: currentState.confirmation_pin,
                     scannedEmployee: currentState.scannedEmployee,
                     receivedBy: currentState.receivedBy
-                }
+                },
+                edit_id: edit // Pass edit ID if in edit mode
             });
 
             // Check if the response indicates success
             if (response.data.success) {
                 // Show success message
-                toast.success(response.data.message || 'Tracking request created successfully!');
+                const successMessage = edit
+                    ? (response.data.message || 'Tracking request updated successfully!')
+                    : (response.data.message || 'Tracking request created successfully!');
+                toast.success(successMessage);
 
                 // Reset Redux state on successful submission
                 dispatch(resetForm());
@@ -291,7 +363,10 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                 });
             } else {
                 // Handle unsuccessful response
-                toast.error(response.data.message || 'Failed to create tracking request');
+                const errorMessage = edit
+                    ? (response.data.message || 'Failed to update tracking request')
+                    : (response.data.message || 'Failed to create tracking request');
+                toast.error(errorMessage);
             }
 
         } catch (error) {
@@ -427,12 +502,16 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="New Tracking Request" />
+            <Head title={edit ? 'Edit Tracking Request' : 'New Tracking Request'} />
 
             <div className="space-y-6 p-6">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">New Tracking Request</h1>
-                    <p className="text-muted-foreground">Create a new equipment tracking request</p>
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        {edit ? 'Edit Tracking Request' : 'New Tracking Request'}
+                    </h1>
+                    <p className="text-muted-foreground">
+                        {edit ? 'Modify existing equipment tracking request' : 'Create a new equipment tracking request'}
+                    </p>
                 </div>
 
                 {/* Request Type Selection */}
@@ -485,7 +564,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                             <DetailTab
                                 data={equipment}
                                 onChange={(equipmentUpdate) => dispatch(updateEquipment(equipmentUpdate))}
-                                onScannedEmployeeChange={(employee) => dispatch(setScannedEmployee(employee))}
+                                onScannedEmployeeChange={(employee) => dispatch(setScannedEmployee(employee))} // Kept for compatibility, but Redux is managed directly in DetailTab
                                 onReceivedByChange={(user) => dispatch(setReceivedBy(user))}
                                 errors={getStepErrors('equipment')}
                                 technician={technician}

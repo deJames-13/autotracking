@@ -149,8 +149,6 @@
                         $badgeClass = match($status) {
                             'completed' => 'status-completed',
                             'pending_calibration' => 'status-pending',
-                            'calibration_in_progress' => 'status-progress',
-                            'ready_for_pickup' => 'status-ready',
                             default => 'status-pending'
                         };
                     @endphp

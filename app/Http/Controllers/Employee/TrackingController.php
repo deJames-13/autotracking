@@ -47,10 +47,10 @@ class TrackingController extends Controller
         $overdueEquipment = Equipment::where('employee_id', $user->employee_id)
             ->whereHas('trackIncoming', function($query) {
                 $query->where('due_date', '<', now())
-                      ->where('status', '!=', 'ready_for_pickup');
+                      ->where('status', '!=', 'completed');
             })
             ->with(['trackIncoming' => function($query) {
-                $query->where('status', '!=', 'ready_for_pickup')->latest();
+                $query->where('status', '!=', 'completed')->latest();
             }])
             ->get();
 
@@ -119,7 +119,7 @@ class TrackingController extends Controller
 
         // Find the latest tracking record for this equipment
         $latestRecord = TrackIncoming::where('equipment_id', $equipment->equipment_id)
-            ->where('status', '!=', 'ready_for_pickup')
+            ->where('status', '!=', 'completed')
             ->latest()
             ->first();
 
@@ -134,7 +134,6 @@ class TrackingController extends Controller
             'date_in' => now(),
             'location_id' => $request->location_id,
             'employee_id_in' => $user->employee_id,
-            'status' => 'calibration_in_progress'
         ]);
 
         return redirect()->back()->with('success', 'Equipment checked in successfully.');

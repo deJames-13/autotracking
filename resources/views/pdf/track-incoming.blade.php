@@ -130,10 +130,6 @@
                 <div class="info-value">
                     @if($trackIncoming->status === 'pending_calibration')
                         <span class="status-badge status-pending">Pending Calibration</span>
-                    @elseif($trackIncoming->status === 'calibration_in_progress')
-                        <span class="status-badge status-in-progress">Calibration In Progress</span>
-                    @elseif($trackIncoming->status === 'ready_for_pickup')
-                        <span class="status-badge status-ready">Ready for Pickup</span>
                     @endif
                 </div>
             </div>

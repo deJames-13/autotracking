@@ -86,6 +86,11 @@ class User extends Authenticatable
         return $this->hasMany(TrackIncoming::class, 'employee_id_in', 'employee_id');
     }
     
+    public function trackIncomingAsReceivedBy()
+    {
+        return $this->hasMany(TrackIncoming::class, 'received_by_id', 'employee_id');
+    }
+
     public function trackOutgoingAsEmployeeOut()
     {
         return $this->hasMany(TrackOutgoing::class, 'employee_id_out', 'employee_id');

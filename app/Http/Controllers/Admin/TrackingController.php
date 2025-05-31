@@ -32,22 +32,56 @@ class TrackingController extends Controller
     /**
      * Display the tracking request index page.
      *
+     * @param \Illuminate\Http\Request $request
      * @return \Inertia\Response
      */
-    public function requestIndex()
+    public function requestIndex(Request $request)
     {
-        return Inertia::render('admin/tracking/request/index');
-    }
+        $editData = null;
+        $editId = null;
 
-    /**
-     * Display a specific tracking request.
-     *
-     * @param int $id
-     * @return \Inertia\Response
-     */
-    public function requestShow($id)
-    {
-        return Inertia::render('admin/tracking/request/detail-tab');
+        // Check if we're in edit mode
+        if ($request->filled('edit')) {
+            $editId = $request->get('edit');
+            $trackIncoming = TrackIncoming::with([
+                'equipment', 
+                'equipment.location', 
+                'technician', 
+                'location', 
+                'employeeIn', 
+                'employeeIn.department',
+                'employeeIn.department.locations',
+                'employeeIn.plant'
+            ])->find($editId);
+
+            if ($trackIncoming) {
+                // Only allow editing if status is pending_calibration
+                if ($trackIncoming->status === 'pending_calibration') {
+                    $editData = [
+                        'id' => $trackIncoming->id,
+                        'request_type' => $trackIncoming->request_type,
+                        'technician' => $trackIncoming->technician,
+                        'equipment' => $trackIncoming->equipment,
+                        'scannedEmployee' => $trackIncoming->employeeIn,
+                        'receivedBy' => $trackIncoming->receivedBy,
+                        'request_date' => $trackIncoming->created_at->format('Y-m-d'),
+                        'description' => $trackIncoming->description,
+                        'location' => $trackIncoming->location,
+                        'recall_number' => $trackIncoming->recall_number,
+                        'status' => $trackIncoming->status
+                    ];
+                } else {
+                    // Redirect back with error if trying to edit non-pending record
+                    return redirect()->route('admin.tracking.incoming.show', $trackIncoming)
+                        ->with('error', 'Only pending calibration requests can be edited.');
+                }
+            }
+        }
+
+        return Inertia::render('admin/tracking/request/index', [
+            'edit' => $editId,
+            'editData' => $editData
+        ]);
     }
 
     /**
@@ -148,7 +182,13 @@ class TrackingController extends Controller
      */
     public function trackOutgoingShow(TrackOutgoing $trackOutgoing)
     {
-        $trackOutgoing->load(['equipment', 'technician', 'location', 'employeeOut', 'trackIncoming.employeeIn']);
+        $trackOutgoing->load([
+            'equipment', 
+            'technician', 
+            'location', 
+            'employeeOut', 
+            'trackIncoming.employeeIn',
+        ]);
         
         return Inertia::render('admin/tracking/outgoing/show', [
             'trackOutgoing' => $trackOutgoing

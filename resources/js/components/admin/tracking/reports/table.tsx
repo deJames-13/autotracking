@@ -287,7 +287,6 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
             const response = await fetch(`/api/reports/table?${queryParams}`);
             if (response.ok) {
                 const result = await response.json();
-                console.log('API Response:', result); // Debug log
 
                 // Validate the response structure
                 if (result && typeof result === 'object') {

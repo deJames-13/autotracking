@@ -64,7 +64,8 @@ const initialState: TrackingRequestState = {
         model: '',
         manufacturer: '',
         dueDate: '',
-        receivedBy: ''
+        receivedBy: '',
+        location_name: ''
     },
     calibration: {
         calibrationDate: '',
@@ -161,6 +162,19 @@ const trackingRequestSlice = createSlice({
             state.receivedBy = action.payload;
             state.isFormDirty = true;
         },
+        loadExistingData: (state, action: PayloadAction<{
+            requestType: 'new' | 'routine';
+            technician: TechnicianState | null;
+            equipment: EquipmentState;
+            receivedBy: TechnicianState | null;
+        }>) => {
+            // Load existing data without marking as dirty since it's pre-existing
+            state.requestType = action.payload.requestType;
+            state.technician = action.payload.technician;
+            state.equipment = action.payload.equipment;
+            state.receivedBy = action.payload.receivedBy;
+            state.isFormDirty = false; // Important: don't mark as dirty when loading existing data
+        },
     }
 })
 
@@ -178,7 +192,8 @@ export const {
     resetForm,
     markFormClean,
     setScannedEmployee,
-    setReceivedBy
+    setReceivedBy,
+    loadExistingData
 } = trackingRequestSlice.actions
 
 export default trackingRequestSlice.reducer

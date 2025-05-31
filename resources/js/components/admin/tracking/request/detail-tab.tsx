@@ -28,11 +28,13 @@ import {
 } from '@/components/ui/dialog';
 import { usePage } from '@inertiajs/react';
 import { type SharedData } from '@/types';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { setScannedEmployee } from '@/store/slices/trackingRequestSlice';
 
 interface DetailTabProps {
     data: EquipmentSchema;
     onChange: (data: EquipmentSchema) => void;
-    onScannedEmployeeChange?: (employee: User | null) => void;
+    onScannedEmployeeChange?: (employee: User | null) => void; // Deprecated: Redux state is used directly
     onReceivedByChange?: (user: User | null) => void;
     errors?: Record<string, string>;
     technician?: User | null;
@@ -50,6 +52,10 @@ const DetailTab: React.FC<DetailTabProps> = ({
 }) => {
     const { auth } = usePage<SharedData>().props;
     const currentUser = auth.user;
+    const dispatch = useAppDispatch();
+
+    // Get scannedEmployee from Redux instead of local state
+    const { scannedEmployee } = useAppSelector(state => state.trackingRequest);
 
     const [departments, setDepartments] = useState<SelectOption[]>([]);
     const [locations, setLocations] = useState<SelectOption[]>([]);
@@ -58,7 +64,6 @@ const DetailTab: React.FC<DetailTabProps> = ({
     const [loadingLocations, setLoadingLocations] = useState(false);
     const [localDueDate, setLocalDueDate] = useState<string | null>(data.dueDate || null);
     const [employeeBarcode, setEmployeeBarcode] = useState<string>('');
-    const [scannedEmployee, setScannedEmployee] = useState<User | null>(null);
     const [loadingEmployee, setLoadingEmployee] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
     const [barcodeError, setBarcodeError] = useState<string>('');
@@ -77,9 +82,10 @@ const DetailTab: React.FC<DetailTabProps> = ({
 
             if (response.data.success && response.data.employee) {
                 const employee = response.data.employee;
-                setScannedEmployee(employee);
+                // Update Redux state instead of local state
+                dispatch(setScannedEmployee(employee));
 
-                // Pass scanned employee to parent
+                // Pass scanned employee to parent (for backward compatibility)
                 if (onScannedEmployeeChange) {
                     onScannedEmployeeChange(employee);
                 }
@@ -105,7 +111,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                 toast.success(`Employee found: ${employee.first_name} ${employee.last_name}`);
             } else {
                 setBarcodeError('Employee not found with this barcode');
-                setScannedEmployee(null);
+                dispatch(setScannedEmployee(null));
                 if (onScannedEmployeeChange) {
                     onScannedEmployeeChange(null);
                 }
@@ -113,7 +119,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
         } catch (error) {
             console.error('Error fetching employee by barcode:', error);
             setBarcodeError('Error searching for employee');
-            setScannedEmployee(null);
+            dispatch(setScannedEmployee(null));
             if (onScannedEmployeeChange) {
                 onScannedEmployeeChange(null);
             }
@@ -129,7 +135,8 @@ const DetailTab: React.FC<DetailTabProps> = ({
         if (value.length >= 1) { // Employee ID can be just 1 digit
             fetchEmployeeByBarcode(value);
         } else {
-            setScannedEmployee(null);
+            // Update Redux state instead of local state
+            dispatch(setScannedEmployee(null));
             if (onScannedEmployeeChange) {
                 onScannedEmployeeChange(null);
             }
@@ -217,6 +224,15 @@ const DetailTab: React.FC<DetailTabProps> = ({
 
         fetchInitialData();
     }, []);
+
+    // Sync employeeBarcode with Redux scannedEmployee state
+    useEffect(() => {
+        if (scannedEmployee?.employee_id) {
+            setEmployeeBarcode(scannedEmployee.employee_id.toString());
+        } else {
+            setEmployeeBarcode('');
+        }
+    }, [scannedEmployee]);
 
     const handleChange = (field: keyof EquipmentSchema, value: string | number | null) => {
         // Special handling for dueDate to maintain local state
@@ -419,8 +435,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
     }, [receivedBy, onReceivedByChange, currentUser]);
 
     // DONT REMOVE
-    // console.log('Equipment data:', data)
-    // console.log('Technician data:', technician)
+    console.log(data.location_name)
 
     return (
         <div className="space-y-6">
@@ -567,6 +582,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                             <InertiaSmartSelect
                                 name="location"
                                 value={data.location}
+                                label={data.location_name}
                                 onChange={(value) => handleChange('location', value as string)}
                                 loadOptions={loadLocationOptions}
                                 onCreateOption={createLocationOption}

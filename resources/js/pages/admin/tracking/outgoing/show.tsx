@@ -35,16 +35,20 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
         return null;
     }
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'ready_for_pickup':
-                return <Badge variant="default">Ready for Pickup</Badge>;
-            case 'completed':
-                return <Badge variant="secondary">Completed</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
+    const getStatusBadge = () => {
+
+        if (trackOutgoing.cal_date && trackOutgoing.cal_due_date) {
+            const calDate = new Date(trackOutgoing.cal_date);
+            const dueDDate = new Date(trackOutgoing.cal_due_date);
+
+            if (calDate < dueDDate) {
+                return <Badge variant="default">Completed</Badge>;
+            } else {
+                return <Badge variant="secondary">For Routine Calibration</Badge>;
+            }
         }
     };
+
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -67,7 +71,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        {getStatusBadge(trackOutgoing.status)}
+                        {getStatusBadge()}
                         {trackOutgoing.certificate_number && (
                             <Button variant="outline" asChild>
                                 <Link href={route('admin.tracking.outgoing.certificate', trackOutgoing.id)}>
@@ -130,7 +134,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
 
                             <div>
                                 <Label className="text-sm font-medium">Status</Label>
-                                <div>{getStatusBadge(trackOutgoing.status)}</div>
+                                <div>{getStatusBadge()}</div>
                             </div>
                         </CardContent>
                     </Card>
@@ -213,6 +217,23 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                                     <p className="text-sm text-muted-foreground">
                                         {trackOutgoing.employee_out_user.first_name} {trackOutgoing.employee_out_user.last_name}
                                     </p>
+                                </div>
+                            )}
+
+                            {trackOutgoing.track_incoming?.employee_in && (
+                                <div>
+                                    <Label className="text-sm font-medium">Originally Received By</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        {trackOutgoing.track_incoming.employee_in.first_name} {trackOutgoing.track_incoming.employee_in.last_name}
+                                    </p>
+                                    {trackOutgoing.track_incoming.employee_in.email && (
+                                        <p className="text-xs text-muted-foreground">{trackOutgoing.track_incoming.employee_in.email}</p>
+                                    )}
+                                    {trackOutgoing.track_incoming.employee_in.department && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Department: {trackOutgoing.track_incoming.employee_in.department.department_name}
+                                        </p>
+                                    )}
                                 </div>
                             )}
                         </CardContent>

@@ -72,7 +72,68 @@ class TrackIncomingController extends Controller
     {
         try {
             $data = $request->validated()['data'];
+            $editId = $request->input('edit_id'); // Check for edit mode
             
+            // If we're in edit mode, update existing record
+            if ($editId) {
+                $trackIncoming = TrackIncoming::find($editId);
+                
+                if (!$trackIncoming) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tracking request not found for editing.'
+                    ], 404);
+                }
+
+                // Only allow editing if status is pending_calibration
+                if ($trackIncoming->status !== 'pending_calibration') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Only pending calibration requests can be edited.'
+                    ], 400);
+                }
+
+                // Update the equipment if needed
+                $equipment = $trackIncoming->equipment;
+                if ($equipment) {
+                    $equipment->update([
+                        'serial_number' => $data['equipment']['serialNumber'],
+                        'description' => $data['equipment']['description'],
+                        'model' => $data['equipment']['model'],
+                        'manufacturer' => $data['equipment']['manufacturer'],
+                        'plant_id' => $data['equipment']['plant'],
+                        'department_id' => $data['equipment']['department'],
+                        'location_id' => $data['equipment']['location'],
+                        'next_calibration_due' => $data['equipment']['dueDate'],
+                    ]);
+                }
+
+                // Update the tracking record
+                $trackIncoming->update([
+                    'technician_id' => $data['technician']['employee_id'],
+                    'description' => $data['equipment']['description'],
+                    'location_id' => $data['equipment']['location'],
+                    'received_by_id' => $data['receivedBy']['employee_id'],
+                    'serial_number' => $data['equipment']['serialNumber'],
+                    'model' => $data['equipment']['model'],
+                    'manufacturer' => $data['equipment']['manufacturer'],
+                    'due_date' => $data['equipment']['dueDate'],
+                    'employee_id_in' => $data['receivedBy']['employee_id'],
+                    'notes' => 'Updated via tracking request system',
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tracking request updated successfully.',
+                    'data' => [
+                        'track_incoming' => $trackIncoming,
+                        'equipment' => $equipment,
+                        'recall_number' => $trackIncoming->recall_number
+                    ]
+                ], 200);
+            }
+            
+            // Create mode - existing logic
             // Generate unique recall number if not provided
             $recallNumber = $data['equipment']['recallNumber'] ?? TrackIncoming::generateUniqueRecallNumber();
             
@@ -130,11 +191,11 @@ class TrackIncomingController extends Controller
             ], 201);
                 
         } catch (\Exception $e) {
-            \Log::error('Error creating tracking request: ' . $e->getMessage());
+            \Log::error('Error creating/updating tracking request: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create tracking request. Please try again.',
+                'message' => 'Failed to process tracking request. Please try again.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -360,7 +421,7 @@ class TrackIncomingController extends Controller
     public function overdue(Request $request): AnonymousResourceCollection
     {
         $query = TrackIncoming::where('due_date', '<', now())
-            ->where('status', '!=', 'ready_for_pickup')
+            ->where('status', '!=', 'completed')
             ->with(['equipment', 'technician', 'location', 'employeeIn', 'trackOutgoing']);
             
         $records = $query->orderBy('due_date', 'asc')->paginate($request->get('per_page', 15));
