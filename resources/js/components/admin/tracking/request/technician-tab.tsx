@@ -89,7 +89,7 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
 
         setFilters(prev => ({
             ...prev,
-            [key]: value
+            [key]: value === 'all' ? '' : value // Convert "all" to empty string for backend
         }));
     };
 
@@ -126,14 +126,14 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
                                         <div className="p-2 w-full">
                                             <Label htmlFor="department">Department</Label>
                                             <Select
-                                                value={filters.department_id}
+                                                value={filters.department_id || 'all'}
                                                 onValueChange={(value) => handleFilterChange('department_id', value)}
                                             >
                                                 <SelectTrigger id="department">
                                                     <SelectValue placeholder="Select department" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="">All Departments</SelectItem>
+                                                    <SelectItem value="all">All Departments</SelectItem>
                                                     {departments.map((dept) => (
                                                         <SelectItem key={dept.department_id} value={dept.department_id.toString()}>
                                                             {dept.department_name}

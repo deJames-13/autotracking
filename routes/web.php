@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\TrackingController as AdminTrackingController;
 
 use App\Http\Controllers\Api\TrackIncomingController as ApiTrackingController;
+use App\Http\Controllers\Api\ReportTableController;
 use App\Models\User;
 use App\Models\Location;
 use App\Models\TrackIncoming;
@@ -63,6 +64,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('track-incoming/search', [ApiTrackingController::class, 'searchTrackIncoming'])->name('track-incoming.search');
         Route::post('track-outgoing', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'store'])->name('track-outgoing.store');
 
+        // Report Table API Routes
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('table', [ReportTableController::class, 'index'])->name('table.index');
+            Route::get('table/filter-options', [ReportTableController::class, 'filterOptions'])->name('table.filter-options');
+            Route::get('table/export/{format}', [ReportTableController::class, 'export'])->name('table.export');
+        });
 
         Route::get('users/search', [AdminUserController::class, 'searchUsers'])->name('users.search');
     });
@@ -132,3 +139,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
+
+// Test route for reports table (remove in production)
+Route::get('/test/reports-table', function () {
+    return Inertia::render('test/reports-table');
+})->name('test.reports-table');

@@ -78,6 +78,8 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
         }
     };
 
+    console.log(completions)
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Outgoing Calibration Completions" />
@@ -125,9 +127,6 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
                                         Equipment
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Certificate #
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                         Calibration Date
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -164,9 +163,6 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                            {completion.certificate_number || 'N/A'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                                             {format(new Date(completion.cal_date), 'MMM dd, yyyy')}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -185,7 +181,7 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
                                             {format(new Date(completion.date_out), 'MMM dd, yyyy')}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {getStatusBadge(completion.status)}
+                                            {getStatusBadge(completion.track_incoming.status)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                                             <Button
@@ -198,18 +194,7 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
                                                     View
                                                 </Link>
                                             </Button>
-                                            {completion.certificate_number && (
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    asChild
-                                                >
-                                                    <Link href={route('admin.tracking.outgoing.certificate', completion.id)}>
-                                                        <FileText className="h-3 w-3 mr-1" />
-                                                        Certificate
-                                                    </Link>
-                                                </Button>
-                                            )}
+
                                         </td>
                                     </tr>
                                 ))}

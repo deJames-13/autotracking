@@ -135,7 +135,7 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
 
                 {/* Requests Table */}
                 {requests.data.length > 0 ? (
-                    <div className="border rounded-md overflow-hidden">
+                    <div className="border rounded-md overflow-scroll">
                         <table className="min-w-full divide-y divide-border">
                             <thead className="bg-muted">
                                 <tr>
