@@ -62,7 +62,7 @@ class LoginRequest extends FormRequest
             // Login with employee ID (for employees)
             $user = User::where('employee_id', $login)
                 ->whereHas('role', function ($query) {
-                    $query->where('role_name', 'employee');
+                    // $query->where('role_name', 'employee');
                 })
                 ->first();
             

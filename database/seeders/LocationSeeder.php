@@ -14,24 +14,24 @@ class LocationSeeder extends Seeder
     {
         $locations = [
             [
-                'location_name' => 'Assembly Line A',
-                'department_id' => 2, // Production
+                'location_name' => 'Annex A',
+                'department_id' => 1, // Calibrations
             ],
             [
-                'location_name' => 'Testing Lab',
-                'department_id' => 3, // Quality Assurance
+                'location_name' => 'Annex B',
+                'department_id' => 2, // Tracking
             ],
             [
-                'location_name' => 'Design Office',
-                'department_id' => 1, // Engineering
+                'location_name' => 'Building B',
+                'department_id' => 3, // Constructions
             ],
             [
-                'location_name' => 'Equipment Room',
-                'department_id' => 4, // Maintenance
+                'location_name' => 'Building A Floor 2',
+                'department_id' => 4, // HR
             ],
             [
-                'location_name' => 'Shipping Dock',
-                'department_id' => 5, // Logistics
+                'location_name' => 'Building B Basement',
+                'department_id' => 5, // Electrical
             ],
         ];
 
