@@ -9,13 +9,17 @@ class TrackOutgoing extends Model
     protected $table = 'track_outgoing';
     
     protected $fillable = [
-        'recall_number',
+        'incoming_id',
         'cal_date',
         'cal_due_date',
         'date_out',
         'employee_id_out',
         'released_by_id',
         'cycle_time',
+        'ct_reqd',
+        'commit_etc',
+        'actual_etc',
+        'overdue',
         'status'
     ];
     
@@ -28,7 +32,7 @@ class TrackOutgoing extends Model
     // Relationships
     public function trackIncoming()
     {
-        return $this->belongsTo(TrackIncoming::class, 'recall_number', 'recall_number');
+        return $this->belongsTo(TrackIncoming::class, 'incoming_id', 'id');
     }
     
     public function employeeOut()
@@ -47,10 +51,10 @@ class TrackOutgoing extends Model
         return $this->hasOneThrough(
             Equipment::class,
             TrackIncoming::class,
-            'recall_number',
+            'id', // local key on TrackIncoming
             'equipment_id',
-            'recall_number',
-            'equipment_id'
+            'incoming_id', // local key on this model
+            'equipment_id' // foreign key on Equipment
         );
     }
     
@@ -60,9 +64,9 @@ class TrackOutgoing extends Model
         return $this->hasOneThrough(
             User::class,
             TrackIncoming::class,
-            'recall_number',
+            'id',
             'employee_id',
-            'recall_number',
+            'incoming_id',
             'technician_id'
         );
     }
@@ -73,9 +77,9 @@ class TrackOutgoing extends Model
         return $this->hasOneThrough(
             Location::class,
             TrackIncoming::class,
-            'recall_number',
+            'id',
             'location_id',
-            'recall_number',
+            'incoming_id',
             'location_id'
         );
     }

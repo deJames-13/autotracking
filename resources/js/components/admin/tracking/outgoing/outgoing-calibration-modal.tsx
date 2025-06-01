@@ -21,6 +21,7 @@ interface OutgoingCalibrationModalProps {
 }
 
 interface OutgoingFormData {
+    incoming_id: number | null;
     recall_number: string;
     cal_date: string;
     cal_due_date: string;
@@ -50,6 +51,7 @@ export function OutgoingCalibrationModal({
     }>({ isValid: true, message: '' });
 
     const { data, setData, post, processing, errors, reset } = useForm<OutgoingFormData>({
+        incoming_id: incomingRecord ? incomingRecord.id : null,
         recall_number: '',
         cal_date: '',
         cal_due_date: '',
@@ -70,6 +72,7 @@ export function OutgoingCalibrationModal({
             setDateOut(currentDate);
 
             setData({
+                incoming_id: incomingRecord.id,
                 recall_number: incomingRecord.recall_number,
                 cal_date: format(currentDate, 'yyyy-MM-dd'),
                 cal_due_date: format(oneYearLater, 'yyyy-MM-dd'),
@@ -261,7 +264,6 @@ export function OutgoingCalibrationModal({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-
         if (!departmentValidation.isValid) {
             toast.error('Cannot complete calibration: Department validation failed');
             return;
@@ -272,6 +274,7 @@ export function OutgoingCalibrationModal({
         try {
             // Submit the form with current data using axios - Remove confirmation_pin
             const response = await axios.post(route('api.track-outgoing.store'), {
+                incoming_id: data.incoming_id,
                 recall_number: data.recall_number,
                 cal_date: data.cal_date,
                 cal_due_date: data.cal_due_date,

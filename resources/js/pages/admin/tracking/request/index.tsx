@@ -15,7 +15,7 @@ import { StepIndicator, type Step } from '@/components/ui/step-indicator';
 import { UserCircle2, Wrench, CalendarClock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAppDispatch, useAppSelector } from '@/store/hooks'
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
     setRequestType,
     setTechnician,
@@ -544,6 +544,31 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
             document.removeEventListener('inertia:start', handleInertiaStart);
         };
     }, [dispatch]);
+
+    // When recall number changes for routine, prefill equipment info
+    useEffect(() => {
+        if (requestType === 'routine' && equipment.recallNumber) {
+            axios.get(route('api.equipment.search-by-recall'), {
+                params: { recall_number: equipment.recallNumber },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(response => {
+                if (response.data.success && response.data.equipment) {
+                    dispatch(updateEquipment({
+                        ...response.data.equipment,
+                        recallNumber: equipment.recallNumber,
+                        existing: true,
+                        equipment_id: response.data.equipment.equipment_id
+                    }));
+                } else {
+                    dispatch(updateEquipment({
+                        recallNumber: equipment.recallNumber,
+                        existing: false,
+                        equipment_id: null
+                    }));
+                }
+            });
+        }
+    }, [requestType, equipment.recallNumber, dispatch]);
 
     // Redirect if user doesn't have permission
     if (!canManageRequestIncoming()) {

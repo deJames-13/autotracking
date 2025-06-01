@@ -73,6 +73,7 @@ class TrackIncomingController extends Controller
         try {
             $data = $request->validated()['data'];
             $editId = $request->input('edit_id'); 
+            $type = $request->input('type');
             
             // If we're in edit mode, update existing record
             if ($editId) {
@@ -652,5 +653,21 @@ class TrackIncomingController extends Controller
                 'message' => 'An error occurred while confirming the request. Please try again.'
             ], 500);
         }
+    }
+
+    /**
+     * Search equipment by recall number (for routine calibration)
+     */
+    public function searchByRecall(Request $request)
+    {
+        $recallNumber = $request->input('recall_number');
+        if (!$recallNumber) {
+            return response()->json(['success' => false, 'message' => 'Recall number required']);
+        }
+        $equipment = Equipment::where('recall_number', $recallNumber)->first();
+        if ($equipment) {
+            return response()->json(['success' => true, 'equipment' => $equipment]);
+        }
+        return response()->json(['success' => false, 'equipment' => null]);
     }
 }

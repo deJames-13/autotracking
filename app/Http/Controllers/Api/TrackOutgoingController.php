@@ -21,7 +21,9 @@ class TrackOutgoingController extends Controller
 
         if ($request->has('search')) {
             $search = $request->get('search');
-            $query->where('recall_number', 'like', "%{$search}%");
+            $query->whereHas('trackIncoming', function($q) use ($search) {
+                $q->where('recall_number', 'like', "%{$search}%");
+            });
         }
 
         if ($request->has('employee_id_out')) {
@@ -43,7 +45,7 @@ class TrackOutgoingController extends Controller
 
     public function store(TrackOutgoingRequest $request): TrackOutgoingResource
     {
-        $incoming = TrackIncoming::where('recall_number', $request->recall_number)->first();
+        $incoming = TrackIncoming::find($request->incoming_id);
         if ($incoming) {
             $incoming->update(['status' => 'completed']);
         }

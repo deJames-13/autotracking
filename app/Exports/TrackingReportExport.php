@@ -22,34 +22,29 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
 
     public function view(): View
     {
-        // Load TrackIncoming with basic relationships first
         $query = TrackIncoming::with([
             'equipment', 
             'technician', 
             'location', 
-            'employeeIn'
+            'employeeIn',
+            'trackOutgoing',
         ]);
 
-        // Apply filters
         $this->applyFilters($query);
 
         $incomingRecords = $query->orderBy('date_in', 'desc')->get();
-        
-        // Get recall numbers to fetch outgoing records separately
-        $recallNumbers = $incomingRecords->pluck('recall_number')->filter();
-        
-        // Load outgoing records separately to avoid circular reference
-        $outgoingRecords = TrackOutgoing::whereIn('recall_number', $recallNumbers)
+        $incomingIds = $incomingRecords->pluck('id')->filter();
+
+        $outgoingRecords = TrackOutgoing::whereIn('incoming_id', $incomingIds)
             ->with(['employeeOut' => function($query) {
                 $query->select(['employee_id', 'first_name', 'last_name']);
             }])
             ->get()
-            ->keyBy('recall_number');
-        
-        // Manually attach outgoing records to incoming records
+            ->keyBy('incoming_id');
+
         $incomingRecords->each(function($record) use ($outgoingRecords) {
-            if (isset($outgoingRecords[$record->recall_number])) {
-                $record->setRelation('trackOutgoing', $outgoingRecords[$record->recall_number]);
+            if (isset($outgoingRecords[$record->id])) {
+                $record->setRelation('trackOutgoing', $outgoingRecords[$record->id]);
             }
         });
 
@@ -58,9 +53,8 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
                 return view('exports.report-template', [
                     'reports' => $incomingRecords
                 ]);
-            
             default:
-                return view('exports.report-template-xlsx', [
+                return view('exports.report-template', [
                     'reports' => $incomingRecords
                 ]);
         }

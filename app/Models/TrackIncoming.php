@@ -76,6 +76,6 @@ class TrackIncoming extends Model
     
     public function trackOutgoing()
     {
-        return $this->hasOne(TrackOutgoing::class, 'recall_number', 'recall_number');
+        return $this->hasOne(TrackOutgoing::class, 'incoming_id', 'id');
     }
 }

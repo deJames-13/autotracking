@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import Barcode from 'react-barcode';
 
 interface TrackingOutgoingShowProps {
     trackOutgoing: TrackOutgoing;
@@ -451,6 +452,21 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            {/* Barcode for Recall Number */}
+                            {trackOutgoing.track_incoming?.recall_number && (
+                                <div className="flex flex-col items-center mb-4">
+                                    <Barcode
+                                        value={trackOutgoing.track_incoming?.recall_number}
+                                        width={2}
+                                        height={60}
+                                        displayValue={true}
+                                        fontSize={16}
+                                        margin={8}
+                                    />
+                                    <span className="text-xs text-muted-foreground mt-1">Recall Number Barcode</span>
+                                </div>
+                            )}
+
                             {trackOutgoing.track_incoming && (
                                 <>
                                     <div>

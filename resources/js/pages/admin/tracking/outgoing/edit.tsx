@@ -29,7 +29,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
             href: '/admin/tracking/outgoing',
         },
         {
-            title: trackOutgoing.recall_number,
+            title: trackOutgoing.track_incoming?.recall_number || trackOutgoing.incoming_id,
             href: `/admin/tracking/outgoing/${trackOutgoing.id}`,
         },
         {
@@ -83,7 +83,8 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
         try {
             const response = await axios.put(`/api/v1/track-outgoing/${trackOutgoing.id}`, {
                 ...data,
-                recall_number: trackOutgoing.recall_number,
+                recall_number: trackOutgoing.track_incoming?.recall_number,
+                incoming_id: trackOutgoing.incoming_id,
                 employee_id_out: trackOutgoing.employee_out_user?.employee_id,
                 cycle_time: parseInt(data.cycle_time)
             }, {
@@ -112,7 +113,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Edit Outgoing Completion: ${trackOutgoing.recall_number}`} />
+            <Head title={`Edit Outgoing Completion: ${trackOutgoing.track_incoming?.recall_number || trackOutgoing.incoming_id}`} />
 
             <div className="space-y-6 p-6">
                 <Button variant="outline" size="sm" asChild>
@@ -125,7 +126,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">
-                            Edit Completion: {trackOutgoing.recall_number}
+                            Edit Completion: {trackOutgoing.track_incoming?.recall_number || trackOutgoing.incoming_id}
                         </h1>
                         <p className="text-muted-foreground">Update calibration completion details</p>
                     </div>
@@ -283,7 +284,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                 <div>
                                     <Label className="text-sm font-medium">Recall Number</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        {trackOutgoing.recall_number}
+                                        {trackOutgoing.track_incoming?.recall_number || trackOutgoing.incoming_id}
                                     </p>
                                 </div>
                             </CardContent>

@@ -95,4 +95,33 @@ class EquipmentController extends Controller
         
         return new EquipmentResource($equipment);
     }
+
+    // Search equipment by recall number
+    public function searchByRecall(Request $request): JsonResponse
+    {
+        $recallNumber = trim($request->get('recall_number'));
+        if (!$recallNumber) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Recall number is required',
+                'equipment' => null
+            ], 400);
+        }
+
+        // Case-insensitive partial match search
+        $equipment = Equipment::whereRaw('LOWER(recall_number) LIKE ?', ['%' . strtolower($recallNumber) . '%'])->first();
+        if ($equipment) {
+            return response()->json([
+                'success' => true,
+                'equipment' => new EquipmentResource($equipment),
+                'searched' => $recallNumber
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'equipment' => null,
+                'searched' => $recallNumber
+            ]);
+        }
+    }
 }

@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { type Equipment } from '@/types';
+import Barcode from 'react-barcode';
 
 interface EquipmentViewDialogProps {
     equipment: Equipment | null;
@@ -20,6 +21,20 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] pr-4">
                     <div className="space-y-6">
+                        {/* Barcode for Recall Number */}
+                        {equipment.recall_number && (
+                            <div className="flex flex-col items-center mb-4">
+                                <Barcode
+                                    value={equipment.recall_number}
+                                    width={2}
+                                    height={60}
+                                    displayValue={true}
+                                    fontSize={16}
+                                    margin={8}
+                                />
+                                <span className="text-xs text-muted-foreground mt-1">Recall Number Barcode</span>
+                            </div>
+                        )}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <label className="text-sm font-medium text-muted-foreground">Equipment ID</label>

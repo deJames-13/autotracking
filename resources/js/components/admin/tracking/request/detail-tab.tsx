@@ -4,10 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EquipmentSchema } from '@/validation/tracking-request-schema';
 import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
+import { QrCode, Scan, Search } from 'lucide-react';
 import axios from 'axios';
 import { User } from '@/types';
 import { toast } from 'react-hot-toast';
-import { CalendarIcon, Scan, User as UserIcon } from 'lucide-react';
+import { CalendarIcon, User as UserIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import {
@@ -29,7 +30,7 @@ import {
 import { usePage } from '@inertiajs/react';
 import { type SharedData } from '@/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setScannedEmployee } from '@/store/slices/trackingRequestSlice';
+import { setScannedEmployee, updateEquipment } from '@/store/slices/trackingRequestSlice';
 
 interface DetailTabProps {
     data: EquipmentSchema;
@@ -55,6 +56,11 @@ const DetailTab: React.FC<DetailTabProps> = ({
     const { auth } = usePage<SharedData>().props;
     const currentUser = auth.user;
     const dispatch = useAppDispatch();
+    const { requestType = '' } = useAppSelector(state => state.trackingRequest);
+    const [recallNumber, setRecallNumber] = useState<string>(data.recallNumber || '');
+    const [recallBarcode, setRecallBarcode] = useState('');
+    const [recallBarcodeError, setRecallBarcodeError] = useState('');
+    const [recallLoading, setRecallLoading] = useState(false);
 
     // Get scannedEmployee from Redux instead of local state
     const { scannedEmployee } = useAppSelector(state => state.trackingRequest);
@@ -69,6 +75,10 @@ const DetailTab: React.FC<DetailTabProps> = ({
     const [loadingEmployee, setLoadingEmployee] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
     const [barcodeError, setBarcodeError] = useState<string>('');
+
+    // Recall number states
+    const [recallError, setRecallError] = useState('');
+    const [showRecallScanner, setShowRecallScanner] = useState(false);
 
     // Function to fetch employee by barcode
     const fetchEmployeeByBarcode = async (barcode: string) => {
@@ -129,6 +139,87 @@ const DetailTab: React.FC<DetailTabProps> = ({
             setLoadingEmployee(false);
         }
     };
+
+    // Recall number: fetch equipment by recall number
+    const fetchEquipmentByRecall = async (recall: string) => {
+        if (!recall) return;
+        setRecallLoading(true);
+        setRecallBarcodeError('');
+        try {
+            const response = await axios.get(route('api.equipment.search-by-recall'), {
+                params: { recall_number: recall },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (response.data.success && response.data.equipment) {
+                dispatch(updateEquipment({
+                    ...response.data.equipment,
+                    recallNumber: recall,
+                    serialNumber: response.data.equipment.serial_number || '',
+                    existing: true,
+                    equipment_id: response.data.equipment.equipment_id
+                }));
+                // Auto-fill serial number in the form
+                onChange({ serialNumber: response.data.equipment.serial_number || '' });
+            } else {
+                dispatch(updateEquipment({
+                    recallNumber: recall,
+                    existing: false,
+                    equipment_id: null
+                }));
+            }
+        } catch (error) {
+            setRecallBarcodeError('Error searching for equipment');
+        } finally {
+            setRecallLoading(false);
+        }
+    };
+
+    // Handle recall number select/search
+    const handleRecallNumberChange = (value: string | number | null) => {
+        const recall = value ? String(value) : '';
+        setRecallNumber(recall);
+        // Always update Redux state with recallNumber
+        dispatch(updateEquipment({ recallNumber: recall }));
+        if (recall) fetchEquipmentByRecall(recall);
+        else dispatch(updateEquipment({ existing: false, equipment_id: null }));
+    };
+
+    // Handle recall barcode input
+    const handleRecallBarcodeChange = (value: string) => {
+        setRecallBarcode(value);
+        setRecallBarcodeError('');
+        if (value.length > 0) {
+            handleRecallNumberChange(value);
+        }
+    };
+
+    // Handle recall barcode scan
+    const handleRecallScan = (detectedCodes: any[]) => {
+        if (detectedCodes && detectedCodes.length > 0) {
+            const scannedText = detectedCodes[0].rawValue;
+            setRecallBarcode(scannedText);
+            handleRecallNumberChange(scannedText);
+        }
+    };
+
+    // SmartSelect load options for recall number
+    const loadRecallOptions = async (inputValue: string) => {
+        if (!inputValue || inputValue.length < 1) return [];
+        try {
+            const response = await axios.get(route('api.equipment.search-by-recall'), {
+                params: { recall_number: inputValue },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (response.data.success && response.data.equipment) {
+                // Use recall_number from backend
+                return [{ label: response.data.equipment.recall_number, value: response.data.equipment.recall_number }];
+            }
+            return [{ label: inputValue, value: inputValue }];
+        } catch {
+            return [{ label: inputValue, value: inputValue }];
+        }
+    };
+
 
     // Handle barcode input change
     const handleBarcodeChange = (value: string) => {
@@ -438,7 +529,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
     }, [receivedBy, onReceivedByChange, currentUser]);
 
     // DONT REMOVE
-    // console.log(scannedEmployee)
+    // console.log(recallNumber)
 
     return (
         <div className="space-y-6">
@@ -447,21 +538,80 @@ const DetailTab: React.FC<DetailTabProps> = ({
                     <CardTitle>Details</CardTitle>
                 </CardHeader>
                 <CardContent>
+                    {/* Recall Number Section for All Requests */}
+                    <div className="mb-6 p-4 border rounded-lg bg-muted/20">
+                        <label className="w-full block font-semibold mb-2">Recall Number</label>
+                        <div className="w-full flex gap-2 items-center ">
+                            <div className='w-full'>
+                                <InertiaSmartSelect
+                                    name="recallNumber"
+                                    value={recallNumber}
+                                    onChange={handleRecallNumberChange}
+                                    loadOptions={loadRecallOptions}
+                                    placeholder="Search or enter recall number"
+                                    isDisabled={recallLoading}
+                                    error={requestType && requestType == 'routine' ? errors.recallNumber : undefined}
+                                    minSearchLength={1}
+                                />
+                            </div>
+                            {/* Barcode scanner button for recall number */}
+                            <div>
+                                <Dialog open={showRecallScanner} onOpenChange={setShowRecallScanner}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline" className="w-full">
+                                            <Scan className="h-4 w-4 mr-2" />
+                                            Scan Recall Barcode
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-md">
+                                        <DialogHeader>
+                                            <DialogTitle>Scan Recall Number Barcode</DialogTitle>
+                                            <DialogDescription>
+                                                Position the barcode within the camera frame to scan
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="flex items-center justify-center p-4">
+                                            <div className="w-full max-w-sm">
+                                                <Scanner
+                                                    onScan={handleRecallScan}
+                                                    onError={handleScanError}
+                                                    formats={['code_128', 'code_39']}
+                                                    constraints={{
+                                                        video: {
+                                                            facingMode: 'environment'
+                                                        }
+                                                    }}
+                                                    allowMultiple={false}
+                                                    scanDelay={500}
+                                                    components={{
+                                                        finder: true,
+                                                        torch: true,
+                                                        zoom: false
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
+                        </div>
+                        {requestType && requestType == 'routine' && recallBarcodeError && <div className="text-red-500 text-xs mt-1">{recallBarcodeError}</div>}
+                    </div>
                     {/* Employee Barcode Section */}
                     <div className="mb-6 p-4 border rounded-lg bg-muted/20">
                         <h3 className="font-medium text-sm mb-4 flex items-center">
                             <UserIcon className="h-4 w-4 mr-2" />
                             Employee Information
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                            <div className="md:col-span-2">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                            <div className="md:col-span-3">
                                 <Label htmlFor="employeeBarcode" className={errors.employeeBarcode ? 'text-destructive' : ''}>
                                     Employee Barcode (Employee ID) *
                                 </Label>
                                 <Input
                                     id="employeeBarcode"
                                     value={employeeBarcode}
-                                    onChange={(e) => handleBarcodeChange(e.target.value)}
+                                    onChange={e => setEmployeeBarcode(e.target.value)}
                                     placeholder="Scan or enter employee ID"
                                     className={errors.employeeBarcode ? 'border-destructive' : ''}
                                     disabled={loadingEmployee}
@@ -469,6 +619,9 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 {errors.employeeBarcode && <p className="text-sm text-destructive mt-1">{errors.employeeBarcode}</p>}
                                 {barcodeError && <span className="text-sm text-red-600 mt-1 block">{barcodeError}</span>}
                             </div>
+                            <Button onClick={() => fetchEmployeeByBarcode(employeeBarcode)} disabled={loadingEmployee || !employeeBarcode}>
+                                Search
+                            </Button>
                             <div>
                                 <Dialog open={showScanner} onOpenChange={setShowScanner}>
                                     <DialogTrigger asChild>
@@ -565,10 +718,10 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 placeholder="Select department"
                                 label={scannedEmployee?.department?.department_name}
                                 error={errors.department}
+                                defaultOptions={departments.length > 0 ? departments : true}
                                 className={errors.department ? 'border-destructive' : ''}
                                 loading={loadingInitialData}
                                 cacheOptions={true}
-                                defaultOptions={departments.length > 0 ? departments : true}
                                 minSearchLength={0}
                             />
                             {scannedEmployee?.department && (
@@ -704,8 +857,8 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     </Label>
                                     <InertiaSmartSelect
                                         name="receivedBy"
-                                        value={data.receivedBy.employee_id}
-                                        label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : undefined}
+                                        value={data.receivedBy?.employee_id}
+                                        label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : (data.receivedBy ? data.receivedBy.first_name + ' ' + data.receivedBy.last_name : undefined)}
                                         onChange={(value) => handleChange('receivedBy', value as string)}
                                         loadOptions={loadUserOptions}
                                         placeholder="Select user"

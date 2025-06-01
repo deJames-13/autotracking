@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('track_incoming', function (Blueprint $table) {
             $table->id();
-            $table->string('recall_number')->unique();
+            $table->string('recall_number');
             $table->foreignId('technician_id')->constrained('users', 'employee_id')->onDelete('restrict');
             $table->text('description');
             $table->foreignId('equipment_id')->constrained('equipments', 'equipment_id')->onDelete('cascade');
@@ -32,8 +32,8 @@ return new class extends Migration
         });
         Schema::create('track_outgoing', function (Blueprint $table) {
             $table->id();
-            $table->string('recall_number');
-            $table->foreign('recall_number')->references('recall_number')->on('track_incoming')->onDelete('cascade');
+            $table->unsignedBigInteger('incoming_id');
+            $table->foreign('incoming_id')->references('id')->on('track_incoming')->onDelete('cascade');
             $table->date('cal_date');
             $table->date('cal_due_date');
             $table->enum('status', ['for_pickup', 'completed'])->default('for_pickup');
@@ -41,6 +41,10 @@ return new class extends Migration
             $table->foreignId('released_by_id')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
             $table->dateTime('date_out')->nullable();
             $table->integer('cycle_time')->nullable();
+            $table->integer('ct_reqd')->nullable();
+            $table->integer('commit_etc')->nullable();
+            $table->integer('actual_etc')->nullable();
+            $table->integer('overdue')->nullable();
             $table->timestamps();
         });
         // Calculations for Cycle time

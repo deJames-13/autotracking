@@ -1,5 +1,14 @@
-- [ ] Setup Routine Cal, 
-- [ ] Generate BarCode
+
+
+- [ ] Setup Routine Cal
+    - [ ] Recall number can not be unique to allow archiving of past records
+    - [ ] Recall number selection with search and auto fill data
+- [ ] Cycle time    
+    - [ ] Manual inputs for CT Reqd (days) standard 
+    - [ ] Manual inputs for Commit and Actual ETCs 
+    - [ ] auto calculate queuing days, start to finish
+    - [ ] aut calculate overdue
+- [x] Generate BarCode for equipment, employee id
 
 
 - [x] TO DO FIX Outgoing Confirmation -  From Pop Up to show.tsx

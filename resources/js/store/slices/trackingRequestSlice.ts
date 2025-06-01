@@ -84,7 +84,7 @@ const initialState: TrackingRequestState = {
     receivedBy: null
 }
 
-const trackingRequestSlice = createSlice({
+export const trackingRequestSlice = createSlice({
     name: 'trackingRequest',
     initialState,
     reducers: {
@@ -97,27 +97,11 @@ const trackingRequestSlice = createSlice({
             state.isFormDirty = true
         },
         updateEquipment: (state, action: PayloadAction<Partial<EquipmentState>>) => {
-            // More careful handling to prevent field overwrites
-            Object.keys(action.payload).forEach(key => {
-                const value = action.payload[key as keyof EquipmentState];
-
-                // Only update if the value is actually provided and meaningful
-                if (value !== undefined && value !== null && value !== '') {
-                    // Ensure plant, department, and location get proper numeric values
-                    if (key === 'plant' || key === 'department' || key === 'location') {
-                        const numericValue = typeof value === 'string' ? parseInt(value) : value;
-                        if (!isNaN(numericValue as number) && numericValue !== 0) {
-                            (state.equipment as any)[key] = numericValue;
-                        }
-                    } else {
-                        (state.equipment as any)[key] = value;
-                    }
-                } else if (value === '' && key !== 'plant' && key !== 'department' && key !== 'location') {
-                    // Allow empty strings for text fields but not for the critical ID fields
-                    (state.equipment as any)[key] = value;
-                }
-            })
-            state.isFormDirty = true
+            // Update equipment fields, including recallNumber, existing, equipment_id
+            state.equipment = {
+                ...state.equipment,
+                ...action.payload,
+            };
         },
         setEquipment: (state, action: PayloadAction<EquipmentState>) => {
             state.equipment = action.payload

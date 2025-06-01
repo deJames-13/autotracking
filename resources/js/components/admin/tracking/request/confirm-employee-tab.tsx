@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import axios from 'axios';
+import { useAppSelector } from '@/store/hooks';
 
 interface ConfirmEmployeeTabProps {
     data: {
@@ -19,49 +20,13 @@ interface ConfirmEmployeeTabProps {
 }
 
 const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange, errors = {} }) => {
-    // console.log(data)
+    const { requestType, equipment } = useAppSelector(state => state.trackingRequest);
     const [locationNames, setLocationNames] = useState({
         plant: '',
         department: '',
         location: ''
     });
     const [loading, setLoading] = useState(true);
-    const [recallNumber, setRecallNumber] = useState('');
-    const [recallLoading, setRecallLoading] = useState(false);
-
-    // Generate a unique recall number when component mounts
-    useEffect(() => {
-        const fetchUniqueRecallNumber = async () => {
-            setRecallLoading(true);
-            try {
-                const response = await axios.get(route('api.tracking.request.generate-recall'), {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    params: { edit: data?.edit }
-                });
-
-                if (response.data.success) {
-                    setRecallNumber(response.data.recall_number);
-                    onChange('equipment', { ...data.equipment, recallNumber })
-                } else {
-                    console.error('Failed to generate recall number:', response.data.message);
-                    // Fallback to local generation if backend fails
-                    const timestamp = Date.now().toString();
-                    const random = Math.floor(10000 + Math.random() * 90000);
-                    setRecallNumber(`RCL-${timestamp.slice(-8)}-${random}`);
-                }
-            } catch (error) {
-                console.error('Error fetching recall number:', error);
-                // Fallback to local generation
-                const timestamp = Date.now().toString();
-                const random = Math.floor(10000 + Math.random() * 90000);
-                setRecallNumber(`RCL-${timestamp.slice(-8)}-${random}`);
-            } finally {
-                setRecallLoading(false);
-            }
-        };
-
-        fetchUniqueRecallNumber();
-    }, []);
 
     // Fetch location names when component mounts or equipment data changes
     useEffect(() => {
@@ -149,7 +114,7 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                 <CardContent>
                     <div className="mb-6">
                         <h3 className="text-lg font-semibold mb-2">
-                            Request for Recall #{recallLoading ? 'Generating...' : recallNumber}
+                            Request for Recall #{equipment.recallNumber || 'Not specified'}
                         </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

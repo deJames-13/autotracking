@@ -25,7 +25,6 @@ class EquipmentRequest extends FormRequest
                 'required', 
                 'string', 
                 'max:255', 
-                Rule::unique('equipments', 'recall_number')->ignore($equipmentId, 'equipment_id')
             ],
             'serial_number' => [
                 'nullable', 
@@ -80,7 +79,6 @@ class EquipmentRequest extends FormRequest
         return [
             'employee_id.exists' => 'The selected employee does not exist.',
             'recall_number.required' => 'Recall number is required.',
-            'recall_number.unique' => 'This recall number is already in use.',
             'description.required' => 'Equipment description is required.',
             'plant_id.exists' => 'The selected plant does not exist.',
             'department_id.exists' => 'The selected department does not exist.',

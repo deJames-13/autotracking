@@ -26,6 +26,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from '@/store';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import Barcode from 'react-barcode';
 
 interface TrackingIncomingShowProps {
     trackIncoming: TrackIncoming;
@@ -204,6 +205,20 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            {/* Barcode for Recall Number */}
+                            {trackIncoming.recall_number && (
+                                <div className="flex flex-col items-center mb-4">
+                                    <Barcode
+                                        value={trackIncoming.recall_number}
+                                        width={2}
+                                        height={60}
+                                        displayValue={true}
+                                        fontSize={16}
+                                        margin={8}
+                                    />
+                                    <span className="text-xs text-muted-foreground mt-1">Recall Number Barcode</span>
+                                </div>
+                            )}
                             <div>
                                 <Label className="text-sm font-medium">Description</Label>
                                 <p className="text-sm text-muted-foreground">{trackIncoming.description}</p>

@@ -8,6 +8,7 @@ import { router } from '@inertiajs/react';
 import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { UserForm } from './user-form';
+import Barcode from 'react-barcode';
 
 interface UserTableProps {
     users: PaginationData<User>;
@@ -195,6 +196,20 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
                     </DialogHeader>
                     {viewingUser && (
                         <div className="space-y-6">
+                            {/* Employee ID Barcode */}
+                            {viewingUser.employee_id && (
+                                <div className="flex flex-col items-center mb-4">
+                                    <Barcode
+                                        value={String(viewingUser.employee_id)}
+                                        width={2}
+                                        height={60}
+                                        displayValue={true}
+                                        fontSize={16}
+                                        margin={8}
+                                    />
+                                    <span className="text-xs text-muted-foreground mt-1">Employee ID Barcode</span>
+                                </div>
+                            )}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium text-muted-foreground">Employee ID</label>

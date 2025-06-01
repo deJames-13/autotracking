@@ -14,7 +14,7 @@ class TrackOutgoingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'recall_number' => ['required', 'string', 'exists:track_incoming,recall_number'],
+            'incoming_id' => ['required', 'integer', 'exists:track_incoming,id'],
             'cal_date' => ['required', 'date'],
             'cal_due_date' => ['required', 'date', 'after_or_equal:cal_date'],
             'date_out' => ['required', 'date'],
