@@ -1,8 +1,8 @@
 
 
-- [ ] Setup Routine Cal
-    - [ ] Recall number can not be unique to allow archiving of past records
-    - [ ] Recall number selection with search and auto fill data
+- [x] Setup Routine Cal
+    - [x] Recall number can not be unique to allow archiving of past records
+    - [x] Recall number selection with search and auto fill data
 - [ ] Cycle time    
     - [ ] Manual inputs for CT Reqd (days) standard 
     - [ ] Manual inputs for Commit and Actual ETCs 
