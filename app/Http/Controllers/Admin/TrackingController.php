@@ -39,6 +39,7 @@ class TrackingController extends Controller
     {
         $editData = null;
         $editId = null;
+        $confirm = null;
 
         // Check if we're in edit mode
         if ($request->filled('edit')) {
@@ -46,6 +47,8 @@ class TrackingController extends Controller
             $trackIncoming = TrackIncoming::with([
                 'equipment', 
                 'equipment.location', 
+                'equipment.department', 
+                'equipment.plant', 
                 'technician', 
                 'location', 
                 'employeeIn', 
@@ -56,7 +59,7 @@ class TrackingController extends Controller
 
             if ($trackIncoming) {
                 // Only allow editing if status is pending_calibration
-                if ($trackIncoming->status === 'pending_calibration') {
+                if (($request->filled('edit') && $trackIncoming->status === 'for_confirmation') || $trackIncoming->status === 'pending_calibration') {
                     $editData = [
                         'id' => $trackIncoming->id,
                         'request_type' => $trackIncoming->request_type,
@@ -71,7 +74,6 @@ class TrackingController extends Controller
                         'status' => $trackIncoming->status
                     ];
                 } else {
-                    // Redirect back with error if trying to edit non-pending record
                     return redirect()->route('admin.tracking.incoming.show', $trackIncoming)
                         ->with('error', 'Only pending calibration requests can be edited.');
                 }
@@ -80,7 +82,8 @@ class TrackingController extends Controller
 
         return Inertia::render('admin/tracking/request/index', [
             'edit' => $editId,
-            'editData' => $editData
+            'editData' => $editData,
+            'confirm' => $confirm
         ]);
     }
 
@@ -130,7 +133,15 @@ class TrackingController extends Controller
      */
     public function trackIncomingShow(TrackIncoming $trackIncoming)
     {
-        $trackIncoming->load(['equipment', 'technician', 'location', 'employeeIn', 'employeeIn.department', 'trackOutgoing.employeeOut']);
+        $trackIncoming->load([
+            'equipment', 
+            'technician', 
+            'receivedBy', 
+            'location', 
+            'employeeIn', 
+            'employeeIn.department', 
+            'trackOutgoing.employeeOut'
+        ]);
         
         return Inertia::render('admin/tracking/incoming/show', [
             'trackIncoming' => $trackIncoming
@@ -145,7 +156,7 @@ class TrackingController extends Controller
      */
     public function trackOutgoingIndex(Request $request)
     {
-        $query = TrackOutgoing::with(['equipment', 'technician', 'employeeOut', 'trackIncoming']);
+        $query = TrackOutgoing::with(['equipment', 'technician', 'employeeOut', 'releasedBy', 'trackIncoming']);
 
         // Apply filters
         if ($request->filled('search')) {
@@ -187,7 +198,9 @@ class TrackingController extends Controller
             'technician', 
             'location', 
             'employeeOut', 
+            'releasedBy',
             'trackIncoming.employeeIn',
+            'trackIncoming.receivedBy',
         ]);
         
         return Inertia::render('admin/tracking/outgoing/show', [
@@ -208,6 +221,7 @@ class TrackingController extends Controller
             'technician', 
             'location', 
             'employeeOut', 
+            'releasedBy',
             'trackIncoming.employeeIn',
         ]);
         
@@ -224,7 +238,7 @@ class TrackingController extends Controller
      */
     public function viewCertificate(TrackOutgoing $trackOutgoing)
     {
-        $trackOutgoing->load(['equipment', 'technician', 'location', 'employeeOut', 'trackIncoming.employeeIn']);
+        $trackOutgoing->load(['equipment', 'technician', 'location', 'employeeOut', 'releasedBy', 'trackIncoming.employeeIn']);
         
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdfs.calibration-certificate', [
             'trackOutgoing' => $trackOutgoing

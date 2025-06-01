@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { EmployeeStatusBadge } from '@/components/ui/status-badge';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackOutgoing, type PaginationData } from '@/types';
@@ -68,14 +69,7 @@ const EmployeeTrackingOutgoingIndex: React.FC<EmployeeTrackingOutgoingIndexProps
     }
 
     const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'for_pickup':
-                return <Badge variant="secondary">Ready for Pickup</Badge>;
-            case 'completed':
-                return <Badge variant="default">Picked Up</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
-        }
+        return <EmployeeStatusBadge status={status as 'for_pickup' | 'completed'} type="outgoing" />;
     };
 
     const isRecalibrationDue = (calDueDate: string) => {
@@ -85,6 +79,7 @@ const EmployeeTrackingOutgoingIndex: React.FC<EmployeeTrackingOutgoingIndexProps
 
     // Make sure requests.data exists before accessing it
     const requestsData = requests?.data || [];
+    // console.log(requestsData)
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -157,7 +152,8 @@ const EmployeeTrackingOutgoingIndex: React.FC<EmployeeTrackingOutgoingIndexProps
                                 </tr>
                             </thead>
                             <tbody className="bg-card divide-y divide-border">
-                                {requestsData.map(completion => (
+                                {requestsData.map(completion => {
+                                    return (
                                     <tr key={completion.id} className="hover:bg-muted/50" onDoubleClick={() => router.visit(route('employee.tracking.outgoing.show', completion.id))}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex items-center gap-2">
@@ -216,7 +212,8 @@ const EmployeeTrackingOutgoingIndex: React.FC<EmployeeTrackingOutgoingIndexProps
                                             </Button>
                                         </td>
                                     </tr>
-                                ))}
+                                    )
+                                })}
                             </tbody>
                         </table>
 

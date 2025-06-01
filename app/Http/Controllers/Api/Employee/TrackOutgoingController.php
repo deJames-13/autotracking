@@ -17,13 +17,16 @@ use Carbon\Carbon;
 class TrackOutgoingController extends Controller
 {
     /**
-     * Get outgoing tracking records for the authenticated employee.
+     * Get outgoing tracking records for the authenticated employee's department.
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'equipment', 'technician'])
-            ->whereHas('trackIncoming', function ($q) {
-                $q->where('employee_id_in', Auth::user()->employee_id);
+        $currentUser = Auth::user();
+        $currentUser->load('department');
+        
+        $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician'])
+            ->whereHas('trackIncoming.employeeIn', function ($q) use ($currentUser) {
+                $q->where('department_id', $currentUser->department_id);
             });
 
         if ($request->has('search')) {
@@ -56,14 +59,17 @@ class TrackOutgoingController extends Controller
     }
 
     /**
-     * Show a specific outgoing record for the employee.
+     * Show a specific outgoing record for employees in the same department.
      */
     public function show(TrackOutgoing $trackOutgoing): TrackOutgoingResource
     {
-        $trackOutgoing->load(['trackIncoming', 'employeeOut', 'equipment', 'technician']);
+        $trackOutgoing->load(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']);
         
-        // Ensure employee can only view their own records
-        if ($trackOutgoing->trackIncoming->employee_id_in !== Auth::user()->employee_id) {
+        $currentUser = Auth::user();
+        $currentUser->load('department');
+        
+        // Ensure employee can only view records from their department
+        if ($trackOutgoing->trackIncoming->employeeIn->department_id !== $currentUser->department_id) {
             abort(403, 'Unauthorized access to this record.');
         }
 
@@ -71,14 +77,17 @@ class TrackOutgoingController extends Controller
     }
 
     /**
-     * Get records ready for pickup by the employee.
+     * Get records ready for pickup by employees in the same department.
      */
     public function readyForPickup(Request $request): AnonymousResourceCollection
     {
-        $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'equipment', 'technician'])
+        $currentUser = Auth::user();
+        $currentUser->load('department');
+        
+        $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician'])
             ->where('status', 'for_pickup')
-            ->whereHas('trackIncoming', function ($q) {
-                $q->where('employee_id_in', Auth::user()->employee_id);
+            ->whereHas('trackIncoming.employeeIn', function ($q) use ($currentUser) {
+                $q->where('department_id', $currentUser->department_id);
             });
 
         $records = $query->orderBy('date_out', 'desc')->paginate($request->get('per_page', 15));
@@ -87,14 +96,17 @@ class TrackOutgoingController extends Controller
     }
 
     /**
-     * Get completed records for the employee.
+     * Get completed records for employees in the same department.
      */
     public function completed(Request $request): AnonymousResourceCollection
     {
-        $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'equipment', 'technician'])
+        $currentUser = Auth::user();
+        $currentUser->load('department');
+        
+        $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician'])
             ->where('status', 'completed')
-            ->whereHas('trackIncoming', function ($q) {
-                $q->where('employee_id_in', Auth::user()->employee_id);
+            ->whereHas('trackIncoming.employeeIn', function ($q) use ($currentUser) {
+                $q->where('department_id', $currentUser->department_id);
             });
 
         $records = $query->orderBy('date_out', 'desc')->paginate($request->get('per_page', 15));
@@ -103,17 +115,19 @@ class TrackOutgoingController extends Controller
     }
 
     /**
-     * Get records due for recalibration.
+     * Get records due for recalibration for employees in the same department.
      */
     public function dueForRecalibration(Request $request): AnonymousResourceCollection
     {
         $today = Carbon::today();
+        $currentUser = Auth::user();
+        $currentUser->load('department');
         
-        $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'equipment', 'technician'])
+        $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician'])
             ->where('status', 'completed')
             ->where('cal_due_date', '<=', $today)
-            ->whereHas('trackIncoming', function ($q) {
-                $q->where('employee_id_in', Auth::user()->employee_id);
+            ->whereHas('trackIncoming.employeeIn', function ($q) use ($currentUser) {
+                $q->where('department_id', $currentUser->department_id);
             });
 
         $records = $query->orderBy('cal_due_date', 'asc')->paginate($request->get('per_page', 15));
@@ -139,11 +153,31 @@ class TrackOutgoingController extends Controller
             ]);
         }
 
-        // Ensure the employee is picking up their own equipment
-        if ($trackOutgoing->trackIncoming->employee_id_in !== $employee->employee_id) {
-            throw ValidationException::withMessages([
-                'employee_id' => 'You can only pick up your own equipment.'
-            ]);
+        // Validate department match - employees from same department can pick up equipment
+        if ($trackOutgoing->trackIncoming && $trackOutgoing->trackIncoming->employeeIn) {
+            $employeeIn = $trackOutgoing->trackIncoming->employeeIn;
+            
+            // Load department relationships if not already loaded
+            $employee->load('department');
+            $employeeIn->load('department');
+            
+            $employeeOutDeptId = $employee->department_id ?? $employee->department?->id;
+            $employeeInDeptId = $employeeIn->department_id ?? $employeeIn->department?->id;
+            
+            if (!$employeeOutDeptId || !$employeeInDeptId) {
+                throw ValidationException::withMessages([
+                    'employee_id' => 'Department information is missing. Please ensure both employees have department assignments.'
+                ]);
+            }
+            
+            if ($employeeOutDeptId !== $employeeInDeptId) {
+                $employeeOutDeptName = $employee->department?->department_name ?? 'Unknown Department';
+                $employeeInDeptName = $employeeIn->department?->department_name ?? 'Unknown Department';
+                
+                throw ValidationException::withMessages([
+                    'employee_id' => "Department mismatch: You are from {$employeeOutDeptName} department but equipment was received by {$employeeInDeptName} department. Only employees from the same department can pick up equipment."
+                ]);
+            }
         }
 
         // Ensure status is for_pickup
@@ -154,11 +188,15 @@ class TrackOutgoingController extends Controller
         }
 
         // Update status to completed
-        $trackOutgoing->update(['status' => 'completed']);
+        // Note: released_by_id should remain as the admin/operator who released it, not the pickup employee
+        $trackOutgoing->update([
+            'status' => 'completed',
+            'employee_id_out' => $employee->employee_id
+        ]);
 
         return response()->json([
             'message' => 'Equipment pickup confirmed successfully.',
-            'data' => new TrackOutgoingResource($trackOutgoing->fresh(['trackIncoming', 'employeeOut', 'equipment', 'technician']))
+            'data' => new TrackOutgoingResource($trackOutgoing->fresh(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']))
         ]);
     }
 }

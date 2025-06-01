@@ -72,7 +72,7 @@ class TrackIncomingController extends Controller
     {
         try {
             $data = $request->validated()['data'];
-            $editId = $request->input('edit_id'); // Check for edit mode
+            $editId = $request->input('edit_id'); 
             
             // If we're in edit mode, update existing record
             if ($editId) {
@@ -85,11 +85,14 @@ class TrackIncomingController extends Controller
                     ], 404);
                 }
 
-                // Only allow editing if status is pending_calibration
-                if ($trackIncoming->status !== 'pending_calibration') {
+                // Check if this is a confirm mode edit (for for_confirmation status)
+                $isConfirmMode = $request->input('confirm_mode', false);
+                
+                // Allow editing if status is pending_calibration OR if in confirm mode with for_confirmation status
+                if ($trackIncoming->status !== 'pending_calibration' && !($isConfirmMode && $trackIncoming->status === 'for_confirmation')) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Only pending calibration requests can be edited.'
+                        'message' => 'Only pending calibration requests or confirmation mode requests can be edited.'
                     ], 400);
                 }
 
@@ -118,13 +121,14 @@ class TrackIncomingController extends Controller
                     'model' => $data['equipment']['model'],
                     'manufacturer' => $data['equipment']['manufacturer'],
                     'due_date' => $data['equipment']['dueDate'],
-                    'employee_id_in' => $data['receivedBy']['employee_id'],
-                    'notes' => 'Updated via tracking request system',
+                    'employee_id_in' => $data['scannedEmployee']['employee_id'],
+                    'status' => $isConfirmMode && $trackIncoming->status === 'for_confirmation' ? 'pending_calibration' : $trackIncoming->status,
+                    'notes' => $isConfirmMode ? 'Updated and confirmed via tracking request system' : 'Updated via tracking request system',
                 ]);
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Tracking request updated successfully.',
+                    'message' => $isConfirmMode ? 'Employee request confirmed and updated successfully.' : 'Tracking request updated successfully.',
                     'data' => [
                         'track_incoming' => $trackIncoming,
                         'equipment' => $equipment,
@@ -207,8 +211,26 @@ class TrackIncomingController extends Controller
      * 
      * @return \Illuminate\Http\JsonResponse
      */
-    public function generateUniqueRecall(): JsonResponse
+    public function generateUniqueRecall(Request $request): JsonResponse
     {
+        $isRoutine = $request->input('routine'); 
+        $editId = $request->input('edit'); 
+        if ($editId) {
+            $trackIncoming = TrackIncoming::find($editId);
+            if ($trackIncoming) {
+                return response()->json([
+                    'success' => true,
+                    'edit' => true,
+                    'recall_number' => $trackIncoming->recall_number
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Tracking request not found.'
+            ], 404);
+        }
+
         try {
             $recallNumber = TrackIncoming::generateUniqueRecallNumber();
             

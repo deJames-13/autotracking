@@ -438,7 +438,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
     }, [receivedBy, onReceivedByChange, currentUser]);
 
     // DONT REMOVE
-    console.log(scannedEmployee)
+    // console.log(scannedEmployee)
 
     return (
         <div className="space-y-6">

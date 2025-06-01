@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { Label } from '@/components/ui/label';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
@@ -31,6 +32,7 @@ interface TrackingIncomingShowProps {
 }
 
 const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trackIncoming }) => {
+    console.log(trackIncoming)
     const { canManageRequestIncoming } = useRole();
     const [showCalibrationModal, setShowCalibrationModal] = useState(false);
     const dispatch = useAppDispatch();
@@ -55,26 +57,17 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
     }
 
     const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'for_confirmation':
-                return <Badge variant="warning">Awaiting Confirmation</Badge>;
-            case 'pending_calibration':
-                return <Badge variant="secondary">Pending Calibration</Badge>;
-            case 'completed':
-                return <Badge variant="default">Completed</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
-        }
+        return <StatusBadge status={status as any} />;
     };
 
     const isOverdue = new Date(trackIncoming.due_date) < new Date();
 
-    const handleEditRequest = () => {
+    const handleEditRequest = (confirm: boolean | null) => {
         // Reset the form first
         dispatch(resetForm());
 
         // Populate form data from existing record (excluding PIN)
-        dispatch(setRequestType('routine')); // Assume editing is always routine
+        dispatch(setRequestType('new')); // Assume editing is always routine
 
         // Set technician data
         if (trackIncoming.technician) {
@@ -136,20 +129,11 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
         dispatch(markFormClean());
 
         // Navigate to edit mode in request creation flow
-        router.visit(route('admin.tracking.request.index', { edit: trackIncoming.id }));
+        router.visit(route('admin.tracking.request.index', { edit: trackIncoming.id, confirm }));
     };
 
-    // Function to confirm employee request
-    const handleConfirmRequest = async () => {
-        try {
-            handleEditRequest()
-        } catch (error: any) {
-            console.error('Error confirming request:', error);
-            toast.error(error.response?.data?.message || 'An error occurred while confirming the request');
-        }
-    };
-
-    console.log(trackIncoming)
+    // DONT REMOVE
+    // console.log(trackIncoming)
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -178,7 +162,7 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
                         )}
                         {(trackIncoming.status === 'for_confirmation') && (
                             <Button
-                                onClick={handleConfirmRequest}
+                                onClick={() => handleEditRequest(true)}
                                 size="sm"
                                 className="ml-2"
                             >
@@ -188,7 +172,7 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
                         )}
                         {(trackIncoming.status === 'pending_calibration') && (
                             <Button
-                                onClick={handleEditRequest}
+                                onClick={() => handleEditRequest(false)}
                                 variant="outline"
                                 size="sm"
                                 className="ml-2"
@@ -315,14 +299,39 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
                                 </div>
                             )}
 
-                            {trackIncoming.employee_in && (
+                            {trackIncoming?.employee_in && (
                                 <div>
-                                    <Label className="text-sm font-medium">Received By</Label>
+                                    <Label className="text-sm font-medium">Employee Incoming</Label>
                                     <p className="text-sm text-muted-foreground">
                                         {trackIncoming.employee_in.first_name} {trackIncoming.employee_in.last_name}
                                     </p>
+                                    {trackIncoming.employee_in.email && (
+                                        <p className="text-xs text-muted-foreground">{trackIncoming.employee_in.email}</p>
+                                    )}
+                                    {trackIncoming.employee_in.department && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Department: {trackIncoming.employee_in.department.department_name}
+                                        </p>
+                                    )}
                                 </div>
                             )}
+                            {trackIncoming?.received_by && (
+                                <div>
+                                    <Label className="text-sm font-medium">Originally Received By</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        {trackIncoming.received_by.first_name} {trackIncoming.received_by.last_name}
+                                    </p>
+                                    {trackIncoming.received_by.email && (
+                                        <p className="text-xs text-muted-foreground">{trackIncoming.received_by.email}</p>
+                                    )}
+                                    {trackIncoming.received_by.department && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Department: {trackIncoming.received_by.department.department_name}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
                         </CardContent>
                     </Card>
 
@@ -364,52 +373,52 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 md:grid-cols-3">
-                                {trackIncoming.trackOutgoing.cal_date && (
+                                {trackIncoming.cal_date && (
                                     <div>
                                         <Label className="text-sm font-medium">Calibration Date</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            {format(new Date(trackIncoming.trackOutgoing.cal_date), 'MMMM dd, yyyy')}
+                                            {format(new Date(trackIncoming.cal_date), 'MMMM dd, yyyy')}
                                         </p>
                                     </div>
                                 )}
 
-                                {trackIncoming.trackOutgoing.cal_due_date && (
+                                {trackIncoming.cal_due_date && (
                                     <div>
                                         <Label className="text-sm font-medium">Next Due Date</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            {format(new Date(trackIncoming.trackOutgoing.cal_due_date), 'MMMM dd, yyyy')}
+                                            {format(new Date(trackIncoming.cal_due_date), 'MMMM dd, yyyy')}
                                         </p>
                                     </div>
                                 )}
 
-                                {trackIncoming.trackOutgoing.date_out && (
+                                {trackIncoming.date_out && (
                                     <div>
                                         <Label className="text-sm font-medium">Date Out</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            {format(new Date(trackIncoming.trackOutgoing.date_out), 'MMMM dd, yyyy')}
+                                            {format(new Date(trackIncoming.date_out), 'MMMM dd, yyyy')}
                                         </p>
                                     </div>
                                 )}
                             </div>
 
-                            {trackIncoming.trackOutgoing.certificate_number && (
+                            {trackIncoming.certificate_number && (
                                 <div>
                                     <Label className="text-sm font-medium">Certificate Number</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        {trackIncoming.trackOutgoing.certificate_number}
+                                        {trackIncoming.certificate_number}
                                     </p>
                                 </div>
                             )}
 
                             <div className="flex gap-2 pt-4">
                                 <Button variant="outline" asChild>
-                                    <Link href={route('admin.tracking.outgoing.show', trackIncoming.trackOutgoing.id)}>
+                                    <Link href={route('admin.tracking.outgoing.show', trackIncoming.id)}>
                                         View Completion Details
                                     </Link>
                                 </Button>
-                                {trackIncoming.trackOutgoing.certificate_number && (
+                                {trackIncoming.certificate_number && (
                                     <Button variant="outline" asChild>
-                                        <Link href={route('admin.tracking.outgoing.certificate', trackIncoming.trackOutgoing.id)}>
+                                        <Link href={route('admin.tracking.outgoing.certificate', trackIncoming.id)}>
                                             <FileText className="h-3 w-3 mr-1" />
                                             View Certificate
                                         </Link>

@@ -92,6 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('track-outgoing/search', [ApiTrackingController::class, 'searchTrackOutgoing'])->name('track-outgoing.search');
         Route::get('track-incoming/search', [ApiTrackingController::class, 'searchTrackIncoming'])->name('track-incoming.search');
         Route::post('track-outgoing', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'store'])->name('track-outgoing.store');
+        Route::post('track-outgoing/confirm-pickup/{trackOutgoing}', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'confirmPickup'])->name('track-outgoing.confirm-pickup');
 
         // Report Table API Routes
         Route::prefix('reports')->name('reports.')->group(function () {
@@ -151,8 +152,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('tracking', [AdminTrackingController::class, 'index'])->name('tracking.index');
         Route::get('tracking/request', [AdminTrackingController::class, 'requestIndex'])->name('tracking.request.index');
         Route::get('tracking/request/{id}', [AdminTrackingController::class, 'requestShow'])->name('tracking.request.show');
+
         Route::get('tracking/incoming', [AdminTrackingController::class, 'trackIncomingIndex'])->name('tracking.incoming.index');
         Route::get('tracking/incoming/{trackIncoming}', [AdminTrackingController::class, 'trackIncomingShow'])->name('tracking.incoming.show');
+
         Route::get('tracking/outgoing', [AdminTrackingController::class, 'trackOutgoingIndex'])->name('tracking.outgoing.index');
         Route::get('tracking/outgoing/{trackOutgoing}', [AdminTrackingController::class, 'trackOutgoingShow'])->name('tracking.outgoing.show');
         Route::get('tracking/outgoing/{trackOutgoing}/edit', [AdminTrackingController::class, 'trackOutgoingEdit'])->name('tracking.outgoing.edit');

@@ -145,13 +145,14 @@ export interface TrackIncoming {
     equipment_id: number;
     technician_id: number;
     location_id: number;
-    received_by: number;
+    received_by_id?: number | null;
+    employee_id_in: number;
     serial_number?: string | null;
     model?: string | null;
     manufacturer?: string | null;
     date_in: string;
     due_date: string;
-    status: 'pending_calibration' | 'completed';
+    status: 'for_confirmation' | 'pending_calibration' | 'completed';
     notes?: string | null;
     created_at: string;
     updated_at: string;
@@ -159,7 +160,9 @@ export interface TrackIncoming {
     technician?: User;
     location?: Location;
     employee_in?: User;
+    received_by?: User;
     track_outgoing?: TrackOutgoing;
+}
 }
 
 // New Track Outgoing interface (calibration completions)
@@ -169,15 +172,17 @@ export interface TrackOutgoing {
     cal_date: string;
     cal_due_date: string;
     date_out: string;
-    employee_out: number;
+    employee_id_out?: number | null;
+    released_by_id?: number | null;
     certificate_number?: string | null;
     cycle_time?: number | null;
-    status: 'completed';
+    status: 'for_pickup' | 'completed';
     notes?: string | null;
     created_at: string;
     updated_at: string;
     track_incoming?: TrackIncoming;
-    employee_out_user?: User;
+    employee_out?: User; // Employee who picks up the package
+    released_by?: User; // Operator who releases the package
     equipment?: Equipment; // Available through hasOneThrough relationship
     technician?: User; // Available through hasOneThrough relationship
 }

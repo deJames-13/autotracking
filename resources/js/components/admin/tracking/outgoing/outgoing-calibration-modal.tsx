@@ -5,14 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Scan } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { format, addYears } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useForm, router } from '@inertiajs/react';
 import { toast } from 'react-hot-toast';
 import { TrackIncoming } from '@/types';
 import axios from 'axios';
-import { Scanner } from '@yudiel/react-qr-scanner';
 
 interface OutgoingCalibrationModalProps {
     incomingRecord: TrackIncoming | null;
@@ -37,7 +36,6 @@ export function OutgoingCalibrationModal({
     onOpenChange,
     onSuccess
 }: OutgoingCalibrationModalProps) {
-    const [showScanner, setShowScanner] = useState(false);
     const [employeeName, setEmployeeName] = useState('');
     const [employeeOut, setEmployeeOut] = useState<any>(null);
     const [loadingEmployee, setLoadingEmployee] = useState(false);
@@ -87,7 +85,10 @@ export function OutgoingCalibrationModal({
     const calculateCycleTime = (dateIn: string, dateOut: Date): number => {
         const inDate = new Date(dateIn);
         const timeDiff = dateOut.getTime() - inDate.getTime();
-        return Math.ceil(timeDiff / (1000 * 3600 * 24));
+        const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        // Ensure cycle time is never negative
+        return Math.max(0, days);
     };
 
     // Update cycle time when date_out changes
@@ -221,25 +222,6 @@ export function OutgoingCalibrationModal({
         }
     };
 
-    // Handle barcode scanning 
-    const handleScanBarcode = () => {
-        setShowScanner(true);
-    };
-
-    // Handle successful barcode scan
-    const handleScan = (detectedCodes: any[]) => {
-        if (detectedCodes && detectedCodes.length > 0) {
-            const scannedText = detectedCodes[0].rawValue;
-            setShowScanner(false);
-            handleEmployeeChange(scannedText);
-        }
-    };
-
-    // Handle scan error
-    const handleScanError = (error: any) => {
-        toast.error('Error scanning barcode');
-    };
-
     // Handle calendar date changes
     const handleCalDateChange = (date: Date | undefined) => {
         if (date) {
@@ -261,25 +243,24 @@ export function OutgoingCalibrationModal({
     };
 
     const handleDateOutChange = (date: Date | undefined) => {
-        if (date) {
+        if (date && incomingRecord) {
+            const dateInTime = new Date(incomingRecord.date_in);
+
+            // Validate that date out is not before date in
+            if (date < dateInTime) {
+                toast.error('Date Out cannot be earlier than Date In. Please select a valid date.');
+                return;
+            }
+
             setDateOut(date);
             setData('date_out', format(date, 'yyyy-MM-dd HH:mm:ss'));
         }
     };
 
-    // Submit form
+    // Submit form - Remove PIN requirement
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!data.employee_id_out) {
-            toast.error('Please enter the employee ID');
-            return;
-        }
-
-        if (!data.confirmation_pin) {
-            toast.error('Please enter your confirmation PIN');
-            return;
-        }
 
         if (!departmentValidation.isValid) {
             toast.error('Cannot complete calibration: Department validation failed');
@@ -289,20 +270,18 @@ export function OutgoingCalibrationModal({
         setSubmitting(true);
 
         try {
-            // Submit the form with current data using axios
+            // Submit the form with current data using axios - Remove confirmation_pin
             const response = await axios.post(route('api.track-outgoing.store'), {
                 recall_number: data.recall_number,
                 cal_date: data.cal_date,
                 cal_due_date: data.cal_due_date,
                 date_out: data.date_out,
-                employee_id_out: data.employee_id_out,
-                cycle_time: data.cycle_time,
-                confirmation_pin: data.confirmation_pin
+                cycle_time: data.cycle_time
             });
 
             // Check if the response indicates success
             if (response.data && response.status === 201) {
-                toast.success('Calibration completion recorded successfully');
+                toast.success('Calibration completion recorded successfully. Equipment is ready for pickup.');
 
                 // Reset form state
                 reset();
@@ -313,7 +292,6 @@ export function OutgoingCalibrationModal({
                 setCalDate(undefined);
                 setCalDueDate(undefined);
                 setDateOut(undefined);
-                setData('confirmation_pin', '');
                 onOpenChange(false);
                 onSuccess();
 
@@ -399,85 +377,125 @@ export function OutgoingCalibrationModal({
                         {/* Calibration Date */}
                         <div className="space-y-2">
                             <Label htmlFor="cal_date">Calibration Date *</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className={cn(
-                                            "w-full justify-start text-left font-normal",
-                                            !calDate && "text-muted-foreground"
-                                        )}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {calDate ? format(calDate, 'PPP') : <span>Pick a date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={calDate}
-                                        onSelect={handleCalDateChange}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="cal_date"
+                                    type="date"
+                                    value={calDate ? format(calDate, 'yyyy-MM-dd') : ''}
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            const newDate = new Date(e.target.value);
+                                            handleCalDateChange(newDate);
+                                        }
+                                    }}
+                                    className="flex-1"
+                                />
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="shrink-0"
+                                        >
+                                            <CalendarIcon className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={calDate}
+                                            onSelect={handleCalDateChange}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                             {errors.cal_date && <p className="text-sm text-destructive">{errors.cal_date}</p>}
                         </div>
 
                         {/* Calibration Due Date */}
                         <div className="space-y-2">
                             <Label htmlFor="cal_due_date">Calibration Due Date *</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className={cn(
-                                            "w-full justify-start text-left font-normal",
-                                            !calDueDate && "text-muted-foreground"
-                                        )}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {calDueDate ? format(calDueDate, 'PPP') : <span>Pick a date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={calDueDate}
-                                        onSelect={handleCalDueDateChange}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="cal_due_date"
+                                    type="date"
+                                    value={calDueDate ? format(calDueDate, 'yyyy-MM-dd') : ''}
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            const newDate = new Date(e.target.value);
+                                            handleCalDueDateChange(newDate);
+                                        }
+                                    }}
+                                    className="flex-1"
+                                />
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="shrink-0"
+                                        >
+                                            <CalendarIcon className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={calDueDate}
+                                            onSelect={handleCalDueDateChange}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                             {errors.cal_due_date && <p className="text-sm text-destructive">{errors.cal_due_date}</p>}
                         </div>
 
                         {/* Date Out */}
                         <div className="space-y-2">
                             <Label htmlFor="date_out">Date Out *</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className={cn(
-                                            "w-full justify-start text-left font-normal",
-                                            !dateOut && "text-muted-foreground"
-                                        )}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {dateOut ? format(dateOut, 'PPP') : <span>Pick a date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={dateOut}
-                                        onSelect={handleDateOutChange}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="date_out"
+                                    type="date"
+                                    value={dateOut ? format(dateOut, 'yyyy-MM-dd') : ''}
+                                    min={incomingRecord ? format(new Date(incomingRecord.date_in), 'yyyy-MM-dd') : undefined}
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            const newDate = new Date(e.target.value);
+                                            handleDateOutChange(newDate);
+                                        }
+                                    }}
+                                    className="flex-1"
+                                />
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="shrink-0"
+                                        >
+                                            <CalendarIcon className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={dateOut}
+                                            onSelect={handleDateOutChange}
+                                            disabled={(date) => incomingRecord ? date < new Date(incomingRecord.date_in) : false}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                             {errors.date_out && <p className="text-sm text-destructive">{errors.date_out}</p>}
+                            {incomingRecord && (
+                                <p className="text-xs text-muted-foreground">
+                                    Must be on or after {format(new Date(incomingRecord.date_in), 'MMM dd, yyyy')} (Date In)
+                                </p>
+                            )}
                         </div>
 
                         {/* Cycle Time (Read-only) */}
@@ -495,133 +513,12 @@ export function OutgoingCalibrationModal({
                         </div>
                     </div>
 
-                    {/* Employee ID Out */}
-                    <div className="space-y-2">
-                        <Label htmlFor="employee_id_out">Employee ID Out (Barcode) *</Label>
-                        <div className="flex gap-2">
-                            <div className="flex-1">
-                                <Input
-                                    id="employee_id_out"
-                                    value={data.employee_id_out}
-                                    onChange={(e) => handleEmployeeChange(e.target.value)}
-                                    placeholder="Scan or enter employee ID"
-                                    className={errors.employee_id_out ? 'border-destructive' : ''}
-                                    disabled={loadingEmployee}
-                                />
-                                {employeeName && !employeeError && (
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        {employeeName}
-                                    </p>
-                                )}
-                                {employeeError && (
-                                    <p className="text-sm text-red-600 mt-1">
-                                        {employeeError}
-                                    </p>
-                                )}
-                                {/* Department Validation Status */}
-                                {employeeOut && !departmentValidation.isValid && (
-                                    <div className="mt-2 p-3 border border-amber-200 bg-amber-50 rounded-md">
-                                        <div className="flex items-start">
-                                            <div className="flex-shrink-0">
-                                                <svg className="h-4 w-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                </svg>
-                                            </div>
-                                            <div className="ml-2">
-                                                <p className="text-sm text-amber-800 font-medium">Department Validation Warning</p>
-                                                <p className="text-sm text-amber-700 mt-1">{departmentValidation.message}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                {employeeOut && departmentValidation.isValid && departmentValidation.message === '' && (
-                                    <div className="mt-2 p-3 border border-green-200 bg-green-50 rounded-md">
-                                        <div className="flex items-center">
-                                            <div className="flex-shrink-0">
-                                                <svg className="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                </svg>
-                                            </div>
-                                            <p className="ml-2 text-sm text-green-800 font-medium">Department validation passed</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {errors.employee_id_out && (
-                                    <p className="text-sm text-destructive mt-1">{errors.employee_id_out}</p>
-                                )}
-                            </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={handleScanBarcode}
-                                disabled={showScanner}
-                            >
-                                <Scan className="h-4 w-4 mr-2" />
-                                {showScanner ? 'Scanning...' : 'Scan'}
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Employee PIN Confirmation */}
-                    <div className="space-y-2">
-                        <Label htmlFor="confirmation_pin">Employee PIN Confirmation *</Label>
-                        <Input
-                            id="confirmation_pin"
-                            type="password"
-                            placeholder="Enter your PIN to confirm completion"
-                            value={data.confirmation_pin}
-                            onChange={(e) => setData('confirmation_pin', e.target.value)}
-                            className={errors.confirmation_pin ? 'border-destructive' : ''}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Enter your PIN to confirm you are completing this calibration
-                        </p>
-                        {errors.confirmation_pin && (
-                            <p className="text-sm text-destructive">{errors.confirmation_pin}</p>
-                        )}
-                    </div>
-
-                    {/* Scanner Modal */}
-                    {showScanner && (
-                        <Dialog open={showScanner} onOpenChange={setShowScanner}>
-                            <DialogContent className="sm:max-w-md">
-                                <DialogHeader>
-                                    <DialogTitle>Scan Employee Barcode</DialogTitle>
-                                    <DialogDescription>
-                                        Position the Code 128 barcode within the camera frame to scan
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="flex items-center justify-center p-4">
-                                    <div className="w-full max-w-sm">
-                                        <Scanner
-                                            onScan={handleScan}
-                                            onError={handleScanError}
-                                            formats={['code_128', 'code_39']}
-                                            constraints={{
-                                                video: {
-                                                    facingMode: 'environment'
-                                                }
-                                            }}
-                                            allowMultiple={false}
-                                            scanDelay={500}
-                                            components={{
-                                                finder: true,
-                                                torch: true,
-                                                zoom: false
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-                    )}
-
                     {/* Form Actions */}
                     <div className="flex justify-end gap-3 pt-4 border-t">
                         <Button type="button" variant="outline" onClick={handleCancel}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={submitting || !data.employee_id_out || !data.confirmation_pin || !departmentValidation.isValid}>
+                        <Button type="submit" disabled={submitting}>
                             {submitting ? 'Recording...' : 'Complete Calibration'}
                         </Button>
                     </div>

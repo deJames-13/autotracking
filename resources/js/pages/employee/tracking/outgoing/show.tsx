@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { EmployeeStatusBadge } from '@/components/ui/status-badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useRole } from '@/hooks/use-role';
@@ -48,14 +49,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
     }
 
     const getStatusBadge = () => {
-        switch (trackOutgoing.status) {
-            case 'for_pickup':
-                return <Badge variant="secondary">Ready for Pickup</Badge>;
-            case 'completed':
-                return <Badge variant="default">Picked Up</Badge>;
-            default:
-                return <Badge variant="outline">{trackOutgoing.status}</Badge>;
-        }
+        return <EmployeeStatusBadge status={trackOutgoing.status as 'for_pickup' | 'completed'} type="outgoing" />;
     };
 
     const isRecalibrationDue = () => {
@@ -236,12 +230,46 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                                 </div>
                             )}
 
-                            {trackOutgoing.employee_out_user && (
+                            {trackOutgoing.released_by && (
                                 <div>
-                                    <Label className="text-sm font-medium">Released By</Label>
+                                    <Label className="text-sm font-medium">Released By (Operator)</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        {trackOutgoing.employee_out_user.first_name} {trackOutgoing.employee_out_user.last_name}
+                                        {trackOutgoing.released_by.first_name} {trackOutgoing.released_by.last_name}
                                     </p>
+                                    {trackOutgoing.released_by.email && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {trackOutgoing.released_by.email}
+                                        </p>
+                                    )}
+                                    {trackOutgoing.released_by.employee_id && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Employee ID: {trackOutgoing.released_by.employee_id}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {trackOutgoing.employee_out && (
+                                <div>
+                                    <Label className="text-sm font-medium">Employee Out (Package Recipient)</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        {trackOutgoing.employee_out.first_name} {trackOutgoing.employee_out.last_name}
+                                    </p>
+                                    {trackOutgoing.employee_out.email && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {trackOutgoing.employee_out.email}
+                                        </p>
+                                    )}
+                                    {trackOutgoing.employee_out.employee_id && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Employee ID: {trackOutgoing.employee_out.employee_id}
+                                        </p>
+                                    )}
+                                    {trackOutgoing.employee_out.department && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Department: {trackOutgoing.employee_out.department.department_name}
+                                        </p>
+                                    )}
                                 </div>
                             )}
 

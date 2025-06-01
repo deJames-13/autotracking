@@ -36,9 +36,11 @@ return new class extends Migration
             $table->foreign('recall_number')->references('recall_number')->on('track_incoming')->onDelete('cascade');
             $table->date('cal_date');
             $table->date('cal_due_date');
-            $table->dateTime('date_out');
-            $table->foreignId('employee_id_out')->constrained('users', 'employee_id')->onDelete('restrict');
-            $table->integer('cycle_time');
+            $table->enum('status', ['for_pickup', 'completed'])->default('for_pickup');
+            $table->foreignId('employee_id_out')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
+            $table->foreignId('released_by_id')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
+            $table->dateTime('date_out')->nullable();
+            $table->integer('cycle_time')->nullable();
             $table->timestamps();
         });
         // Calculations for Cycle time

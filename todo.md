@@ -1,3 +1,10 @@
+- [ ] Setup Routine Cal, 
+- [ ] Generate BarCode
+
+
+- [x] TO DO FIX Outgoing Confirmation -  From Pop Up to show.tsx
+- [x] TO DO FIX Confirmation Button not redirecting to intened route
+
 - Setup MVRCs - Model Controller Routes Views
     - [x] Roles 
         - [x] Technician
@@ -5,28 +12,28 @@
         - [x] Person In Charge
         - [x] Admin
     - [x] Equipments
-    - Tracking Record
-        - Incoming
-        - Outgoing
-        - Cycles
+    - [x] Tracking Record
+        - [x] Incoming
+        - [x] Outgoing
+        - [x] Cycles
 
 
 - Setup required Packages
-    - barryvdh/laravel-dompdf
-    - maatwebsite/excel
+    - [x] barryvdh/laravel-dompdf
+    - [x] maatwebsite/excel
 
 
 
 Admin / Person In Charge
-- Go to admin page
+- [x] Go to admin page
 - Auth Page
-    - Verified Email
-    - Password
+    - [x] Verified Email
+    - [x] Password
 
-- Reports
+- [x] Reports
 - Tracking
     - 
-- Managements
+- [x] Managements
 
 Employee Process
 - Go to website

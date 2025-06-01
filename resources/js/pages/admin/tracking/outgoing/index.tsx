@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge, OutgoingStatusBadge } from '@/components/ui/status-badge';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackOutgoing, type PaginationData } from '@/types';
@@ -68,15 +69,9 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
     }
 
     const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'completed':
-                return <Badge variant="default">Completed</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
-        }
+        return <OutgoingStatusBadge status={status as any} />;
     };
 
-    console.log(completions)
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -178,7 +173,7 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
                                             {format(new Date(completion.date_out), 'MMM dd, yyyy')}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {getStatusBadge(completion.track_incoming.status)}
+                                            {getStatusBadge(completion.status)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                                             <Button

@@ -40,7 +40,7 @@ interface TrackingRequestIndexProps {
     errors?: Record<string, string>;
     edit?: number; // ID of the record being edited
     editData?: any; // Data for the record being edited
-    confirm?: boolean; // Flag to indicate confirmation mode
+    confirm?: int; // Flag to indicate confirmation mode
 }
 
 const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
@@ -49,7 +49,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
     editData,
     confirm
 }) => {
-    const { canManageRequestIncoming } = useRole();
+    const { canManageRequestIncoming, user: currenUser } = useRole();
     const dispatch = useAppDispatch();
     const [isEditMode] = useState(!!edit);
     const [isConfirmMode] = useState(!!confirm);
@@ -92,8 +92,11 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
 
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
-    // Define the steps
-    const steps: Step[] = [
+    // Define the steps - exclude confirmation step in confirm mode
+    const steps: Step[] = isConfirmMode ? [
+        { id: 'technician', name: 'Technician', icon: <UserCircle2 className="h-5 w-5" /> },
+        { id: 'details', name: 'Equipment Details', icon: <Wrench className="h-5 w-5" /> },
+    ] : [
         { id: 'technician', name: 'Technician', icon: <UserCircle2 className="h-5 w-5" /> },
         { id: 'details', name: 'Equipment Details', icon: <Wrench className="h-5 w-5" /> },
         { id: 'confirmation', name: 'Confirmation', icon: <CheckCircle2 className="h-5 w-5" /> },
@@ -141,6 +144,8 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                         format(new Date(editData.equipment.next_calibration_due), 'yyyy-MM-dd') : '',
                     receivedBy: ''
                 }));
+            } else {
+
             }
 
             // Set received by data
@@ -151,6 +156,14 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                     last_name: editData.received_by.last_name,
                     full_name: `${editData.received_by.first_name} ${editData.received_by.last_name}`,
                     email: editData.received_by.email || '',
+                }));
+            } else {
+                dispatch(setReceivedBy({
+                    employee_id: currenUser.employee_id,
+                    first_name: currenUser.first_name,
+                    last_name: currenUser.last_name,
+                    full_name: `${currenUser.first_name} ${currenUser.last_name}`,
+                    email: currenUser.email || '',
                 }));
             }
 
@@ -190,9 +203,6 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
     const validateCurrentStep = (): boolean => {
         clearErrors();
         setValidationMessage(null);
-
-        // console.log('Validating step:', currentStep);
-        // console.log('Current equipment state:', equipment);
 
         if (currentStep === 'technician') {
             if (!requestType) {
@@ -261,7 +271,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                 return false;
             }
         }
-        else if (currentStep === 'confirmation') {
+        else if (currentStep === 'confirmation' && !isConfirmMode) {
             if (!confirmation_pin || confirmation_pin.length < 4) {
                 setError('confirmation_pin', 'PIN must be at least 4 digits.');
                 setValidationMessage('PIN must be at least 4 digits.');
@@ -337,24 +347,23 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
             return false;
         }
     }
-
     // Handle form submission
     const handleSubmit = async () => {
         if (!validateCurrentStep()) return;
 
-        // First confirm PIN before proceeding with submission (skip in confirm mode)
-        const isPinConfirmed = isConfirmMode || await handleConfirmPin();
+        // First confirm PIN before proceeding with submission (skip in confirm mode or if not needed)
+        const isPinConfirmed = isConfirmMode || (currentStep !== 'confirmation') || await handleConfirmPin();
         if (!isPinConfirmed) return;
 
         // Get current Redux state for submission
         const currentState = store.getState().trackingRequest;
-        console.log(currentState);
 
         try {
             // For confirm mode, we need to send a specific flag
             const endpoint = isConfirmMode
                 ? route('api.tracking.incoming.confirm-employee-request', edit)
                 : route('api.tracking.request.store');
+
 
             const payload = isConfirmMode
                 ? {
@@ -371,7 +380,8 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                         scannedEmployee: currentState.scannedEmployee,
                         receivedBy: currentState.receivedBy
                     },
-                    edit_id: edit
+                    edit_id: edit,
+                    confirm_mode: isEditMode
                 };
 
             // Submit the form with current Redux data using axios
@@ -645,7 +655,8 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                                     calibration,
                                     confirmation_pin,
                                     scannedEmployee,
-                                    receivedBy
+                                    receivedBy,
+                                    edit,
                                 }}
                                 onChange={updateNestedData}
                                 errors={{ pin: getError('confirmation_pin') }}

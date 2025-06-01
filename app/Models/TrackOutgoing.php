@@ -14,6 +14,7 @@ class TrackOutgoing extends Model
         'cal_due_date',
         'date_out',
         'employee_id_out',
+        'released_by_id',
         'cycle_time',
         'status'
     ];
@@ -33,6 +34,11 @@ class TrackOutgoing extends Model
     public function employeeOut()
     {
         return $this->belongsTo(User::class, 'employee_id_out', 'employee_id');
+    }
+    
+    public function releasedBy()
+    {
+        return $this->belongsTo(User::class, 'released_by_id', 'employee_id');
     }
     
     // Access equipment through incoming record

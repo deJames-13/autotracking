@@ -12,12 +12,14 @@ interface ConfirmEmployeeTabProps {
         confirmation_pin: string;
         scannedEmployee?: any;
         receivedBy?: any;
+        edit?: Number;
     };
     onChange: (pin: string) => void;
     errors?: Record<string, string>;
 }
 
 const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange, errors = {} }) => {
+    // console.log(data)
     const [locationNames, setLocationNames] = useState({
         plant: '',
         department: '',
@@ -33,7 +35,8 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
             setRecallLoading(true);
             try {
                 const response = await axios.get(route('api.tracking.request.generate-recall'), {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    params: { edit: data?.edit }
                 });
 
                 if (response.data.success) {

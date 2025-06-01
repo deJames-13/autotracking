@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { EmployeeStatusBadge } from '@/components/ui/status-badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useRole } from '@/hooks/use-role';
@@ -45,16 +46,7 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
     }
 
     const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'for_confirmation':
-                return <Badge variant="secondary">Awaiting Admin Confirmation</Badge>;
-            case 'pending_calibration':
-                return <Badge variant="default">Confirmed - In Progress</Badge>;
-            case 'completed':
-                return <Badge variant="success">Completed</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
-        }
+        return <EmployeeStatusBadge status={status as any} />;
     };
 
     const canEditRequest = () => {

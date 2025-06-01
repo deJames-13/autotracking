@@ -135,17 +135,20 @@ class TrackingController extends Controller
     }
 
     /**
-     * Display the track outgoing index page for employees.
+     * Display the track outgoing index page for employees in the same department.
      */
     public function trackOutgoingIndex(Request $request)
     {
         // Get search filters
         $filters = $request->only(['search', 'status']);
         
-        // Query outgoing tracking records related to the current employee's incoming records
-        $query = TrackOutgoing::with(['trackIncoming', 'equipment', 'technician', 'employeeOut'])
-            ->whereHas('trackIncoming', function($q) {
-                $q->where('employee_id_in', Auth::user()->employee_id);
+        $currentUser = Auth::user();
+        $currentUser->load('department');
+        
+        // Query outgoing tracking records related to the current employee's department
+        $query = TrackOutgoing::with(['trackIncoming', 'equipment', 'technician', 'employeeOut', 'releasedBy'])
+            ->whereHas('trackIncoming.employeeIn', function($q) use ($currentUser) {
+                $q->where('department_id', $currentUser->department_id);
             });
         
         // Apply search filter if provided
@@ -178,19 +181,23 @@ class TrackingController extends Controller
     }
 
     /**
-     * Display a specific outgoing tracking record for employees.
+     * Display a specific outgoing tracking record for employees in the same department.
      */
     public function trackOutgoingShow(TrackOutgoing $trackOutgoing)
     {
         $trackOutgoing->load([
-            'trackIncoming',
-            'employeeOut',
+            'trackIncoming.employeeIn.department',
+            'employeeOut.department',
+            'releasedBy',
             'equipment',
             'technician'
         ]);
 
-        // Ensure employee can only view their own records
-        if ($trackOutgoing->trackIncoming->employee_id_in !== Auth::user()->employee_id) {
+        $currentUser = Auth::user();
+        $currentUser->load('department');
+
+        // Ensure employee can only view records from their department
+        if ($trackOutgoing->trackIncoming->employeeIn->department_id !== $currentUser->department_id) {
             abort(403, 'Unauthorized access to this record.');
         }
 
@@ -217,19 +224,43 @@ class TrackingController extends Controller
             ]);
         }
 
-        // Ensure the employee is picking up their own equipment
-        if ($trackOutgoing->trackIncoming->employee_id_in !== $employee->employee_id) {
-            throw ValidationException::withMessages([
-                'employee_id' => 'You can only pick up your own equipment.'
-            ]);
+        // Validate department match - employees from same department can pick up equipment
+        if ($trackOutgoing->trackIncoming && $trackOutgoing->trackIncoming->employeeIn) {
+            $employeeIn = $trackOutgoing->trackIncoming->employeeIn;
+            
+            // Load department relationships if not already loaded
+            $employee->load('department');
+            $employeeIn->load('department');
+            
+            $employeeOutDeptId = $employee->department_id ?? $employee->department?->id;
+            $employeeInDeptId = $employeeIn->department_id ?? $employeeIn->department?->id;
+            
+            if (!$employeeOutDeptId || !$employeeInDeptId) {
+                throw ValidationException::withMessages([
+                    'employee_id' => 'Department information is missing. Please ensure both employees have department assignments.'
+                ]);
+            }
+            
+            if ($employeeOutDeptId !== $employeeInDeptId) {
+                $employeeOutDeptName = $employee->department?->department_name ?? 'Unknown Department';
+                $employeeInDeptName = $employeeIn->department?->department_name ?? 'Unknown Department';
+                
+                throw ValidationException::withMessages([
+                    'employee_id' => "Department mismatch: You are from {$employeeOutDeptName} department but equipment was received by {$employeeInDeptName} department. Only employees from the same department can pick up equipment."
+                ]);
+            }
         }
 
         // Update status to completed
-        $trackOutgoing->update(['status' => 'completed']);
+        // Note: released_by_id should remain as the admin/operator who released it, not the pickup employee
+        $trackOutgoing->update([
+            'status' => 'completed',
+            'employee_id_out' => $employee->employee_id
+        ]);
 
         return response()->json([
             'message' => 'Equipment pickup confirmed successfully.',
-            'data' => $trackOutgoing->fresh(['trackIncoming', 'employeeOut'])
+            'data' => $trackOutgoing->fresh(['trackIncoming', 'employeeOut', 'releasedBy'])
         ]);
     }
 }

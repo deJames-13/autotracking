@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackIncoming, type PaginationData } from '@/types';
@@ -65,20 +66,6 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
         setIsModalOpen(true);
     };
 
-    // Function to confirm employee request
-    const handleConfirmRequest = async (request: TrackIncoming) => {
-        try {
-            // Redirect to request page with both edit and confirm params
-            router.visit(route('admin.tracking.request.index', {
-                edit: request.id,
-                confirm: true
-            }));
-        } catch (error: any) {
-            console.error('Error redirecting to confirmation:', error);
-            toast.error('An error occurred while redirecting to confirmation page');
-        }
-    };
-
     const handleModalSuccess = () => {
         setIsModalOpen(false);
         setSelectedRequest(null);
@@ -101,16 +88,7 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
     }
 
     const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'for_confirmation':
-                return <Badge variant="warning">Awaiting Confirmation</Badge>;
-            case 'pending_calibration':
-                return <Badge variant="secondary">Pending Calibration</Badge>;
-            case 'completed':
-                return <Badge variant="default">Completed</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
-        }
+        return <StatusBadge status={status as any} />;
     };
 
     return (
@@ -234,17 +212,6 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
                                                     View
                                                 </Link>
                                             </Button>
-
-                                            {request.status === 'for_confirmation' && (
-                                                <Button
-                                                    variant="default"
-                                                    size="sm"
-                                                    onClick={() => handleConfirmRequest(request)}
-                                                >
-                                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                                    Confirm
-                                                </Button>
-                                            )}
                                         </td>
                                     </tr>
                                 ))}

@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { EmployeeStatusBadge } from '@/components/ui/status-badge';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackIncoming, type PaginationData } from '@/types';
 import { Head, router, useForm, Link } from '@inertiajs/react';
-import { Plus, Search, Eye, Edit, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Search, Eye, Edit, Plus } from 'lucide-react';
 import { useEffect } from 'react';
 import { format } from 'date-fns';
 
@@ -68,16 +68,7 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
     }
 
     const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'for_confirmation':
-                return <Badge variant="secondary">Awaiting Admin Confirmation</Badge>;
-            case 'pending_calibration':
-                return <Badge variant="default">Confirmed - In Progress</Badge>;
-            case 'completed':
-                return <Badge variant="success">Completed</Badge>;
-            default:
-                return <Badge variant="outline">{status}</Badge>;
-        }
+        return <EmployeeStatusBadge status={status as any} />;
     };
 
     const canEditRequest = (request: TrackIncoming) => {

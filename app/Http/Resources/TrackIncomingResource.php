@@ -16,6 +16,7 @@ class TrackIncomingResource extends JsonResource
             'description' => $this->description,
             'equipment_id' => $this->equipment_id,
             'location_id' => $this->location_id,
+            'received_by_id' => $this->received_by_id,
             'due_date' => $this->due_date,
             'date_in' => $this->date_in,
             'employee_id_in' => $this->employee_id_in,
@@ -26,6 +27,7 @@ class TrackIncomingResource extends JsonResource
             'technician' => new UserResource($this->whenLoaded('technician')),
             'location' => new LocationResource($this->whenLoaded('location')),
             'employee_in' => new UserResource($this->whenLoaded('employeeIn')),
+            'received_by' => new UserResource($this->whenLoaded('receivedBy')),
             'track_outgoing' => new TrackOutgoingResource($this->whenLoaded('trackOutgoing')),
         ];
     }

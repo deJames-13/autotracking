@@ -18,7 +18,8 @@ class TrackOutgoingRequest extends FormRequest
             'cal_date' => ['required', 'date'],
             'cal_due_date' => ['required', 'date', 'after_or_equal:cal_date'],
             'date_out' => ['required', 'date'],
-            'employee_id_out' => ['required', 'exists:users,employee_id'],
+            'employee_id_out' => ['nullable', 'exists:users,employee_id'], // Made nullable
+            'released_by_id' => ['nullable', 'exists:users,employee_id'], // Add released_by_id validation
             'cycle_time' => ['required', 'integer', 'min:1'],
         ];
     }
