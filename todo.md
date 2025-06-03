@@ -1,13 +1,37 @@
 
 
-- [x] Setup Routine Cal
-    - [x] Recall number can not be unique to allow archiving of past records
-    - [x] Recall number selection with search and auto fill data
+
 - [ ] Cycle time    
     - [ ] Manual inputs for CT Reqd (days) standard 
     - [ ] Manual inputs for Commit and Actual ETCs 
     - [ ] auto calculate queuing days, start to finish
-    - [ ] aut calculate overdue
+    - [ ] auto calculate overdue
+- [ ] Incoming Request Revision
+    - [ ] Received By not working properly when changing from select
+    - [ ] Recall number should be after calibration
+        - [ ] Recall number auto generates when not specified
+        - [ ] allow editing of recall number
+
+- [ ] Table paginated/filters (turn to datatable)
+
+- [ ] Roles
+    - [ ] Admin
+        - [ ] Can see all
+        - [ ] Can for accept (no pin needed)
+    - [ ] Technician
+        - [ ] Can only see incoming, calibration, outgoing, 
+    - [ ] Employee
+        - [ ] Can only see incoming and outgoing
+
+- [ ] Accounts
+    - [ ] Manual input or auto generated of id (unique)
+    - [ ] On user creation, email user with their employee id and pin
+    - [ ] Admin can reset password immediately, email automatically on change  
+
+
+- [x] Setup Routine Cal
+    - [x] Recall number can not be unique to allow archiving of past records
+    - [x] Recall number selection with search and auto fill data
 - [x] Generate BarCode for equipment, employee id
 
 
