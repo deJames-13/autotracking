@@ -126,6 +126,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Users management - specific routes before resource
         Route::get('search-by-barcode/users', [AdminUserController::class, 'searchByBarcode'])->name('users.search-by-barcode');
         Route::get('users/table-data', [AdminUserController::class, 'tableData'])->name('users.table-data');
+        Route::post('users/generate-employee-id', [AdminUserController::class, 'generateNewEmployeeId'])->name('users.generate-employee-id');
+        Route::post('users/{user:employee_id}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::post('users/validate-email', [AdminUserController::class, 'validateEmail'])->name('users.validate-email');
+        
+        // Tracking table data routes
+        Route::get('tracking/incoming/table-data', [AdminTrackingController::class, 'trackIncomingTableData'])->name('tracking.incoming.table-data');
+        Route::get('tracking/incoming/filter-options', [AdminTrackingController::class, 'trackIncomingFilterOptions'])->name('tracking.incoming.filter-options');
+        Route::get('tracking/outgoing/table-data', [AdminTrackingController::class, 'trackOutgoingTableData'])->name('tracking.outgoing.table-data');
+        Route::get('tracking/outgoing/filter-options', [AdminTrackingController::class, 'trackOutgoingFilterOptions'])->name('tracking.outgoing.filter-options');
         
         Route::resource('users', AdminUserController::class)->parameters([
             'users' => 'user:employee_id'

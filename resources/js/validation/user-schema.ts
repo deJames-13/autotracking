@@ -2,6 +2,13 @@ import { z } from "zod";
 
 // User schema
 export const userSchema = z.object({
+    employee_id: z.union([z.string(), z.number()])
+        .optional()
+        .refine(val => {
+            if (!val) return true; // Optional field
+            const num = typeof val === 'string' ? parseInt(val) : val;
+            return !isNaN(num) && num > 0;
+        }, "Employee ID must be a positive number"),
     first_name: z.string()
         .min(1, "First name is required")
         .max(255, "First name must be less than 255 characters"),

@@ -4,12 +4,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { type Department, type Plant, type Role, type User, type UserFormData } from '@/types';
 import { userSchema, UserSchema } from '@/validation/user-schema';
 import { useForm } from '@inertiajs/react';
 import axios from 'axios';
-import { FormEventHandler, useCallback, useMemo, useState } from 'react';
+import { FormEventHandler, useCallback, useMemo, useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { Eye, EyeOff, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
 interface UserFormProps {
     user?: User;
@@ -25,9 +27,14 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
     const [loadingDepartments, setLoadingDepartments] = useState(false);
     const [loadingPlants, setLoadingPlants] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
+    const [emailValidation, setEmailValidation] = useState<any>(null);
+    const [emailValidating, setEmailValidating] = useState(false);
 
     // Memoize the initial form data to prevent unnecessary rerenders
     const initialData = useMemo(() => ({
+        employee_id: user?.employee_id || undefined,
         first_name: user?.first_name || '',
         last_name: user?.last_name || '',
         middle_name: user?.middle_name || '',
@@ -126,6 +133,44 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
         }
     }, []);
 
+    // Email validation function
+    const validateEmail = useCallback(async (email: string) => {
+        if (!email || !email.includes('@')) {
+            setEmailValidation(null);
+            return;
+        }
+
+        try {
+            setEmailValidating(true);
+            const response = await axios.post(route('admin.users.validate-email'), {
+                email: email
+            });
+            setEmailValidation(response.data);
+        } catch (error: any) {
+            console.error('Email validation error:', error);
+            setEmailValidation({
+                validation: { is_valid: false, warnings: ['Failed to validate email'] },
+                recommendations: [{
+                    type: 'error',
+                    message: 'Failed to validate email. Please check your connection.'
+                }]
+            });
+        } finally {
+            setEmailValidating(false);
+        }
+    }, []);
+
+    // Debounce email validation
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (data.email && data.email !== user?.email) {
+                validateEmail(data.email);
+            }
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [data.email, user?.email, validateEmail]);
+
     // Validate form using Zod
     const validateForm = (): boolean => {
         try {
@@ -211,6 +256,63 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left column */}
                 <div className="space-y-6">
+                    {/* Employee ID field */}
+                    <div className="space-y-2">
+                        <Label htmlFor="employee_id" className={allErrors.employee_id ? 'text-destructive' : ''}>
+                            Employee ID
+                            {!isEditing && <span className="text-xs text-muted-foreground block">(will be auto-generated if not provided)</span>}
+                        </Label>
+                        <div className="flex gap-2">
+                            <Input
+                                id="employee_id"
+                                type="number"
+                                value={data.employee_id || ''}
+                                onChange={(e) => setData('employee_id', e.target.value ? parseInt(e.target.value) : undefined)}
+                                className={allErrors.employee_id ? 'border-destructive' : ''}
+                                placeholder="Enter employee ID (optional)"
+                                min="1"
+                                disabled={isEditing} // Disable editing of employee ID for existing users
+                            />
+                            {!isEditing && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={async () => {
+                                        if (!data.role_id) {
+                                            toast.error('Please select a role first');
+                                            return;
+                                        }
+
+                                        try {
+                                            const response = await axios.post(route('admin.users.generate-employee-id'), {
+                                                role_id: data.role_id
+                                            });
+
+                                            if (response.data.success) {
+                                                setData('employee_id', response.data.employee_id);
+                                                toast.success('Employee ID generated successfully');
+                                            } else {
+                                                toast.error('Failed to generate employee ID');
+                                            }
+                                        } catch (error) {
+                                            console.error('Error generating employee ID:', error);
+                                            toast.error('Failed to generate employee ID');
+                                        }
+                                    }}
+                                    className="whitespace-nowrap"
+                                    disabled={!data.role_id}
+                                >
+                                    Auto-generate
+                                </Button>
+                            )}
+                        </div>
+                        <InputError message={allErrors.employee_id} />
+                        {isEditing && (
+                            <span className="text-xs text-muted-foreground">Employee ID cannot be changed after creation</span>
+                        )}
+                    </div>
+
                     {/* Name fields */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -258,7 +360,7 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
 
                     <div className="space-y-2">
                         <Label htmlFor="email" className={allErrors.email ? 'text-destructive' : ''}>
-                            Email
+                            Email {emailValidating && <span className="text-xs text-muted-foreground">(validating...)</span>}
                         </Label>
                         <Input
                             id="email"
@@ -269,6 +371,30 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                             placeholder="Enter email address (optional)"
                         />
                         <InputError message={allErrors.email} />
+                        
+                        {/* Email validation feedback */}
+                        {emailValidation && emailValidation.recommendations && (
+                            <div className="space-y-2">
+                                {emailValidation.recommendations.map((rec: any, index: number) => (
+                                    <Alert 
+                                        key={index} 
+                                        variant={rec.type === 'error' ? 'destructive' : rec.type === 'success' ? 'default' : 'default'}
+                                        className={`text-sm ${
+                                            rec.type === 'error' ? 'border-red-200 bg-red-50' : 
+                                            rec.type === 'warning' ? 'border-yellow-200 bg-yellow-50' : 
+                                            'border-green-200 bg-green-50'
+                                        }`}
+                                    >
+                                        {rec.type === 'error' && <AlertTriangle className="h-4 w-4" />}
+                                        {rec.type === 'warning' && <Info className="h-4 w-4" />}
+                                        {rec.type === 'success' && <CheckCircle className="h-4 w-4" />}
+                                        <AlertDescription className="text-xs">
+                                            {rec.message}
+                                        </AlertDescription>
+                                    </Alert>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -281,14 +407,32 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                                 Password {!isEditing && <span className="text-destructive">*</span>}
                                 {isEditing && <span className="text-xs text-muted-foreground block">(leave blank to keep current)</span>}
                             </Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                value={data.password}
-                                onChange={(e) => setData('password', e.target.value)}
-                                className={allErrors.password ? 'border-destructive' : ''}
-                                placeholder={isEditing ? "New password" : "Enter password"}
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    value={data.password}
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    className={allErrors.password ? 'border-destructive pr-10' : 'pr-10'}
+                                    placeholder={isEditing ? "New password" : "Enter password"}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                        <Eye className="h-4 w-4" />
+                                    )}
+                                    <span className="sr-only">
+                                        {showPassword ? "Hide password" : "Show password"}
+                                    </span>
+                                </Button>
+                            </div>
                             <InputError message={allErrors.password} />
                         </div>
 
@@ -296,14 +440,32 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                             <Label htmlFor="password_confirmation" className={allErrors.password_confirmation ? 'text-destructive' : ''}>
                                 Confirm Password {!isEditing && <span className="text-destructive">*</span>}
                             </Label>
-                            <Input
-                                id="password_confirmation"
-                                type="password"
-                                value={data.password_confirmation}
-                                onChange={(e) => setData('password_confirmation', e.target.value)}
-                                className={allErrors.password_confirmation ? 'border-destructive' : ''}
-                                placeholder="Confirm password"
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="password_confirmation"
+                                    type={showPasswordConfirmation ? "text" : "password"}
+                                    value={data.password_confirmation}
+                                    onChange={(e) => setData('password_confirmation', e.target.value)}
+                                    className={allErrors.password_confirmation ? 'border-destructive pr-10' : 'pr-10'}
+                                    placeholder="Confirm password"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
+                                >
+                                    {showPasswordConfirmation ? (
+                                        <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                        <Eye className="h-4 w-4" />
+                                    )}
+                                    <span className="sr-only">
+                                        {showPasswordConfirmation ? "Hide password" : "Show password"}
+                                    </span>
+                                </Button>
+                            </div>
                             <InputError message={allErrors.password_confirmation} />
                         </div>
                     </div>

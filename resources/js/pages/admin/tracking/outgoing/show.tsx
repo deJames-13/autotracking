@@ -21,7 +21,6 @@ interface TrackingOutgoingShowProps {
 }
 
 const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoing }) => {
-    console.log(trackOutgoing)
     const { canManageRequestIncoming, isAdmin, isTechnician } = useRole();
 
     // Determine if PIN input should be shown (not for Admin or Technician)

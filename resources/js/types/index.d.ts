@@ -199,6 +199,7 @@ export interface PaginationData<T> {
 
 // Form types
 export interface UserFormData {
+    employee_id?: number;
     first_name: string;
     last_name: string;
     middle_name?: string;

@@ -8,10 +8,17 @@ use App\Models\Department;
 use App\Models\Plant;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\UserCreatedNotification;
+use App\Notifications\PasswordResetNotification;
+use App\Notifications\PasswordUpdatedNotification;
+use App\Services\EmailValidationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -85,22 +92,84 @@ class UserController extends Controller
     {
         $data = $request->validated();
         
+        // Validate email if provided
+        $emailWarnings = [];
+        if (!empty($data['email'])) {
+            $emailValidator = app(EmailValidationService::class);
+            $emailValidation = $emailValidator->validateEmail($data['email']);
+            $emailWarnings = $emailValidation['warnings'] ?? [];
+            
+            // Log email validation results for admin review
+            if (!empty($emailWarnings) || $emailValidation['is_disposable']) {
+                Log::warning('User created with suspicious email', [
+                    'email' => $data['email'],
+                    'validation' => $emailValidation,
+                    'created_by' => Auth::user()->email ?? 'Unknown'
+                ]);
+            }
+        }
+        
+        // Generate temporary password if not provided
+        $temporaryPassword = null;
         if (isset($data['password'])) {
+            $temporaryPassword = $data['password']; // Store plain password for email
             $data['password'] = Hash::make($data['password']);
+        } else {
+            // Generate a random temporary password
+            $temporaryPassword = Str::random(12);
+            $data['password'] = Hash::make($temporaryPassword);
+        }
+
+        // Handle employee_id auto-generation if not provided
+        if (empty($data['employee_id'])) {
+            $data['employee_id'] = $this->generateEmployeeId($data['role_id']);
         }
 
         $user = User::create($data);
 
-        // Return JSON only for non-Inertia AJAX requests
-        if ($request->ajax() && !$request->header('X-Inertia')) {
-            return response()->json([
-                'message' => 'User created successfully.',
-                'data' => $user
-            ]);
+        // Send email notification with employee ID and temporary password
+        $emailSent = false;
+        if (!empty($user->email)) {
+            try {
+                $user->notify(new UserCreatedNotification($temporaryPassword));
+                $emailSent = true;
+                Log::info('User creation email sent successfully', [
+                    'user_id' => $user->employee_id,
+                    'email' => $user->email
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send user creation email', [
+                    'user_id' => $user->employee_id,
+                    'email' => $user->email,
+                    'error' => $e->getMessage()
+                ]);
+            }
         }
 
+        // Prepare response message
+        $message = 'User created successfully.';
+        if (!$emailSent && !empty($user->email)) {
+            $message .= ' However, the email notification could not be sent.';
+        } elseif ($emailSent) {
+            $message .= ' Login credentials have been sent to their email.';
+        }
+
+        // Add email warnings to response
+        $responseData = ['message' => $message];
+        if (!empty($emailWarnings)) {
+            $responseData['email_warnings'] = $emailWarnings;
+        }
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            $responseData['data'] = $user;
+            return response()->json($responseData);
+        }
+
+        $flashType = !empty($emailWarnings) ? 'warning' : 'success';
         return redirect()->route('admin.users.index')
-            ->with('success', 'User created successfully.');
+            ->with($flashType, $message)
+            ->with('email_warnings', $emailWarnings);
     }
 
     public function show(User $user, Request $request): Response|JsonResponse
@@ -136,25 +205,110 @@ class UserController extends Controller
     public function update(UserRequest $request, User $user): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
+        $passwordChanged = false;
+        $newPassword = null;
         
+        // Check if password is being updated
         if (isset($data['password']) && !empty($data['password'])) {
+            $newPassword = $data['password']; // Store plain password for email
             $data['password'] = Hash::make($data['password']);
+            $passwordChanged = true;
         } else {
             unset($data['password']);
         }
 
+        // Validate email if changed
+        $emailWarnings = [];
+        if (isset($data['email']) && $data['email'] !== $user->email && !empty($data['email'])) {
+            $emailValidator = app(EmailValidationService::class);
+            $emailValidation = $emailValidator->validateEmail($data['email']);
+            $emailWarnings = $emailValidation['warnings'] ?? [];
+            
+            // Log email validation results for admin review
+            if (!empty($emailWarnings) || $emailValidation['is_disposable']) {
+                Log::warning('User updated with suspicious email', [
+                    'user_id' => $user->employee_id,
+                    'old_email' => $user->email,
+                    'new_email' => $data['email'],
+                    'validation' => $emailValidation,
+                    'updated_by' => Auth::user()->email ?? 'Unknown'
+                ]);
+            }
+        }
+
+        // Handle employee_id auto-generation if not provided and user doesn't have one
+        if (empty($data['employee_id']) && empty($user->employee_id)) {
+            $data['employee_id'] = $this->generateEmployeeId($data['role_id'] ?? $user->role_id);
+        }
+
         $user->update($data);
+
+        // Send email notification if password was changed
+        $emailSent = false;
+        if ($passwordChanged && !empty($user->email) && !empty($newPassword)) {
+            try {
+                $adminUser = Auth::user();
+                $updatedBy = $adminUser ? ($adminUser->first_name . ' ' . $adminUser->last_name) : 'System Administrator';
+                
+                $user->notify(new PasswordUpdatedNotification($newPassword, $updatedBy));
+                $emailSent = true;
+                
+                Log::info('Password update email sent successfully', [
+                    'user_id' => $user->employee_id,
+                    'email' => $user->email,
+                    'updated_by' => $updatedBy
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send password update email', [
+                    'user_id' => $user->employee_id,
+                    'email' => $user->email,
+                    'error' => $e->getMessage()
+                ]);
+                
+                // For AJAX requests, include email failure in response
+                if ($request->ajax() && !$request->header('X-Inertia')) {
+                    $responseData = [
+                        'message' => 'User updated successfully, but failed to send password update email.',
+                        'data' => $user->fresh(['role', 'department', 'plant']),
+                        'email_sent' => false,
+                        'password_changed' => true
+                    ];
+                    if (!empty($emailWarnings)) {
+                        $responseData['email_warnings'] = $emailWarnings;
+                    }
+                    return response()->json($responseData);
+                }
+            }
+        }
+
+        // Prepare response message
+        $message = 'User updated successfully.';
+        if ($passwordChanged) {
+            if ($emailSent) {
+                $message .= ' Password update notification has been sent to their email.';
+            } elseif (!empty($user->email)) {
+                $message .= ' However, the password update email notification could not be sent.';
+            }
+        }
+
+        // Prepare response data
+        $responseData = ['message' => $message];
+        if (!empty($emailWarnings)) {
+            $responseData['email_warnings'] = $emailWarnings;
+        }
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
-            return response()->json([
-                'message' => 'User updated successfully.',
-                'data' => $user
-            ]);
+            $responseData['data'] = $user->fresh(['role', 'department', 'plant']);
+            $responseData['email_sent'] = $emailSent;
+            $responseData['password_changed'] = $passwordChanged;
+            return response()->json($responseData);
         }
 
+        $flashType = !empty($emailWarnings) ? 'warning' : 'success';
         return redirect()->route('admin.users.index')
-            ->with('success', 'User updated successfully.');
+            ->with($flashType, $message)
+            ->with('email_warnings', $emailWarnings);
     }
 
     public function destroy(User $user, Request $request): RedirectResponse|JsonResponse
@@ -318,5 +472,177 @@ class UserController extends Controller
                 'to' => $users->lastItem(),
             ],
         ]);
+    }
+
+    /**
+     * Validate email address
+     */
+    public function validateEmail(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $emailValidator = app(EmailValidationService::class);
+        $validation = $emailValidator->validateEmail($request->email);
+
+        return response()->json([
+            'validation' => $validation,
+            'recommendations' => $this->getEmailRecommendations($validation)
+        ]);
+    }
+
+    /**
+     * Get email recommendations based on validation results
+     */
+    private function getEmailRecommendations(array $validation): array
+    {
+        $recommendations = [];
+
+        if ($validation['is_disposable']) {
+            $recommendations[] = [
+                'type' => 'error',
+                'message' => 'This is a disposable email address. Please use a permanent email address.'
+            ];
+        }
+
+        if (!$validation['is_official']) {
+            $recommendations[] = [
+                'type' => 'warning',
+                'message' => 'Consider using an official business email address for better security and communication.'
+            ];
+        }
+
+        foreach ($validation['warnings'] as $warning) {
+            $recommendations[] = [
+                'type' => 'warning',
+                'message' => $warning
+            ];
+        }
+
+        if (empty($recommendations)) {
+            $recommendations[] = [
+                'type' => 'success',
+                'message' => 'Email address looks good!'
+            ];
+        }
+
+        return $recommendations;
+    }
+
+    /**
+     * Generate a new employee ID for the given role
+     */
+    public function generateNewEmployeeId(Request $request): JsonResponse
+    {
+        $request->validate([
+            'role_id' => 'required|exists:roles,role_id'
+        ]);
+        $roleId = $request->role_id || '2';
+
+        try {
+            $employeeId = $this->generateEmployeeId($request->role_id);
+            
+            return response()->json([
+                'success' => true,
+                'employee_id' => $employeeId
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate employee ID: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Reset user password and send email notification
+     */
+    public function resetPassword(Request $request, User $user): RedirectResponse|JsonResponse
+    {
+        $request->validate([
+            'send_email' => 'boolean'
+        ]);
+
+        // Generate new temporary password
+        $newPassword = Str::random(12);
+        $user->update([
+            'password' => Hash::make($newPassword)
+        ]);
+
+        // Send email notification if requested (default: true)
+        $sendEmail = $request->get('send_email', true);
+        if ($sendEmail) {
+            try {
+                $user->notify(new PasswordResetNotification($newPassword));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send password reset email: ' . $e->getMessage());
+                
+                if ($request->ajax() && !$request->header('X-Inertia')) {
+                    return response()->json([
+                        'message' => 'Password reset successfully, but failed to send email notification.',
+                        'new_password' => $newPassword
+                    ]);
+                }
+                
+                return redirect()->route('admin.users.index')
+                    ->with('warning', 'Password reset successfully, but failed to send email notification. New password: ' . $newPassword);
+            }
+        }
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => $sendEmail 
+                    ? 'Password reset successfully. New credentials have been sent to the user\'s email.' 
+                    : 'Password reset successfully.',
+                'new_password' => $sendEmail ? null : $newPassword
+            ]);
+        }
+
+        return redirect()->route('admin.users.index')
+            ->with('success', $sendEmail 
+                ? 'Password reset successfully. New credentials have been sent to the user\'s email.'
+                : 'Password reset successfully. New password: ' . $newPassword
+            );
+    }
+
+    /**
+     * Generate a unique employee ID based on role
+     */
+    private function generateEmployeeId(int $roleId): int
+    {
+        // Get role name to determine prefix
+        $role = Role::where('role_id', $roleId)->first();
+        if (!$role) {
+            throw new \Exception('Invalid role ID');
+        }
+
+        // Determine prefix based on role
+        $prefix = match(strtolower($role->role_name)) {
+            'admin' => '100',
+            'technician' => '200', 
+            'employee' => '300',
+            default => '300' // Default to employee prefix
+        };
+
+        // Find the highest existing employee ID with this prefix
+        $maxId = User::where('employee_id', 'like', $prefix . '%')
+            ->max('employee_id');
+
+        if ($maxId) {
+            // Increment the highest existing ID
+            $nextId = $maxId + 1;
+        } else {
+            // Start with prefix + 001
+            $nextId = intval($prefix . '001');
+        }
+
+        // Ensure uniqueness (in case of race conditions)
+        while (User::where('employee_id', $nextId)->exists()) {
+            $nextId++;
+        }
+
+        return $nextId;
     }
 }

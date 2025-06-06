@@ -1,254 +1,142 @@
+import React, { useState, useEffect } from 'react';
+import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { useRole } from '@/hooks/use-role';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type TrackIncoming, type PaginationData } from '@/types';
-import { Head, router, useForm, Link } from '@inertiajs/react';
-import { Plus, Search, Eye, FileText, CheckCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
-import { OutgoingCalibrationModal } from '@/components/admin/tracking/outgoing/outgoing-calibration-modal';
+import { Plus } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { toast } from 'sonner';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import AppLayout from '@/layouts/app-layout';
+import { TrackIncomingTable } from '@/components/admin/tracking/track-incoming-table';
+import { type TrackIncoming, type PaginationData, type User, type Location } from '@/types';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Tracking Management',
-        href: '/admin/tracking',
-    },
-    {
-        title: 'Incoming Requests',
-        href: '/admin/tracking/incoming',
-    },
-];
-
-interface TrackingIncomingIndexProps {
-    filters?: {
-        search?: string;
-        status?: string;
-    };
-    requests: PaginationData<TrackIncoming>;
+interface TrackIncomingIndexProps {
+    // Props can be extended as needed
 }
 
-const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
-    filters = {},
-    requests
-}) => {
-    const { canManageRequestIncoming } = useRole();
+interface FilterOptions {
+    statuses: Array<{ value: string; label: string }>;
+    technicians: User[];
+    locations: Location[];
+    employees: User[];
+}
 
-    // State for outgoing calibration modal
-    const [selectedRequest, setSelectedRequest] = useState<TrackIncoming | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+export default function TrackIncomingIndex({ }: TrackIncomingIndexProps) {
+    const [trackIncoming, setTrackIncoming] = useState<PaginationData<TrackIncoming> | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
+    const [currentFilters, setCurrentFilters] = useState<Record<string, any>>({});
+    const [currentSearch, setCurrentSearch] = useState('');
 
-    const { data, setData, get, processing } = useForm({
-        search: filters.search || '',
-        status: filters.status || '',
-    });
-
-    // Redirect if user doesn't have permission
-    useEffect(() => {
-        if (!canManageRequestIncoming()) {
-            router.visit('/dashboard');
+    // Fetch table data
+    const fetchTableData = async (
+        page = 1,
+        perPage = 10,
+        search = '',
+        filters = {}
+    ) => {
+        try {
+            setLoading(true);
+            const response = await axios.get(route('admin.tracking.incoming.table-data'), {
+                params: {
+                    page,
+                    per_page: perPage,
+                    search,
+                    ...filters,
+                },
+            });
+            setTrackIncoming(response.data);
+        } catch (error) {
+            console.error('Error fetching track incoming data:', error);
+            toast.error('Failed to load track incoming data');
+        } finally {
+            setLoading(false);
         }
-    }, [canManageRequestIncoming]);
-
-    const handleFilterChange = () => {
-        get(route('admin.tracking.incoming.index'), {
-            preserveState: true,
-            replace: true,
-        });
     };
 
-    const handleCompleteCalibration = (request: TrackIncoming) => {
-        setSelectedRequest(request);
-        setIsModalOpen(true);
+    // Fetch filter options
+    const fetchFilterOptions = async () => {
+        try {
+            const response = await axios.get(route('admin.tracking.incoming.filter-options'));
+            setFilterOptions(response.data);
+        } catch (error) {
+            console.error('Error fetching filter options:', error);
+            toast.error('Failed to load filter options');
+        }
     };
 
-    const handleModalSuccess = () => {
-        setIsModalOpen(false);
-        setSelectedRequest(null);
-        // Refresh the data
-        router.reload();
-    };
-
+    // Load initial data
     useEffect(() => {
-        const delayedSearch = setTimeout(() => {
-            if (data.search !== filters.search) {
-                handleFilterChange();
-            }
-        }, 500);
+        fetchTableData();
+        fetchFilterOptions();
+    }, []);
 
-        return () => clearTimeout(delayedSearch);
-    }, [data.search]);
+    // Handle search
+    const handleSearch = (search: string) => {
+        setCurrentSearch(search);
+        fetchTableData(1, trackIncoming?.per_page || 10, search, currentFilters);
+    };
 
-    if (!canManageRequestIncoming()) {
-        return null;
-    }
+    // Handle filter
+    const handleFilter = (filters: Record<string, any>) => {
+        setCurrentFilters(filters);
+        fetchTableData(1, trackIncoming?.per_page || 10, currentSearch, filters);
+    };
 
-    const getStatusBadge = (status: string) => {
-        return <StatusBadge status={status as any} />;
+    // Handle page change
+    const handlePageChange = (page: number) => {
+        fetchTableData(page, trackIncoming?.per_page || 10, currentSearch, currentFilters);
+    };
+
+    // Handle per page change
+    const handlePerPageChange = (perPage: number) => {
+        fetchTableData(1, perPage, currentSearch, currentFilters);
+    };
+
+    // Handle refresh
+    const handleRefresh = () => {
+        fetchTableData(
+            trackIncoming?.current_page || 1,
+            trackIncoming?.per_page || 10,
+            currentSearch,
+            currentFilters
+        );
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Incoming Calibration Requests" />
+        <AppLayout>
+            <Head title="Track Incoming Equipment" />
 
-            <div className="space-y-6 p-6">
+            <div className="flex flex-col space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Incoming Calibration Requests</h1>
-                        <p className="text-muted-foreground">Manage equipment submitted for calibration</p>
+                        <h1 className="text-2xl font-bold tracking-tight">Track Incoming Equipment</h1>
+                        <p className="text-muted-foreground">
+                            Manage and track incoming equipment calibration requests
+                        </p>
                     </div>
-                    <Button onClick={() => router.visit(route('admin.tracking.request.index'))}>
+
+                    <Button
+                        onClick={() => router.visit(route('admin.tracking.request'))}
+                        size="sm"
+                    >
                         <Plus className="mr-2 h-4 w-4" />
                         New Request
                     </Button>
                 </div>
 
-                {/* Filters */}
-                <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search by recall number, description, or serial number..."
-                            value={data.search}
-                            onChange={(e) => setData('search', e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-                    <select
-                        value={data.status}
-                        onChange={(e) => setData('status', e.target.value)}
-                        className="px-3 py-2 border border-border rounded-md bg-background"
-                    >
-                        <option value="">All Statuses</option>
-                        <option value="for_confirmation">Awaiting Confirmation</option>
-                        <option value="pending_calibration">Pending Calibration</option>
-                        <option value="completed">Completed</option>
-                    </select>
-                </div>
-
-                {/* Requests Table */}
-                {requests.data.length > 0 ? (
-                    <div className="border rounded-md overflow-scroll">
-                        <table className="min-w-full divide-y divide-border">
-                            <thead className="bg-muted">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Recall #
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Equipment
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Serial Number
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Technician
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Date In
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Due Date
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-card divide-y divide-border">
-                                {requests.data.map(request => (
-                                    <tr key={request.id} className="hover:bg-muted/50" onDoubleClick={() => router.visit(route('admin.tracking.incoming.show', request.id))}>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            {request.recall_number || (
-                                                <span className="text-muted-foreground text-xs">
-                                                    {request.request_type === 'new' ? 'To be assigned' : 'N/A'}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <div>
-                                                <div className="font-medium">{request.description}</div>
-                                                {request.manufacturer && request.model && (
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {request.manufacturer} {request.model}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                            {request.serial_number || 'N/A'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            {request.technician ? (
-                                                `${request.technician.first_name} ${request.technician.last_name}`
-                                            ) : 'Unassigned'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                            {format(new Date(request.date_in), 'MMM dd, yyyy')}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <span className={
-                                                new Date(request.due_date) < new Date()
-                                                    ? 'text-destructive font-medium'
-                                                    : 'text-muted-foreground'
-                                            }>
-                                                {format(new Date(request.due_date), 'MMM dd, yyyy')}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            {getStatusBadge(request.status)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                asChild
-                                            >
-                                                <Link href={route('admin.tracking.incoming.show', request.id)}>
-                                                    <Eye className="h-3 w-3 mr-1" />
-                                                    View
-                                                </Link>
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {/* Pagination would go here */}
-                        {requests.last_page > 1 && (
-                            <div className="px-6 py-3 bg-muted text-center text-sm text-muted-foreground">
-                                Showing {requests.from} to {requests.to} of {requests.total} results
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="text-center py-12">
-                        <p className="text-muted-foreground">No incoming calibration requests found.</p>
-                        <Button className="mt-4" onClick={() => router.visit(route('admin.tracking.request.index'))}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Create New Request
-                        </Button>
-                    </div>
+                {trackIncoming && (
+                    <TrackIncomingTable
+                        trackIncoming={trackIncoming}
+                        loading={loading}
+                        filterOptions={filterOptions}
+                        onRefresh={handleRefresh}
+                        onSearch={handleSearch}
+                        onFilter={handleFilter}
+                        onPageChange={handlePageChange}
+                        onPerPageChange={handlePerPageChange}
+                    />
                 )}
             </div>
-
-            {/* Outgoing Calibration Modal */}
-            <OutgoingCalibrationModal
-                incomingRecord={selectedRequest}
-                open={isModalOpen}
-                onOpenChange={setIsModalOpen}
-                onSuccess={handleModalSuccess}
-            />
         </AppLayout>
     );
-};
-
-export default TrackingIncomingIndex;
+}
