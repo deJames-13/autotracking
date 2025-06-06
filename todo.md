@@ -20,8 +20,8 @@
     - [x] equipment
     - [ ] incoming
     - [ ] outgoing
-    
-- [ ] Bar Code downloadables
+
+- [x] Bar Code downloadables
 
 - [ ] Roles
     - [ ] Admin
