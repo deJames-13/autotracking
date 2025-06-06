@@ -141,6 +141,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         ]);
         
         // Equipment management
+        Route::get('equipment/table-data', [AdminEquipmentController::class, 'tableData'])->name('equipment.table-data');
         Route::resource('equipment', AdminEquipmentController::class)->parameters([
             'equipment' => 'equipment:equipment_id'
         ]);

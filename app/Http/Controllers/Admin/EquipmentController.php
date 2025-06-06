@@ -17,9 +17,28 @@ use Inertia\Response;
 
 class EquipmentController extends Controller
 {
-    public function index(Request $request): Response|JsonResponse
+    public function index(Request $request): Response
     {
-        // Get initial data for the page
+        $users = User::with(['role', 'department'])
+            ->orderBy('first_name')
+            ->get();
+
+        $plants = Plant::orderBy('plant_name')->get();
+        $departments = Department::orderBy('department_name')->get();
+        $locations = Location::with('department')->orderBy('location_name')->get();
+
+        return Inertia::render('admin/equipment/index', [
+            'users' => $users,
+            'plants' => $plants,
+            'departments' => $departments,
+            'locations' => $locations,
+        ]);
+    }
+
+    public function tableData(Request $request): JsonResponse
+    {
+        $filters = ['search', 'employee_id', 'manufacturer', 'status', 'plant_id', 'department_id'];
+        
         $equipments = Equipment::with(['user.role', 'user.department', 'plant', 'department', 'location'])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -32,55 +51,58 @@ class EquipmentController extends Controller
             ->when($request->employee_id !== null, function ($query) use ($request) {
                 if ($request->employee_id === 'unassigned') {
                     $query->whereNull('employee_id');
-                } elseif ($request->employee_id !== '') {
+                } elseif ($request->employee_id !== '' && $request->employee_id !== 'all') {
                     $query->where('employee_id', $request->employee_id);
                 }
             })
-            ->when($request->status, function ($query, $status) {
+            ->when($request->status && $request->status !== 'all', function ($query, $status) {
                 $query->where('status', $status);
             })
-            ->when($request->plant_id, function ($query, $plantId) {
+            ->when($request->plant_id && $request->plant_id !== 'all', function ($query, $plantId) {
                 $query->where('plant_id', $plantId);
             })
-            ->when($request->department_id, function ($query, $departmentId) {
+            ->when($request->department_id && $request->department_id !== 'all', function ($query, $departmentId) {
                 $query->where('department_id', $departmentId);
             })
             ->when($request->manufacturer, function ($query, $manufacturer) {
                 $query->where('manufacturer', 'like', "%{$manufacturer}%");
             })
-            ->when($request->limit, function ($query, $limit) {
-                $query->limit($limit);
+            ->when($request->sort_by, function ($query, $sortBy) {
+                $direction = $request->sort_direction === 'desc' ? 'desc' : 'asc';
+                
+                if (in_array($sortBy, ['equipment_id', 'recall_number', 'serial_number', 'description', 'manufacturer', 'status', 'created_at'])) {
+                    $query->orderBy($sortBy, $direction);
+                } elseif ($sortBy === 'user_name') {
+                    $query->leftJoin('users', 'equipment.employee_id', '=', 'users.employee_id')
+                          ->orderBy('users.first_name', $direction)
+                          ->orderBy('users.last_name', $direction)
+                          ->select('equipment.*');
+                } elseif ($sortBy === 'plant_name') {
+                    $query->leftJoin('plants', 'equipment.plant_id', '=', 'plants.plant_id')
+                          ->orderBy('plants.plant_name', $direction)
+                          ->select('equipment.*');
+                } elseif ($sortBy === 'department_name') {
+                    $query->leftJoin('departments', 'equipment.department_id', '=', 'departments.department_id')
+                          ->orderBy('departments.department_name', $direction)
+                          ->select('equipment.*');
+                }
+            }, function ($query) {
+                $query->orderBy('created_at', 'desc');
             })
-            ->orderBy('created_at', 'desc')
-            ->paginate($request->limit ?? 15)
+            ->paginate($request->per_page ?? 15)
             ->withQueryString();
 
-        $users = User::with(['role', 'department'])
-            ->orderBy('first_name')
-            ->get();
-
-        $plants = Plant::orderBy('plant_name')->get();
-        $departments = Department::orderBy('department_name')->get();
-        $locations = Location::with('department')->orderBy('location_name')->get();
-
-        // Return JSON only for non-Inertia AJAX requests
-        if ($request->ajax() && !$request->header('X-Inertia')) {
-            return response()->json([
-                'data' => $equipments,
-                'users' => $users,
-                'plants' => $plants,
-                'departments' => $departments,
-                'locations' => $locations,
-            ]);
-        }
-
-        return Inertia::render('admin/equipment/index', [
-            'equipment' => $equipments,
-            'users' => $users,
-            'plants' => $plants,
-            'departments' => $departments,
-            'locations' => $locations,
-            'filters' => $request->only(['search', 'employee_id', 'manufacturer', 'status', 'plant_id', 'department_id']),
+        return response()->json([
+            'data' => $equipments->items(),
+            'meta' => [
+                'current_page' => $equipments->currentPage(),
+                'last_page' => $equipments->lastPage(),
+                'per_page' => $equipments->perPage(),
+                'total' => $equipments->total(),
+                'from' => $equipments->firstItem(),
+                'to' => $equipments->lastItem(),
+            ],
+            'filters' => $request->only($filters),
         ]);
     }
 

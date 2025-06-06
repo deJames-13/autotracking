@@ -2,14 +2,13 @@ import { EquipmentForm } from '@/components/admin/equipment/equipment-form';
 import { EquipmentTable } from '@/components/admin/equipment/equipment-table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type Equipment, type User, type PaginationData } from '@/types';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Plus, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type BreadcrumbItem, type Equipment, type User, type Plant, type Department } from '@/types';
+import { Head, router } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -19,65 +18,116 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 interface EquipmentIndexProps {
-    equipment: PaginationData<Equipment>;
     users: User[];
-    filters: {
-        search?: string;
-        employee_id?: number;
-        manufacturer?: string;
-    };
+    plants: Plant[];
+    departments: Department[];
 }
 
-export default function EquipmentIndex({ equipment: initialEquipment, users, filters = {} }: EquipmentIndexProps) {
+export default function EquipmentIndex({ users, plants, departments }: EquipmentIndexProps) {
     const { canManageEquipment } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-
-    // Use live page data instead of initial props
-    const { props } = usePage<EquipmentIndexProps>();
-    const equipment = props.equipment;
-
-    const { data, setData, get, processing } = useForm({
-        search: filters.search || '',
-        employee_id: filters.employee_id || '',
-        manufacturer: filters.manufacturer || '',
+    const [equipment, setEquipment] = useState<Equipment[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 0
     });
+    const [filters, setFilters] = useState<Record<string, any>>({});
 
     // Redirect if user doesn't have permission
     useEffect(() => {
         if (!canManageEquipment()) {
             router.visit('/dashboard');
         }
-    }, [canManageEquipment]);
+    }, []);
 
-    const handleFilterChange = () => {
-        get(route('admin.equipment.index'), {
-            preserveState: true,
-            replace: true,
-        });
-    };
+    const fetchEquipment = useCallback(async (params: Record<string, any> = {}) => {
+        setLoading(true);
+        try {
+            const queryParams = new URLSearchParams();
 
-    const refreshEquipment = () => {
-        get(route('admin.equipment.index'), {
-            preserveState: true,
-            replace: true,
-        });
-    };
+            // Add parameters with proper defaults
+            queryParams.append('page', params.page?.toString() || '1');
+            queryParams.append('per_page', params.per_page?.toString() || '15');
 
-    useEffect(() => {
-        const delayedSearch = setTimeout(() => {
-            if (data.search !== filters.search) {
-                handleFilterChange();
+            // Add filters if provided
+            if (params.filters) {
+                Object.keys(params.filters).forEach(key => {
+                    const value = params.filters[key];
+                    if (value && value !== 'all') {
+                        queryParams.append(key, value);
+                    }
+                });
             }
-        }, 500);
 
-        return () => clearTimeout(delayedSearch);
-    }, [data.search]);
+            // Add search if provided
+            if (params.search) {
+                queryParams.append('search', params.search);
+            }
 
-    useEffect(() => {
-        if (data.employee_id !== filters.employee_id || data.manufacturer !== filters.manufacturer) {
-            handleFilterChange();
+            // Add sorting if provided
+            if (params.sort_by) {
+                queryParams.append('sort_by', params.sort_by);
+            }
+            if (params.sort_direction) {
+                queryParams.append('sort_direction', params.sort_direction);
+            }
+
+            const response = await axios.get(`/admin/equipment/table-data?${queryParams.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = response.data;
+            setEquipment(data.data || []);
+            setPagination({
+                current_page: data.meta.current_page || 1,
+                last_page: data.meta.last_page || 1,
+                per_page: data.meta.per_page || 15,
+                total: data.meta.total || 0
+            });
+        } catch (error) {
+            console.error('Error fetching equipment:', error);
+            setEquipment([]);
+        } finally {
+            setLoading(false);
         }
-    }, [data.employee_id, data.manufacturer]);
+    }, []);
+
+    // Initial fetch - only run once
+    useEffect(() => {
+        if (canManageEquipment()) {
+            fetchEquipment();
+        }
+    }, []);
+
+    // Handle DataTable search
+    const handleSearch = useCallback((search: string) => {
+        fetchEquipment({ ...filters, search, page: 1 });
+    }, [filters]);
+
+    // Handle DataTable filters
+    const handleFilter = useCallback((newFilters: Record<string, any>) => {
+        setFilters(newFilters);
+        fetchEquipment({ filters: newFilters, page: 1 });
+    }, []);
+
+    // Handle DataTable pagination
+    const handlePageChange = useCallback((page: number) => {
+        fetchEquipment({ ...filters, page });
+    }, [filters]);
+
+    const handlePerPageChange = useCallback((perPage: number) => {
+        fetchEquipment({ ...filters, per_page: perPage, page: 1 });
+    }, [filters]);
+
+    // Refresh equipment after actions
+    const refreshEquipment = useCallback(() => {
+        fetchEquipment({ ...filters });
+    }, [filters]);
 
     if (!canManageEquipment()) {
         return null;
@@ -108,7 +158,7 @@ export default function EquipmentIndex({ equipment: initialEquipment, users, fil
                                     Create a new equipment record. All fields marked with * are required.
                                 </DialogDescription>
                             </DialogHeader>
-                            <div className="flex-1 overflow-y-auto px-1">
+                            <div className="flex-1 overflow-y-auto px-1 py-4">
                                 <EquipmentForm
                                     users={users}
                                     onSuccess={() => {
@@ -122,62 +172,25 @@ export default function EquipmentIndex({ equipment: initialEquipment, users, fil
                     </Dialog>
                 </div>
 
-                {/* Filters */}
-                <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search by serial number, description, or manufacturer..."
-                            value={data.search}
-                            onChange={(e) => setData('search', e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-
-                    <div className="flex gap-2">
-                        <Select
-                            value={data.employee_id ? data.employee_id.toString() : 'all'}
-                            onValueChange={(value) => setData('employee_id', value === 'all' ? '' : value)}
-                        >
-                            <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="Filter by user" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Users</SelectItem>
-                                <SelectItem value="unassigned">Unassigned</SelectItem>
-                                {users.map((user) => (
-                                    <SelectItem key={user.employee_id} value={user.employee_id.toString()}>
-                                        {user.full_name || `${user.first_name} ${user.last_name}`}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        <Input
-                            placeholder="Filter by manufacturer"
-                            value={data.manufacturer}
-                            onChange={(e) => setData('manufacturer', e.target.value)}
-                            className="w-[200px]"
-                        />
-                    </div>
-                </div>
-
                 {/* Equipment Table */}
                 <EquipmentTable
-                    equipment={equipment}
+                    equipment={{
+                        data: equipment,
+                        current_page: pagination.current_page,
+                        last_page: pagination.last_page,
+                        per_page: pagination.per_page,
+                        total: pagination.total
+                    }}
+                    loading={loading}
                     users={users}
+                    plants={plants}
+                    departments={departments}
                     onRefresh={refreshEquipment}
+                    onSearch={handleSearch}
+                    onFilter={handleFilter}
+                    onPageChange={handlePageChange}
+                    onPerPageChange={handlePerPageChange}
                 />
-
-                {/* Pagination Info */}
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div>
-                        Showing {equipment.from || 0} to {equipment.to || 0} of {equipment.total} equipment
-                    </div>
-                    <div>
-                        Page {equipment.current_page} of {equipment.last_page}
-                    </div>
-                </div>
             </div>
         </AppLayout>
     );

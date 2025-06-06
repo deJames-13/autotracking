@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { type Equipment, type User, type PaginationData } from '@/types';
+import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
+import { type Equipment, type User, type PaginationData, type Plant, type Department } from '@/types';
 import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { router } from '@inertiajs/react';
 import { EquipmentViewDialog } from './equipment-view-dialog';
 import { EquipmentEditDialog } from './equipment-edit-dialog';
@@ -12,11 +13,29 @@ import { EquipmentDeleteDialog } from './equipment-delete-dialog';
 
 interface EquipmentTableProps {
     equipment: PaginationData<Equipment>;
+    loading?: boolean;
     users: User[];
+    plants: Plant[];
+    departments: Department[];
     onRefresh?: () => void;
+    onSearch?: (search: string) => void;
+    onFilter?: (filters: Record<string, any>) => void;
+    onPageChange?: (page: number) => void;
+    onPerPageChange?: (perPage: number) => void;
 }
 
-export function EquipmentTable({ equipment, users, onRefresh }: EquipmentTableProps) {
+export function EquipmentTable({
+    equipment,
+    loading = false,
+    users,
+    plants,
+    departments,
+    onRefresh,
+    onSearch,
+    onFilter,
+    onPageChange,
+    onPerPageChange
+}: EquipmentTableProps) {
     const [viewingEquipment, setViewingEquipment] = useState<Equipment | null>(null);
     const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
     const [deletingEquipment, setDeletingEquipment] = useState<Equipment | null>(null);
@@ -33,129 +52,275 @@ export function EquipmentTable({ equipment, users, onRefresh }: EquipmentTablePr
         router.reload({ only: ['equipment'] });
     };
 
+    const getStatusBadgeVariant = (status: string) => {
+        switch (status) {
+            case 'active':
+                return 'default';
+            case 'in_calibration':
+                return 'secondary';
+            case 'pending_calibration':
+                return 'outline';
+            default:
+                return 'destructive';
+        }
+    };
+
+    // Define DataTable columns
+    const columns: DataTableColumn<Equipment>[] = [
+        {
+            key: 'equipment_id',
+            label: 'ID',
+            render: (value, row) => (
+                <div className="font-medium">
+                    {row.equipment_id}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[100px]'
+        },
+        {
+            key: 'recall_number',
+            label: 'Recall Number',
+            render: (value, row) => (
+                <div className="font-medium">
+                    {row.recall_number}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[150px]'
+        },
+        {
+            key: 'serial_number',
+            label: 'Serial Number',
+            render: (value, row) => (
+                <div className="text-sm">
+                    {row.serial_number || 'N/A'}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[150px]'
+        },
+        {
+            key: 'description',
+            label: 'Description',
+            render: (value, row) => (
+                <div className="space-y-0.5">
+                    <div className="text-sm max-w-[200px] truncate" title={row.description}>
+                        {row.description}
+                    </div>
+                    {row.manufacturer && (
+                        <div className="text-xs text-muted-foreground">
+                            {row.manufacturer}
+                        </div>
+                    )}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[250px]'
+        },
+        {
+            key: 'plant_name',
+            label: 'Plant',
+            render: (value, row) => (
+                <div className="text-sm">
+                    {row.plant?.plant_name || 'Not assigned'}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[150px]'
+        },
+        {
+            key: 'department_name',
+            label: 'Department',
+            render: (value, row) => (
+                <div className="text-sm">
+                    {row.department?.department_name || 'Not assigned'}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[150px]'
+        },
+        {
+            key: 'user_name',
+            label: 'Assigned User',
+            render: (value, row) => (
+                <div className="text-sm">
+                    {row.user ? (
+                        <div>
+                            <div className="font-medium">
+                                {row.user.full_name || `${row.user.first_name} ${row.user.last_name}`}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                                ID: {row.user.employee_id}
+                                {row.user.role && (
+                                    <span> • {row.user.role.role_name.replace('_', ' ')}</span>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <span className="text-muted-foreground italic">Unassigned</span>
+                    )}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[200px]'
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            render: (value, row) => (
+                <Badge variant={getStatusBadgeVariant(row.status)}>
+                    {row.status?.replace('_', ' ').toUpperCase()}
+                </Badge>
+            ),
+            sortable: true,
+            width: 'w-[120px]'
+        },
+        {
+            key: 'created_at',
+            label: 'Created',
+            render: (value, row) => (
+                <div className="text-sm text-muted-foreground">
+                    {new Date(row.created_at).toLocaleDateString()}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[100px]'
+        },
+        {
+            key: 'actions',
+            label: 'Actions',
+            render: (value, row) => (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setViewingEquipment(row)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEditingEquipment(row)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => setDeletingEquipment(row)}
+                            className="text-destructive"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ),
+            width: 'w-[70px]'
+        }
+    ];
+
+    // Define DataTable filters
+    const filters: DataTableFilter[] = [
+        {
+            key: 'employee_id',
+            label: 'Assigned User',
+            type: 'select',
+            options: [
+                { value: 'all', label: 'All Users' },
+                { value: 'unassigned', label: 'Unassigned' },
+                ...users.map(user => ({
+                    value: user.employee_id.toString(),
+                    label: user.full_name || `${user.first_name} ${user.last_name}`
+                }))
+            ]
+        },
+        {
+            key: 'plant_id',
+            label: 'Plant',
+            type: 'select',
+            options: [
+                { value: 'all', label: 'All Plants' },
+                ...plants.map(plant => ({
+                    value: plant.plant_id.toString(),
+                    label: plant.plant_name
+                }))
+            ]
+        },
+        {
+            key: 'department_id',
+            label: 'Department',
+            type: 'select',
+            options: [
+                { value: 'all', label: 'All Departments' },
+                ...departments.map(dept => ({
+                    value: dept.department_id.toString(),
+                    label: dept.department_name
+                }))
+            ]
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            type: 'select',
+            options: [
+                { value: 'all', label: 'All Statuses' },
+                { value: 'active', label: 'Active' },
+                { value: 'in_calibration', label: 'In Calibration' },
+                { value: 'pending_calibration', label: 'Pending Calibration' },
+                { value: 'inactive', label: 'Inactive' }
+            ]
+        }
+    ];
+
+    // Handle DataTable events
+    const handleSearch = useCallback((search: string) => {
+        if (onSearch) {
+            onSearch(search);
+        }
+    }, [onSearch]);
+
+    const handleFilter = useCallback((filters: Record<string, any>) => {
+        if (onFilter) {
+            onFilter(filters);
+        }
+    }, [onFilter]);
+
+    const handlePageChange = useCallback((page: number) => {
+        if (onPageChange) {
+            onPageChange(page);
+        }
+    }, [onPageChange]);
+
+    const handlePerPageChange = useCallback((perPage: number) => {
+        if (onPerPageChange) {
+            onPerPageChange(perPage);
+        }
+    }, [onPerPageChange]);
+
     return (
         <>
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[100px]">ID</TableHead>
-                            <TableHead className="w-[150px]">Recall Number</TableHead>
-                            <TableHead className="w-[150px]">Serial Number</TableHead>
-                            <TableHead className="w-[200px]">Description</TableHead>
-                            <TableHead className="w-[150px]">Plant</TableHead>
-                            <TableHead className="w-[150px]">Department</TableHead>
-                            <TableHead className="w-[200px]">Assigned User</TableHead>
-                            <TableHead className="w-[100px]">Status</TableHead>
-                            <TableHead className="w-[100px]">Created</TableHead>
-                            <TableHead className="w-[70px]">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {equipment.data.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={10} className="h-24 text-center">
-                                    No equipment found.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            equipment.data.map((item) => (
-                                <TableRow key={item.equipment_id}>
-                                    <TableCell className="font-medium">
-                                        {item.equipment_id}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="font-medium">
-                                            {item.recall_number}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {item.serial_number || 'N/A'}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm max-w-[200px] truncate" title={item.description}>
-                                            {item.description}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {item.plant?.plant_name || 'Not assigned'}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {item.department?.department_name || 'Not assigned'}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {item.user ? (
-                                                <div>
-                                                    <div className="font-medium">
-                                                        {item.user.full_name || `${item.user.first_name} ${item.user.last_name}`}
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        ID: {item.user.employee_id}
-                                                        {item.user.role && (
-                                                            <span> • {item.user.role.role_name.replace('_', ' ')}</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <span className="text-muted-foreground italic">Unassigned</span>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={
-                                            item.status === 'active' ? 'default' :
-                                                item.status === 'in_calibration' ? 'secondary' :
-                                                    item.status === 'pending_calibration' ? 'outline' :
-                                                        'destructive'
-                                        }>
-                                            {item.status?.replace('_', ' ').toUpperCase()}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm text-muted-foreground">
-                                            {new Date(item.created_at).toLocaleDateString()}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Open menu</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => setViewingEquipment(item)}>
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    View
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => setEditingEquipment(item)}>
-                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                    Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => setDeletingEquipment(item)}
-                                                    className="text-destructive"
-                                                >
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+            <DataTable
+                data={equipment.data}
+                columns={columns}
+                filters={filters}
+                loading={loading}
+                pagination={{
+                    current_page: equipment.current_page,
+                    last_page: equipment.last_page,
+                    per_page: equipment.per_page,
+                    total: equipment.total
+                }}
+                onSearch={handleSearch}
+                onFilter={handleFilter}
+                onPageChange={handlePageChange}
+                onPerPageChange={handlePerPageChange}
+                searchable={true}
+                filterable={true}
+                emptyMessage="No equipment found."
+                rowKey="equipment_id"
+            />
 
             {/* Equipment Dialogs */}
             <EquipmentViewDialog
