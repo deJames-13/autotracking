@@ -5,10 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
 import { type Department, type Plant, type Role, type User, type PaginationData } from '@/types';
 import { router } from '@inertiajs/react';
-import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Eye, MoreHorizontal, Pencil, Trash2, Download } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { UserForm } from './user-form';
 import Barcode from 'react-barcode';
+import { toast } from 'sonner';
 
 interface UserTableProps {
     users: PaginationData<User>;
@@ -77,6 +78,81 @@ export function UserTable({
 
     const formatRoleName = (roleName: string) => {
         return roleName.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    };
+
+    // Handle barcode download
+    const handleDownloadBarcode = () => {
+        try {
+            // Find the barcode SVG element
+            const barcodeSvg = document.querySelector('.user-barcode-container svg') as SVGSVGElement;
+            if (!barcodeSvg) {
+                toast.error('Barcode not found');
+                return;
+            }
+
+            // Get SVG dimensions
+            const svgRect = barcodeSvg.getBoundingClientRect();
+            const svgWidth = svgRect.width || 300;
+            const svgHeight = svgRect.height || 100;
+
+            // Create a canvas to convert SVG to PNG
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                toast.error('Could not create download canvas');
+                return;
+            }
+
+            // Set canvas size with some padding
+            canvas.width = svgWidth + 20;
+            canvas.height = svgHeight + 20;
+
+            // Fill with white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Convert SVG to data URL
+            const svgData = new XMLSerializer().serializeToString(barcodeSvg);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const svgUrl = URL.createObjectURL(svgBlob);
+
+            // Create an image element to load the SVG
+            const img = new Image();
+            img.onload = () => {
+                // Draw the SVG image onto the canvas with padding
+                ctx.drawImage(img, 10, 10, svgWidth, svgHeight);
+
+                // Convert canvas to blob and download
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        toast.error('Could not generate barcode image');
+                        return;
+                    }
+
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `user-barcode-${viewingUser?.employee_id || 'unknown'}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    URL.revokeObjectURL(svgUrl);
+
+                    toast.success('Barcode downloaded successfully');
+                }, 'image/png');
+            };
+
+            img.onerror = () => {
+                toast.error('Failed to load barcode for download');
+                URL.revokeObjectURL(svgUrl);
+            };
+
+            img.src = svgUrl;
+        } catch (error) {
+            console.error('Error downloading barcode:', error);
+            toast.error('Failed to download barcode');
+        }
     };
 
     // Define DataTable columns
@@ -316,15 +392,28 @@ export function UserTable({
                             {/* Employee ID Barcode */}
                             {viewingUser.employee_id && (
                                 <div className="flex flex-col items-center mb-4">
-                                    <Barcode
-                                        value={String(viewingUser.employee_id)}
-                                        width={2}
-                                        height={60}
-                                        displayValue={true}
-                                        fontSize={16}
-                                        margin={8}
-                                    />
-                                    <span className="text-xs text-muted-foreground mt-1">Employee ID Barcode</span>
+                                    <div className="user-barcode-container">
+                                        <Barcode
+                                            value={String(viewingUser.employee_id)}
+                                            width={2}
+                                            height={60}
+                                            displayValue={true}
+                                            fontSize={16}
+                                            margin={8}
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <span className="text-xs text-muted-foreground">Employee ID Barcode</span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleDownloadBarcode}
+                                            className="h-6 px-2"
+                                        >
+                                            <Download className="h-3 w-3 mr-1" />
+                                            Download
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                             <div className="grid grid-cols-2 gap-4">

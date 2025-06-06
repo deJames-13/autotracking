@@ -15,8 +15,12 @@
 
 -- TODO
 
-- [ ] Table paginated/filters (turn to datatable)
-
+- [ ] Table paginated/filters (turn to datatable)  
+    - [x] user
+    - [x] equipment
+    - [ ] incoming
+    - [ ] outgoing
+    
 - [ ] Bar Code downloadables
 
 - [ ] Roles
