@@ -13,15 +13,22 @@
         - [x] Recall number auto generates when not specified
         - [x] allow editing of recall number
 
--- TODO
-
 - [ ] Table paginated/filters (turn to datatable)  
     - [x] user
     - [x] equipment
+
     - [ ] incoming
     - [ ] outgoing
+        - [ ] remove export button
+
+- [ ] Accounts
+    - [ ] Manual input or auto generated of id (unique)
+    - [ ] On user creation, email user with their employee id and pin
+    - [x] Admin can reset password immediately, email automatically on change  
 
 - [x] Bar Code downloadables
+
+-- TODO
 
 - [ ] Roles
     - [ ] Admin
@@ -31,11 +38,6 @@
         - [ ] Can only see incoming, calibration, outgoing, 
     - [ ] Employee
         - [ ] Can only see incoming and outgoing
-
-- [ ] Accounts
-    - [ ] Manual input or auto generated of id (unique)
-    - [ ] On user creation, email user with their employee id and pin
-    - [ ] Admin can reset password immediately, email automatically on change  
 
 - [ ] Equipment
     - [ ] process requirement range (for new items)
