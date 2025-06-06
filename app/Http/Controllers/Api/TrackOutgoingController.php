@@ -59,6 +59,27 @@ class TrackOutgoingController extends Controller
         // Set released_by_id to current authenticated user (admin/operator releasing the equipment)
         $validatedData['released_by_id'] = auth()->user()->employee_id;
 
+        // Auto-calculate overdue (due date vs cal date)
+        if ($incoming && isset($validatedData['cal_date'])) {
+            $dueDate = new \DateTime($incoming->due_date);
+            $calDate = new \DateTime($validatedData['cal_date']);
+            
+            if ($calDate > $dueDate) {
+                $interval = $dueDate->diff($calDate);
+                $validatedData['overdue'] = $interval->days;
+            } else {
+                $validatedData['overdue'] = 0;
+            }
+        }
+        
+        // Auto-calculate queuing days (incoming date to cal date)
+        if ($incoming && isset($validatedData['cal_date'])) {
+            $incomingDate = new \DateTime($incoming->date_in);
+            $calDate = new \DateTime($validatedData['cal_date']);
+            
+            $interval = $incomingDate->diff($calDate);
+            $validatedData['cycle_time'] = $interval->days;
+        }
         $record = TrackOutgoing::create($validatedData);
         $record->load(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']);
 
@@ -73,7 +94,31 @@ class TrackOutgoingController extends Controller
 
     public function update(TrackOutgoingRequest $request, TrackOutgoing $trackOutgoing): TrackOutgoingResource
     {
-        $trackOutgoing->update($request->validated());
+        $validatedData = $request->validated();
+        
+        // Auto-calculate overdue (due date vs cal date)
+        if (isset($validatedData['cal_date']) && $trackOutgoing->trackIncoming) {
+            $dueDate = new \DateTime($trackOutgoing->trackIncoming->due_date);
+            $calDate = new \DateTime($validatedData['cal_date']);
+            
+            if ($calDate > $dueDate) {
+                $interval = $dueDate->diff($calDate);
+                $validatedData['overdue'] = $interval->days;
+            } else {
+                $validatedData['overdue'] = 0;
+            }
+        }
+        
+        // Auto-calculate queuing days (incoming date to cal date)
+        if (isset($validatedData['cal_date']) && $trackOutgoing->trackIncoming) {
+            $incomingDate = new \DateTime($trackOutgoing->trackIncoming->date_in);
+            $calDate = new \DateTime($validatedData['cal_date']);
+            
+            $interval = $incomingDate->diff($calDate);
+            $validatedData['cycle_time'] = $interval->days;
+        }
+        
+        $trackOutgoing->update($validatedData);
         $trackOutgoing->load(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']);
 
         return new TrackOutgoingResource($trackOutgoing);

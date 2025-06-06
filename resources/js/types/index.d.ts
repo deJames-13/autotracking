@@ -163,7 +163,6 @@ export interface TrackIncoming {
     received_by?: User;
     track_outgoing?: TrackOutgoing;
 }
-}
 
 // New Track Outgoing interface (calibration completions)
 export interface TrackOutgoing {

@@ -86,7 +86,11 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                 recall_number: trackOutgoing.track_incoming?.recall_number,
                 incoming_id: trackOutgoing.incoming_id,
                 employee_id_out: trackOutgoing.employee_out_user?.employee_id,
-                cycle_time: parseInt(data.cycle_time)
+                cycle_time: parseInt(data.cycle_time),
+                ct_reqd: data.ct_reqd ? parseInt(data.ct_reqd) : null,
+                commit_etc: data.commit_etc ? parseInt(data.commit_etc) : null,
+                actual_etc: data.actual_etc ? parseInt(data.actual_etc) : null,
+                overdue: data.overdue ? parseInt(data.overdue) : 0
             }, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
@@ -196,20 +200,77 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
 
                                 <div>
                                     <Label htmlFor="cycle_time" className="text-sm font-medium">
-                                        Cycle Time (days) *
+                                        Cycle Time (days)
                                     </Label>
                                     <Input
                                         id="cycle_time"
                                         type="number"
-                                        min="1"
                                         value={data.cycle_time}
-                                        onChange={(e) => setData('cycle_time', e.target.value)}
-                                        className={errors.cycle_time ? 'border-destructive' : ''}
-                                        placeholder="Enter cycle time in days"
-                                        required
+                                        min={0}
+                                        onChange={e => setData('cycle_time', e.target.value)}
                                     />
                                     {errors.cycle_time && (
                                         <p className="text-sm text-destructive">{errors.cycle_time}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <Label htmlFor="ct_reqd" className="text-sm font-medium">
+                                        CT Reqd (days)
+                                    </Label>
+                                    <Input
+                                        id="ct_reqd"
+                                        type="number"
+                                        value={data.ct_reqd || ''}
+                                        min={0}
+                                        onChange={e => setData('ct_reqd', e.target.value)}
+                                    />
+                                    {errors.ct_reqd && (
+                                        <p className="text-sm text-destructive">{errors.ct_reqd}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <Label htmlFor="commit_etc" className="text-sm font-medium">
+                                        Commit ETC (days)
+                                    </Label>
+                                    <Input
+                                        id="commit_etc"
+                                        type="number"
+                                        value={data.commit_etc || ''}
+                                        min={0}
+                                        onChange={e => setData('commit_etc', e.target.value)}
+                                    />
+                                    {errors.commit_etc && (
+                                        <p className="text-sm text-destructive">{errors.commit_etc}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <Label htmlFor="actual_etc" className="text-sm font-medium">
+                                        Actual ETC (days)
+                                    </Label>
+                                    <Input
+                                        id="actual_etc"
+                                        type="number"
+                                        value={data.actual_etc || ''}
+                                        min={0}
+                                        onChange={e => setData('actual_etc', e.target.value)}
+                                    />
+                                    {errors.actual_etc && (
+                                        <p className="text-sm text-destructive">{errors.actual_etc}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <Label htmlFor="overdue" className="text-sm font-medium">
+                                        Overdue (days)
+                                    </Label>
+                                    <Input
+                                        id="overdue"
+                                        type="number"
+                                        value={data.overdue || 0}
+                                        min={0}
+                                        onChange={e => setData('overdue', e.target.value)}
+                                    />
+                                    {errors.overdue && (
+                                        <p className="text-sm text-destructive">{errors.overdue}</p>
                                     )}
                                 </div>
                             </CardContent>

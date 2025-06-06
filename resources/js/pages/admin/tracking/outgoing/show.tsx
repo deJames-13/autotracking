@@ -427,15 +427,36 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                                 </p>
                             </div>
 
-                            {trackOutgoing.cycle_time && (
-                                <div>
-                                    <Label className="text-sm font-medium">Cycle Time</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {trackOutgoing.cycle_time} days
-                                    </p>
-                                </div>
-                            )}
-
+                            <div>
+                                <Label className="text-sm font-medium">Cycle Time</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    {trackOutgoing.cycle_time} days
+                                </p>
+                            </div>
+                            <div>
+                                <Label className="text-sm font-medium">CT Reqd</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    {trackOutgoing.ct_reqd ?? '—'} days
+                                </p>
+                            </div>
+                            <div>
+                                <Label className="text-sm font-medium">Commit ETC</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    {trackOutgoing.commit_etc ? `${trackOutgoing.commit_etc} days` : '—'}
+                                </p>
+                            </div>
+                            <div>
+                                <Label className="text-sm font-medium">Actual ETC</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    {trackOutgoing.actual_etc ? `${trackOutgoing.actual_etc} days` : '—'}
+                                </p>
+                            </div>
+                            <div>
+                                <Label className="text-sm font-medium">Overdue</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    {trackOutgoing.overdue ?? 0} days
+                                </p>
+                            </div>
                             <div>
                                 <Label className="text-sm font-medium">Status</Label>
                                 <div>{getStatusBadge()}</div>

@@ -28,6 +28,10 @@ interface OutgoingFormData {
     date_out: string;
     employee_id_out: string;
     cycle_time: number;
+    ct_reqd: number | null;
+    commit_etc: number | null;
+    actual_etc: number | null;
+    overdue: number | null;
     confirmation_pin: string;
 }
 
@@ -58,6 +62,10 @@ export function OutgoingCalibrationModal({
         date_out: '',
         employee_id_out: '',
         cycle_time: 0,
+        ct_reqd: null,
+        commit_etc: null,
+        actual_etc: null,
+        overdue: null,
         confirmation_pin: ''
     });
 
@@ -79,6 +87,10 @@ export function OutgoingCalibrationModal({
                 date_out: format(currentDate, 'yyyy-MM-dd HH:mm:ss'),
                 employee_id_out: '',
                 cycle_time: calculateCycleTime(incomingRecord.date_in, currentDate),
+                ct_reqd: null,
+                commit_etc: null,
+                actual_etc: null,
+                overdue: null,
                 confirmation_pin: ''
             });
         }
@@ -257,7 +269,48 @@ export function OutgoingCalibrationModal({
 
             setDateOut(date);
             setData('date_out', format(date, 'yyyy-MM-dd HH:mm:ss'));
+
+            // Auto-calculate overdue if commit_etc is set
+            if (commitEtc && date > commitEtc) {
+                const timeDiff = date.getTime() - commitEtc.getTime();
+                const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                setData('overdue', days);
+            }
         }
+    };
+
+    const handleCommitEtcChange = (date: Date | undefined) => {
+        if (date) {
+            setCommitEtc(date);
+            setData('commit_etc', format(date, 'yyyy-MM-dd'));
+
+            // Auto-calculate overdue if date_out is set
+            if (dateOut && dateOut > date) {
+                const timeDiff = dateOut.getTime() - date.getTime();
+                const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                setData('overdue', days);
+            } else {
+                setData('overdue', 0);
+            }
+        }
+    };
+
+    const handleActualEtcChange = (date: Date | undefined) => {
+        if (date) {
+            setActualEtc(date);
+            setData('actual_etc', format(date, 'yyyy-MM-dd'));
+        }
+    };
+
+    // Calculate queuing days (from date in to cal date)
+    const calculateQueuingDays = (): number => {
+        if (!incomingRecord || !calDate) return 0;
+
+        const dateIn = new Date(incomingRecord.date_in);
+        const calDateObj = new Date(calDate);
+
+        const timeDiff = calDateObj.getTime() - dateIn.getTime();
+        return Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
     };
 
     // Submit form - Remove PIN requirement
@@ -272,14 +325,20 @@ export function OutgoingCalibrationModal({
         setSubmitting(true);
 
         try {
-            // Submit the form with current data using axios - Remove confirmation_pin
+            // Submit the form with current data using axios - Include all cycle time fields
             const response = await axios.post(route('api.track-outgoing.store'), {
                 incoming_id: data.incoming_id,
                 recall_number: data.recall_number,
                 cal_date: data.cal_date,
                 cal_due_date: data.cal_due_date,
                 date_out: data.date_out,
-                cycle_time: data.cycle_time
+                employee_id_out: data.employee_id_out,
+                cycle_time: data.cycle_time,
+                ct_reqd: data.ct_reqd,
+                commit_etc: data.commit_etc,
+                actual_etc: data.actual_etc,
+                overdue: data.overdue,
+                confirmation_pin: data.confirmation_pin
             });
 
             // Check if the response indicates success
@@ -380,139 +439,102 @@ export function OutgoingCalibrationModal({
                         {/* Calibration Date */}
                         <div className="space-y-2">
                             <Label htmlFor="cal_date">Calibration Date *</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    id="cal_date"
-                                    type="date"
-                                    value={calDate ? format(calDate, 'yyyy-MM-dd') : ''}
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            const newDate = new Date(e.target.value);
-                                            handleCalDateChange(newDate);
-                                        }
-                                    }}
-                                    className="flex-1"
-                                />
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="shrink-0"
-                                        >
-                                            <CalendarIcon className="h-4 w-4" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                        <Calendar
-                                            mode="single"
-                                            selected={calDate}
-                                            onSelect={handleCalDateChange}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                            {errors.cal_date && <p className="text-sm text-destructive">{errors.cal_date}</p>}
+                            <Input
+                                id="cal_date"
+                                type="date"
+                                value={calDate ? format(calDate, 'yyyy-MM-dd') : ''}
+                                onChange={e => {
+                                    if (e.target.value) handleCalDateChange(new Date(e.target.value));
+                                }}
+                            />
                         </div>
-
                         {/* Calibration Due Date */}
                         <div className="space-y-2">
                             <Label htmlFor="cal_due_date">Calibration Due Date *</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    id="cal_due_date"
-                                    type="date"
-                                    value={calDueDate ? format(calDueDate, 'yyyy-MM-dd') : ''}
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            const newDate = new Date(e.target.value);
-                                            handleCalDueDateChange(newDate);
-                                        }
-                                    }}
-                                    className="flex-1"
-                                />
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="shrink-0"
-                                        >
-                                            <CalendarIcon className="h-4 w-4" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                        <Calendar
-                                            mode="single"
-                                            selected={calDueDate}
-                                            onSelect={handleCalDueDateChange}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                            {errors.cal_due_date && <p className="text-sm text-destructive">{errors.cal_due_date}</p>}
+                            <Input
+                                id="cal_due_date"
+                                type="date"
+                                value={calDueDate ? format(calDueDate, 'yyyy-MM-dd') : ''}
+                                onChange={e => {
+                                    if (e.target.value) handleCalDueDateChange(new Date(e.target.value));
+                                }}
+                            />
                         </div>
-
                         {/* Date Out */}
                         <div className="space-y-2">
                             <Label htmlFor="date_out">Date Out *</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    id="date_out"
-                                    type="date"
-                                    value={dateOut ? format(dateOut, 'yyyy-MM-dd') : ''}
-                                    min={incomingRecord ? format(new Date(incomingRecord.date_in), 'yyyy-MM-dd') : undefined}
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            const newDate = new Date(e.target.value);
-                                            handleDateOutChange(newDate);
-                                        }
-                                    }}
-                                    className="flex-1"
-                                />
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="shrink-0"
-                                        >
-                                            <CalendarIcon className="h-4 w-4" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                        <Calendar
-                                            mode="single"
-                                            selected={dateOut}
-                                            onSelect={handleDateOutChange}
-                                            disabled={(date) => incomingRecord ? date < new Date(incomingRecord.date_in) : false}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                            {errors.date_out && <p className="text-sm text-destructive">{errors.date_out}</p>}
-                            {incomingRecord && (
-                                <p className="text-xs text-muted-foreground">
-                                    Must be on or after {format(new Date(incomingRecord.date_in), 'MMM dd, yyyy')} (Date In)
-                                </p>
-                            )}
+                            <Input
+                                id="date_out"
+                                type="date"
+                                value={dateOut ? format(dateOut, 'yyyy-MM-dd') : ''}
+                                onChange={e => {
+                                    if (e.target.value) handleDateOutChange(new Date(e.target.value));
+                                }}
+                            />
                         </div>
-
-                        {/* Cycle Time (Read-only) */}
+                        {/* CT Reqd (manual input) */}
+                        <div className="space-y-2">
+                            <Label htmlFor="ct_reqd">CT Reqd (days)</Label>
+                            <Input
+                                id="ct_reqd"
+                                type="number"
+                                value={data.ct_reqd ?? ''}
+                                min={0}
+                                onChange={e => setData('ct_reqd', e.target.value ? parseInt(e.target.value) : null)}
+                            />
+                        </div>
+                        {/* Commit ETC (manual input, days) */}
+                        <div className="space-y-2">
+                            <Label htmlFor="commit_etc">Commit ETC (days)</Label>
+                            <Input
+                                id="commit_etc"
+                                type="number"
+                                value={data.commit_etc ?? ''}
+                                min={0}
+                                onChange={e => setData('commit_etc', e.target.value ? parseInt(e.target.value) : null)}
+                            />
+                        </div>
+                        {/* Actual ETC (manual input, days) */}
+                        <div className="space-y-2">
+                            <Label htmlFor="actual_etc">Actual ETC (days)</Label>
+                            <Input
+                                id="actual_etc"
+                                type="number"
+                                value={data.actual_etc ?? ''}
+                                min={0}
+                                onChange={e => setData('actual_etc', e.target.value ? parseInt(e.target.value) : null)}
+                            />
+                        </div>
+                        {/* Cycle Time (editable) */}
                         <div className="space-y-2">
                             <Label htmlFor="cycle_time">Cycle Time (Days)</Label>
                             <Input
                                 id="cycle_time"
+                                type="number"
                                 value={data.cycle_time}
+                                min={0}
+                                onChange={e => setData('cycle_time', e.target.value ? parseInt(e.target.value) : 0)}
+                            />
+                        </div>
+                        {/* Queuing Days (auto) */}
+                        <div className="space-y-2">
+                            <Label>Queuing Days</Label>
+                            <Input
+                                value={calculateQueuingDays()}
                                 readOnly
                                 className="bg-muted"
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Automatically calculated from date in to date out
-                            </p>
+                        </div>
+                        {/* Overdue (auto/manual) */}
+                        <div className="space-y-2">
+                            <Label htmlFor="overdue">Overdue (days)</Label>
+                            <Input
+                                id="overdue"
+                                type="number"
+                                value={data.overdue ?? 0}
+                                min={0}
+                                onChange={e => setData('overdue', e.target.value ? parseInt(e.target.value) : 0)}
+                            />
                         </div>
                     </div>
 
