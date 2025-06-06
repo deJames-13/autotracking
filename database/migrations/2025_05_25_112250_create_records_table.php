@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('track_incoming', function (Blueprint $table) {
             $table->id();
-            $table->string('recall_number');
+            $table->string('recall_number')->nullable();
             $table->foreignId('technician_id')->constrained('users', 'employee_id')->onDelete('restrict');
             $table->text('description');
             $table->foreignId('equipment_id')->constrained('equipments', 'equipment_id')->onDelete('cascade');

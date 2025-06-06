@@ -899,11 +899,11 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     <Label htmlFor="receivedBy" className={errors.receivedBy ? 'text-destructive' : ''}>
                                         Received By
                                     </Label>
-
+                                    {console.log(receivedBy)}
                                     <InertiaSmartSelect
                                         name="receivedBy"
-                                        value={receivedBy?.user_id || receivedBy?.employee_id}
-                                        label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : undefined}
+                                        value={receivedBy?.employee_id}
+                                        label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : 'None'}
                                         onChange={(value) => handleChange('receivedBy', value as string)}
                                         loadOptions={loadUserOptions}
                                         placeholder="Select user"

@@ -10,7 +10,7 @@
 
 -- TODO
 - [ ] Incoming Request Revision
-    - [ ] Received By not working properly when changing from select
+    - [x] Received By not working properly when changing from select
     - [ ] Recall number should be after calibration
         - [ ] Recall number auto generates when not specified
         - [ ] allow editing of recall number

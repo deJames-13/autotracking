@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('equipments', function (Blueprint $table) {
             $table->id('equipment_id');
-            $table->string('recall_number');
+            $table->string('recall_number')->nullable();
             $table->string('serial_number')->nullable();
             $table->text('description');
             $table->foreignId('employee_id')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
