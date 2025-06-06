@@ -139,7 +139,7 @@ const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
                                 {completions.data.map(completion => (
                                     <tr key={completion.id} className="hover:bg-muted/50" onDoubleClick={() => router.visit(route('admin.tracking.outgoing.show', completion.id))}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            {completion.recall_number}
+                                            {completion.track_incoming.recall_number}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <div>

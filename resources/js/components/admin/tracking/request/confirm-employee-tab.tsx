@@ -20,7 +20,6 @@ interface ConfirmEmployeeTabProps {
 }
 
 const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange, errors = {} }) => {
-    console.log('changed', data.receivedBy)
     const { requestType, equipment } = useAppSelector(state => state.trackingRequest);
     const [locationNames, setLocationNames] = useState({
         plant: '',

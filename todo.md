@@ -9,11 +9,11 @@
 
 
 -- TODO
-- [ ] Incoming Request Revision
+- [x] Incoming Request Revision
     - [x] Received By not working properly when changing from select
-    - [ ] Recall number should be after calibration
-        - [ ] Recall number auto generates when not specified
-        - [ ] allow editing of recall number
+    - [x] Recall number should be after calibration
+        - [x] Recall number auto generates when not specified
+        - [x] allow editing of recall number
 
 - [ ] Table paginated/filters (turn to datatable)
 

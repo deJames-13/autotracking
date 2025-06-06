@@ -47,7 +47,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
             href: '/admin/tracking/outgoing',
         },
         {
-            title: trackOutgoing.recall_number,
+            title: trackOutgoing.track_incoming.recall_number,
             href: `/admin/tracking/outgoing/${trackOutgoing.id}`,
         },
     ];
@@ -213,7 +213,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
     };
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Outgoing Completion: ${trackOutgoing.recall_number}`} />
+            <Head title={`Outgoing Completion: ${trackOutgoing.track_incoming?.recall_number}`} />
 
             <div className="space-y-6 p-6">
                 <Button variant="outline" size="sm" asChild>
@@ -227,7 +227,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                     <div className="flex items-center gap-4">
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">
-                                Completion: {trackOutgoing.recall_number}
+                                Completion: {trackOutgoing.track_incoming?.recall_number}
                             </h1>
                             <p className="text-muted-foreground">Calibration completion details</p>
                         </div>

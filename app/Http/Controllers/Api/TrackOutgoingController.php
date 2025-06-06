@@ -47,7 +47,18 @@ class TrackOutgoingController extends Controller
     {
         $incoming = TrackIncoming::find($request->incoming_id);
         if ($incoming) {
-            $incoming->update(['status' => 'completed']);
+            // Update both status and recall number in the incoming record
+            $incoming->update([
+                'status' => 'completed',
+                'recall_number' => $request->recall_number
+            ]);
+            
+            // Also update the recall number in the related equipment if it exists
+            if ($incoming->equipment) {
+                $incoming->equipment->update([
+                    'recall_number' => $request->recall_number
+                ]);
+            }
         }
 
         $validatedData = $request->validated();
