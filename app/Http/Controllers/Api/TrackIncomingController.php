@@ -288,10 +288,26 @@ class TrackIncomingController extends Controller
      */
     public function confirmRequestPin(Request $request): JsonResponse
     {
-        $request->validate([
-            'employee_id' => 'required|numeric',
-            'pin' => 'required|string|min:4',
-        ]);
+        // Get current authenticated user to check role
+        $currentUser = Auth::user();
+        $currentUser->load('role');
+        
+        // Check if current user is Admin or Technician - they can bypass PIN validation
+        $canBypassPin = in_array($currentUser->role?->role_name, ['admin', 'technician']);
+        
+        // Validate request based on role
+        if ($canBypassPin) {
+            // Admin/Technician only needs employee_id
+            $request->validate([
+                'employee_id' => 'required|numeric',
+            ]);
+        } else {
+            // Regular users need both employee_id and pin
+            $request->validate([
+                'employee_id' => 'required|numeric',
+                'pin' => 'required|string|min:4',
+            ]);
+        }
 
         try {
             // Find the employee by employee_id
@@ -304,26 +320,34 @@ class TrackIncomingController extends Controller
                 ], 404);
             }
 
-            // Check if employee has a PIN set - using password field as PIN
-            if (!$employee->password) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Employee PIN is not set. Please contact administrator.'
-                ], 400);
+            // Skip PIN validation for Admin/Technician roles
+            if (!$canBypassPin) {
+                // Check if employee has a PIN set - using password field as PIN
+                if (!$employee->password) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Employee PIN is not set. Please contact administrator.'
+                    ], 400);
+                }
+
+                // Verify the PIN - assuming PIN is stored in password field
+                if (!Hash::check($request->pin, $employee->password)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid PIN. Please try again.'
+                    ], 401);
+                }
             }
 
-            // Verify the PIN - assuming PIN is stored in password field
-            if (!Hash::check($request->pin, $employee->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid PIN. Please try again.'
-                ], 401);
-            }
+            // PIN is correct or bypassed for Admin/Technician
+            $message = $canBypassPin 
+                ? 'Employee validated successfully (PIN bypassed for ' . ucfirst($currentUser->role->role_name) . ').'
+                : 'PIN confirmed successfully.';
 
-            // PIN is correct
             return response()->json([
                 'success' => true,
-                'message' => 'PIN confirmed successfully.',
+                'message' => $message,
+                'bypassed_pin' => $canBypassPin,
                 'employee' => [
                     'employee_id' => $employee->employee_id,
                     'first_name' => $employee->first_name,

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Search } from 'lucide-react';
 import { format, addYears } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useForm, router } from '@inertiajs/react';
@@ -48,6 +48,8 @@ export function OutgoingCalibrationModal({
     const [calDate, setCalDate] = useState<Date>();
     const [calDueDate, setCalDueDate] = useState<Date>();
     const [dateOut, setDateOut] = useState<Date>();
+    const [commitEtc, setCommitEtc] = useState<Date>();
+    const [actualEtc, setActualEtc] = useState<Date>();
     const [employeeError, setEmployeeError] = useState<string>('');
     const [departmentValidation, setDepartmentValidation] = useState<{
         isValid: boolean;
@@ -140,22 +142,23 @@ export function OutgoingCalibrationModal({
         }
     }, [open]);
 
-    // Handle employee barcode/ID input
+    // Handle employee barcode/ID input (no automatic search)
     const handleEmployeeChange = (value: string) => {
         setData('employee_id_out', value);
         setEmployeeName('');
         setEmployeeOut(null);
         setEmployeeError('');
         setDepartmentValidation({ isValid: true, message: '' });
+    };
 
-        if (value.length >= 1) {
-            lookupEmployee(value);
-        } else {
-            setEmployeeName('');
-            setEmployeeOut(null);
-            setEmployeeError('');
-            setDepartmentValidation({ isValid: true, message: '' });
+    // Handle employee search when button is clicked
+    const handleEmployeeSearch = () => {
+        const employeeId = data.employee_id_out?.trim();
+        if (!employeeId) {
+            setEmployeeError('Please enter an employee ID');
+            return;
         }
+        lookupEmployee(employeeId);
     };
 
     // Function to validate department match
@@ -363,6 +366,8 @@ export function OutgoingCalibrationModal({
                 setCalDate(undefined);
                 setCalDueDate(undefined);
                 setDateOut(undefined);
+                setCommitEtc(undefined);
+                setActualEtc(undefined);
                 onOpenChange(false);
                 onSuccess();
 
@@ -403,6 +408,8 @@ export function OutgoingCalibrationModal({
         setCalDate(undefined);
         setCalDueDate(undefined);
         setDateOut(undefined);
+        setCommitEtc(undefined);
+        setActualEtc(undefined);
         setData('confirmation_pin', '');
         onOpenChange(false);
     };
@@ -453,6 +460,61 @@ export function OutgoingCalibrationModal({
                             </div>
                         </div>
                     </div>
+
+                    {/* Employee ID Out */}
+                    <div className="space-y-2">
+                        <Label htmlFor="employee_id_out">Employee ID Out *</Label>
+                        <div className="flex gap-2">
+                            <Input
+                                id="employee_id_out"
+                                type="text"
+                                value={data.employee_id_out}
+                                onChange={(e) => handleEmployeeChange(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleEmployeeSearch();
+                                    }
+                                }}
+                                placeholder="Enter employee ID to validate"
+                                className="flex-1"
+                                disabled={loadingEmployee}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleEmployeeSearch}
+                                disabled={loadingEmployee || !data.employee_id_out?.trim()}
+                                className="shrink-0"
+                            >
+                                <Search className="h-4 w-4" />
+                                Search
+                            </Button>
+                        </div>
+                        {loadingEmployee && (
+                            <p className="text-sm text-muted-foreground">Searching for employee...</p>
+                        )}
+                        {employeeName && (
+                            <p className="text-sm text-green-600">✓ Employee found: {employeeName}</p>
+                        )}
+                        {employeeError && (
+                            <p className="text-sm text-destructive">{employeeError}</p>
+                        )}
+                        {errors.employee_id_out && (
+                            <p className="text-sm text-destructive">{errors.employee_id_out}</p>
+                        )}
+                    </div>
+
+                    {/* Department Validation */}
+                    {departmentValidation.message && (
+                        <div className={`p-3 rounded-lg ${departmentValidation.isValid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                            }`}>
+                            <p className={`text-sm ${departmentValidation.isValid ? 'text-green-700' : 'text-red-700'
+                                }`}>
+                                {departmentValidation.message}
+                            </p>
+                        </div>
+                    )}
 
                     {/* Form Fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

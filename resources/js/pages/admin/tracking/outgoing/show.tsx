@@ -4,11 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { OutgoingStatusBadge } from '@/components/ui/status-badge';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackOutgoing } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, User, Calendar, Package, Clock, Edit, Scan, CheckCircle } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Package, Clock, Edit, Scan, Search, CheckCircle, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -21,7 +22,11 @@ interface TrackingOutgoingShowProps {
 
 const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoing }) => {
     console.log(trackOutgoing)
-    const { canManageRequestIncoming } = useRole();
+    const { canManageRequestIncoming, isAdmin, isTechnician } = useRole();
+
+    // Determine if PIN input should be shown (not for Admin or Technician)
+    const shouldShowPinInput = !isAdmin() && !isTechnician();
+    const currentRole = isAdmin() ? 'Admin' : isTechnician() ? 'Technician' : 'User';
 
     // State for pickup confirmation
     const [showPickupForm, setShowPickupForm] = useState(false);
@@ -109,46 +114,54 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
         });
     };
 
-    // Handle employee ID input and lookup
-    const handleEmployeeChange = async (value: string) => {
+    // Handle employee ID input change (no automatic search)
+    const handleEmployeeChange = (value: string) => {
         setEmployeeId(value);
+        // Clear previous results when input changes
         setEmployeeName('');
         setEmployeeError('');
         setEmployeeOut(null);
         setDepartmentValidation({ isValid: true, message: '' });
+    };
 
-        if (value.length >= 1) {
-            setLoadingEmployee(true);
-            try {
-                const response = await axios.get(route('api.users.search'), {
-                    params: { employee_id: value },
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
+    // Handle employee search when button is clicked
+    const handleEmployeeSearch = async () => {
+        if (!employeeId.trim()) {
+            setEmployeeError('Please enter an employee ID');
+            return;
+        }
 
-                if (response.data && response.data.length > 0) {
-                    const employee = response.data[0];
-                    setEmployeeName(`${employee.first_name} ${employee.last_name}`);
-                    setEmployeeOut(employee);
-                    setEmployeeError('');
+        setLoadingEmployee(true);
+        setEmployeeError('');
+        setEmployeeName('');
+        setEmployeeOut(null);
+        setDepartmentValidation({ isValid: true, message: '' });
 
-                    // Validate department match
-                    validateDepartment(employee);
-                } else {
-                    setEmployeeName('');
-                    setEmployeeOut(null);
-                    setEmployeeError('Employee not found with this ID');
-                }
-            } catch (error) {
+        try {
+            const response = await axios.get(route('api.users.search'), {
+                params: { employee_id: employeeId.trim() },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (response.data && response.data.length > 0) {
+                const employee = response.data[0];
+                setEmployeeName(`${employee.first_name} ${employee.last_name}`);
+                setEmployeeOut(employee);
+                setEmployeeError('');
+
+                // Validate department match
+                validateDepartment(employee);
+            } else {
                 setEmployeeName('');
                 setEmployeeOut(null);
-                setEmployeeError('Error searching for employee');
-            } finally {
-                setLoadingEmployee(false);
+                setEmployeeError('Employee not found with this ID');
             }
-        } else {
+        } catch (error) {
             setEmployeeName('');
             setEmployeeOut(null);
-            setEmployeeError('');
+            setEmployeeError('Error searching for employee');
+        } finally {
+            setLoadingEmployee(false);
         }
     };
 
@@ -159,7 +172,8 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
             return;
         }
 
-        if (!confirmationPin) {
+        // Only check PIN for non-Admin/non-Technician users
+        if (shouldShowPinInput && !confirmationPin) {
             toast.error('Please enter confirmation PIN');
             return;
         }
@@ -177,13 +191,23 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
         setSubmitting(true);
 
         try {
-            const response = await axios.post(route('api.track-outgoing.confirm-pickup', trackOutgoing.id), {
+            // Build request data - include PIN only if required
+            const requestData: any = {
                 employee_id: employeeId,
-                confirmation_pin: confirmationPin
-            });
+            };
+
+            // Only include PIN if not bypassed
+            if (shouldShowPinInput) {
+                requestData.confirmation_pin = confirmationPin;
+            }
+
+            const response = await axios.post(route('api.track-outgoing.confirm-pickup', trackOutgoing.id), requestData);
 
             if (response.data.success) {
-                toast.success('Equipment pickup confirmed successfully');
+                const message = response.data.bypassed_pin
+                    ? `Equipment pickup confirmed successfully (PIN bypassed for ${currentRole})`
+                    : 'Equipment pickup confirmed successfully';
+                toast.success(message);
                 // Refresh the page to show updated status
                 router.reload();
             } else {
@@ -298,6 +322,11 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                                                 id="employee_id_input"
                                                 value={employeeId}
                                                 onChange={(e) => handleEmployeeChange(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && employeeId.trim()) {
+                                                        handleEmployeeSearch();
+                                                    }
+                                                }}
                                                 placeholder="Scan or enter employee ID"
                                                 disabled={loadingEmployee || submitting}
                                             />
@@ -348,6 +377,15 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                                         </div>
                                         <Button
                                             type="button"
+                                            variant="default"
+                                            onClick={handleEmployeeSearch}
+                                            disabled={loadingEmployee || submitting || !employeeId.trim()}
+                                        >
+                                            <Search className="h-4 w-4 mr-2" />
+                                            Search
+                                        </Button>
+                                        <Button
+                                            type="button"
                                             variant="outline"
                                             onClick={handleScanBarcode}
                                             disabled={submitting}
@@ -358,21 +396,30 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                                     </div>
                                 </div>
 
-                                {/* PIN Confirmation */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="confirmation_pin">Employee PIN Confirmation *</Label>
-                                    <Input
-                                        id="confirmation_pin"
-                                        type="password"
-                                        placeholder="Enter employee PIN to confirm pickup"
-                                        value={confirmationPin}
-                                        onChange={(e) => setConfirmationPin(e.target.value)}
-                                        disabled={submitting}
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        Employee must enter their PIN to confirm equipment pickup
-                                    </p>
-                                </div>
+                                {/* PIN Confirmation - Show only for non-Admin/non-Technician users */}
+                                {shouldShowPinInput ? (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="confirmation_pin">Employee PIN Confirmation *</Label>
+                                        <Input
+                                            id="confirmation_pin"
+                                            type="password"
+                                            placeholder="Enter employee PIN to confirm pickup"
+                                            value={confirmationPin}
+                                            onChange={(e) => setConfirmationPin(e.target.value)}
+                                            disabled={submitting}
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            Employee must enter their PIN to confirm equipment pickup
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <Alert>
+                                        <Info className="h-4 w-4" />
+                                        <AlertDescription>
+                                            As a {currentRole}, PIN authentication is bypassed for equipment pickup confirmation.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
 
                                 {/* Submit Button */}
                                 <div className="flex justify-end gap-2 pt-4">
@@ -386,7 +433,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                                     </Button>
                                     <Button
                                         onClick={handleConfirmPickup}
-                                        disabled={submitting || !employeeId || !confirmationPin || !!employeeError || !departmentValidation.isValid}
+                                        disabled={submitting || !employeeId || (shouldShowPinInput && !confirmationPin) || !!employeeError || !departmentValidation.isValid}
                                     >
                                         {submitting ? 'Processing...' : 'Confirm Pickup'}
                                     </Button>

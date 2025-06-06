@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 import axios from 'axios';
 import { useAppSelector } from '@/store/hooks';
+import { useRole } from '@/hooks/use-role';
 
 interface ConfirmEmployeeTabProps {
     data: {
@@ -15,18 +18,23 @@ interface ConfirmEmployeeTabProps {
         receivedBy?: any;
         edit?: Number;
     };
-    onChange: (pin: string) => void;
+    onChange: (key: string, value: string) => void;
     errors?: Record<string, string>;
 }
 
 const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange, errors = {} }) => {
     const { requestType, equipment } = useAppSelector(state => state.trackingRequest);
+    const { isAdmin, isTechnician } = useRole();
     const [locationNames, setLocationNames] = useState({
         plant: '',
         department: '',
         location: ''
     });
     const [loading, setLoading] = useState(true);
+
+    // Determine if PIN input should be shown (not for Admin or Technician)
+    const shouldShowPinInput = !isAdmin() && !isTechnician();
+    const currentRole = isAdmin() ? 'Admin' : isTechnician() ? 'Technician' : 'User';
 
     // Fetch location names when component mounts or equipment data changes
     useEffect(() => {
@@ -113,10 +121,13 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                 </CardHeader>
                 <CardContent>
                     <div className="mb-6">
+                        {
+                            equipment.recallNumber && 
                         <h3 className="text-lg font-semibold mb-2">
                             Request for Recall #{equipment.recallNumber ||
                                 (requestType === 'routine' ? 'Not specified' : 'Will be assigned during calibration')}
                         </h3>
+                        }
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <div>
@@ -166,23 +177,36 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-                            <div>
-                                <Label
-                                    htmlFor="pin"
-                                    className={errors.pin ? 'text-destructive' : ''}
-                                >
-                                    Employee PIN
-                                </Label>
-                                <Input
-                                    id="pin"
-                                    type="password"
-                                    placeholder="Enter PIN"
-                                    value={data.confirmation_pin}
-                                    onChange={(e) => onChange('confirmation_pin', e.target.value)}
-                                    className={errors.pin ? 'border-destructive' : ''}
-                                />
-                                {errors.pin && <p className="text-sm text-destructive mt-1">{errors.pin}</p>}
-                            </div>
+                            {/* Show PIN bypass notification for Admin/Technician */}
+                            {!shouldShowPinInput && (
+                                <Alert className="mb-4">
+                                    <Info className="h-4 w-4" />
+                                    <AlertDescription>
+                                        As a {currentRole}, PIN authentication is bypassed for this action. The request will be confirmed without requiring employee PIN verification.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            {/* Show PIN input only for non-Admin/non-Technician users */}
+                            {shouldShowPinInput && (
+                                <div>
+                                    <Label
+                                        htmlFor="pin"
+                                        className={errors.pin ? 'text-destructive' : ''}
+                                    >
+                                        Employee PIN
+                                    </Label>
+                                    <Input
+                                        id="pin"
+                                        type="password"
+                                        placeholder="Enter PIN"
+                                        value={data.confirmation_pin}
+                                        onChange={(e) => onChange('confirmation_pin', e.target.value)}
+                                        className={errors.pin ? 'border-destructive' : ''}
+                                    />
+                                    {errors.pin && <p className="text-sm text-destructive mt-1">{errors.pin}</p>}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </CardContent>

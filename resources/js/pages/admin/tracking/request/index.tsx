@@ -49,7 +49,10 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
     editData,
     confirm
 }) => {
-    const { canManageRequestIncoming, user: currenUser } = useRole();
+    const { canManageRequestIncoming, user: currenUser, isAdmin, isTechnician } = useRole();
+
+    // Determine if PIN input should be shown (not for Admin or Technician)
+    const shouldShowPinInput = !isAdmin() && !isTechnician();
     const dispatch = useAppDispatch();
     const [isEditMode] = useState(!!edit);
     const [isConfirmMode] = useState(!!confirm);
@@ -272,7 +275,8 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
             }
         }
         else if (currentStep === 'confirmation' && !isConfirmMode) {
-            if (!confirmation_pin || confirmation_pin.length < 4) {
+            // Only validate PIN for non-Admin/non-Technician users
+            if (shouldShowPinInput && (!confirmation_pin || confirmation_pin.length < 4)) {
                 setError('confirmation_pin', 'PIN must be at least 4 digits.');
                 setValidationMessage('PIN must be at least 4 digits.');
                 return false;
@@ -311,17 +315,36 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
             // Get current Redux state
             const currentState = store.getState().trackingRequest;
 
-            // Check if we have a scanned employee and PIN
-            if (!currentState.scannedEmployee?.employee_id || !currentState.confirmation_pin) {
-                toast.error("Employee ID and PIN are required.");
+            // Check if we have a scanned employee
+            if (!currentState.scannedEmployee?.employee_id) {
+                toast.error("Employee ID is required.");
                 return false;
             }
 
-            // Send request to verify PIN using Axios or fetch with proper CSRF handling
-            const response = await axios.post(route('api.tracking.request.confirm-pin'), {
+            // For Admin/Technician, skip PIN requirement
+            if (!shouldShowPinInput) {
+                toast.success("Employee validated successfully (PIN bypassed for privileged user).");
+                return true;
+            }
+
+            // For regular users, PIN is required
+            if (!currentState.confirmation_pin) {
+                toast.error("PIN is required.");
+                return false;
+            }
+
+            // Build request data - include PIN only if required
+            const requestData: any = {
                 employee_id: currentState.scannedEmployee.employee_id,
-                pin: currentState.confirmation_pin
-            });
+            };
+
+            // Only include PIN if not bypassed
+            if (shouldShowPinInput) {
+                requestData.pin = currentState.confirmation_pin;
+            }
+
+            // Send request to verify PIN using Axios or fetch with proper CSRF handling
+            const response = await axios.post(route('api.tracking.request.confirm-pin'), requestData);
 
             // Axios automatically handles response status
             const result = response.data;
@@ -331,8 +354,11 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                 return false;
             }
 
-            // PIN verified successfully
-            toast.success("Employee PIN confirmed successfully.");
+            // PIN verified successfully or bypassed
+            const message = result.bypassed_pin
+                ? "Employee validated successfully (PIN bypassed for privileged user)."
+                : "Employee PIN confirmed successfully.";
+            toast.success(message);
             return true;
 
         } catch (error) {

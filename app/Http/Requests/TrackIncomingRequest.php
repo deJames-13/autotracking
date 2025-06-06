@@ -43,8 +43,8 @@ class TrackIncomingRequest extends FormRequest
             'data.receivedBy' => ['required', 'array'],
             'data.receivedBy.employee_id' => ['required', 'exists:users,employee_id'],
             
-            // Confirmation pin
-            'data.confirmation_pin' => ['required', 'string'],
+            // Confirmation pin - conditional based on user role
+            'data.confirmation_pin' => $this->getPinValidationRule(),
         ];
 
         // Dynamic recall number validation based on request type
@@ -87,7 +87,25 @@ class TrackIncomingRequest extends FormRequest
             'data.receivedBy.required' => 'Received by information is required.',
             'data.receivedBy.employee_id.required' => 'Received by employee ID is required.',
             'data.receivedBy.employee_id.exists' => 'Selected employee does not exist.',
-            'data.confirmation_pin.required' => 'Confirmation PIN is required.',
+            'data.confirmation_pin.required' => 'Confirmation PIN is required (Admin and Technician users bypass this requirement).',
         ];
+    }
+
+    /**
+     * Get PIN validation rule based on user role.
+     * Admin and Technician users can bypass PIN requirement.
+     */
+    private function getPinValidationRule(): array
+    {
+        $currentUser = auth()->user();
+        
+        // Check if current user is Admin or Technician - they can bypass PIN validation
+        $canBypassPin = $currentUser && 
+                       $currentUser->role && 
+                       in_array($currentUser->role->role_name, ['admin', 'technician']);
+        
+        return $canBypassPin 
+            ? ['nullable', 'string'] 
+            : ['required', 'string'];
     }
 }

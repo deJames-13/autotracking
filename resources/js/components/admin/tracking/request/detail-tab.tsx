@@ -221,19 +221,24 @@ const DetailTab: React.FC<DetailTabProps> = ({
     };
 
 
-    // Handle barcode input change
+    // Handle barcode input change (no automatic search)
     const handleBarcodeChange = (value: string) => {
         setEmployeeBarcode(value);
         setBarcodeError(''); // Clear error when user starts typing
-        if (value.length >= 1) { // Employee ID can be just 1 digit
-            fetchEmployeeByBarcode(value);
-        } else {
-            // Update Redux state instead of local state
-            dispatch(setScannedEmployee(null));
-            if (onScannedEmployeeChange) {
-                onScannedEmployeeChange(null);
-            }
+        // Clear previous results when input changes
+        dispatch(setScannedEmployee(null));
+        if (onScannedEmployeeChange) {
+            onScannedEmployeeChange(null);
         }
+    };
+
+    // Handle employee search when button is clicked
+    const handleEmployeeSearch = () => {
+        if (!employeeBarcode.trim()) {
+            setBarcodeError('Please enter an employee ID');
+            return;
+        }
+        fetchEmployeeByBarcode(employeeBarcode.trim());
     };
 
     // Handle barcode scan
@@ -655,7 +660,12 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 <Input
                                     id="employeeBarcode"
                                     value={employeeBarcode}
-                                    onChange={e => setEmployeeBarcode(e.target.value)}
+                                    onChange={e => handleBarcodeChange(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && employeeBarcode.trim()) {
+                                            handleEmployeeSearch();
+                                        }
+                                    }}
                                     placeholder="Scan or enter employee ID"
                                     className={errors.employeeBarcode ? 'border-destructive' : ''}
                                     disabled={loadingEmployee}
@@ -663,7 +673,8 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 {errors.employeeBarcode && <p className="text-sm text-destructive mt-1">{errors.employeeBarcode}</p>}
                                 {barcodeError && <span className="text-sm text-red-600 mt-1 block">{barcodeError}</span>}
                             </div>
-                            <Button onClick={() => fetchEmployeeByBarcode(employeeBarcode)} disabled={loadingEmployee || !employeeBarcode}>
+                            <Button onClick={handleEmployeeSearch} disabled={loadingEmployee || !employeeBarcode.trim()}>
+                                <Search className="h-4 w-4 mr-2" />
                                 Search
                             </Button>
                             <div>

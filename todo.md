@@ -7,20 +7,22 @@
     - [x] auto calculate queuing days, start to finish
     - [x] auto calculate overdue
 
-
--- TODO
 - [x] Incoming Request Revision
     - [x] Received By not working properly when changing from select
     - [x] Recall number should be after calibration
         - [x] Recall number auto generates when not specified
         - [x] allow editing of recall number
 
+-- TODO
+
 - [ ] Table paginated/filters (turn to datatable)
+
+- [ ] Bar Code downloadables
 
 - [ ] Roles
     - [ ] Admin
         - [ ] Can see all
-        - [ ] Can for accept (no pin needed)
+        - [x] Can for accept (no pin needed)
     - [ ] Technician
         - [ ] Can only see incoming, calibration, outgoing, 
     - [ ] Employee

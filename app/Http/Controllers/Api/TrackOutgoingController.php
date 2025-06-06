@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 
 class TrackOutgoingController extends Controller
@@ -165,10 +166,26 @@ class TrackOutgoingController extends Controller
      */
     public function confirmPickup(Request $request, TrackOutgoing $trackOutgoing): JsonResponse
     {
-        $request->validate([
-            'employee_id' => 'required|exists:users,employee_id',
-            'confirmation_pin' => 'required|string'
-        ]);
+        // Get current authenticated user to check role
+        $currentUser = Auth::user();
+        $currentUser->load('role');
+        
+        // Check if current user is Admin or Technician - they can bypass PIN validation
+        $canBypassPin = in_array($currentUser->role?->role_name, ['admin', 'technician']);
+        
+        // Validate request based on role
+        if ($canBypassPin) {
+            // Admin/Technician only needs employee_id
+            $request->validate([
+                'employee_id' => 'required|exists:users,employee_id',
+            ]);
+        } else {
+            // Regular users need both employee_id and confirmation_pin
+            $request->validate([
+                'employee_id' => 'required|exists:users,employee_id',
+                'confirmation_pin' => 'required|string'
+            ]);
+        }
 
         try {
             // Verify the employee and PIN
@@ -181,11 +198,14 @@ class TrackOutgoingController extends Controller
                 ], 404);
             }
 
-            if (!Hash::check($request->confirmation_pin, $employee->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid PIN. Please try again.'
-                ], 401);
+            // Skip PIN validation for Admin/Technician roles
+            if (!$canBypassPin) {
+                if (!Hash::check($request->confirmation_pin, $employee->password)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid PIN. Please try again.'
+                    ], 401);
+                }
             }
 
             // Validate department match - employees from same department can pick up equipment
@@ -233,9 +253,14 @@ class TrackOutgoingController extends Controller
                 'picked_up_by' => $employee->employee_id
             ]);
 
+            $message = $canBypassPin 
+                ? 'Equipment pickup confirmed successfully (PIN bypassed for ' . ucfirst($currentUser->role->role_name) . ').'
+                : 'Equipment pickup confirmed successfully.';
+
             return response()->json([
                 'success' => true,
-                'message' => 'Equipment pickup confirmed successfully.',
+                'message' => $message,
+                'bypassed_pin' => $canBypassPin,
                 'data' => $trackOutgoing->fresh(['trackIncoming', 'employeeOut', 'releasedBy'])
             ]);
 
