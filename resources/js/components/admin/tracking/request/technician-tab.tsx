@@ -1,23 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Search, Filter } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { User, Role, Department, Plant } from '@/types';
 import axios from 'axios';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 interface TechnicianTabProps {
     data: User | null;
@@ -26,80 +14,141 @@ interface TechnicianTabProps {
 }
 
 const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = {} }) => {
-    const [searchQuery, setSearchQuery] = useState('');
     const [technicians, setTechnicians] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
-    const [roles, setRoles] = useState<Role[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [plants, setPlants] = useState<Plant[]>([]);
-    const [filters, setFilters] = useState({
-        role_id: '',
-        department_id: '',
+    const [pagination, setPagination] = useState({
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 0
     });
 
-    // Fetch technicians and filter options
-    useEffect(() => {
-        const fetchTechnicians = async () => {
-            setLoading(true);
-            try {
-                const queryParams = new URLSearchParams();
+    // Fetch technicians with pagination
+    const fetchTechnicians = useCallback(async (params: Record<string, any> = {}) => {
+        setLoading(true);
+        try {
+            const queryParams = new URLSearchParams();
 
-                if (searchQuery) {
-                    queryParams.append('search', searchQuery);
-                }
+            // Always filter for technicians only
+            queryParams.append('role_name', 'technician');
+            queryParams.append('limit', params.per_page?.toString() || '15');
 
-                // Always filter for technicians only
-                queryParams.append('role_name', 'technician');
-
-                if (filters.department_id) {
-                    queryParams.append('department_id', filters.department_id);
-                }
-
-                const response = await axios.get(`/admin/users?${queryParams.toString()}`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-
-                // Additional client-side filter to ensure only technicians
-                const technicianUsers = response.data.data.data.filter(user =>
-                    user.role?.role_name === 'technician'
-                );
-
-                setTechnicians(technicianUsers);
-                setRoles(response.data.roles);
-                setDepartments(response.data.departments);
-                setPlants(response.data.plants);
-            } catch (error) {
-                console.error('Error fetching technicians:', error);
-            } finally {
-                setLoading(false);
+            if (params.page) {
+                queryParams.append('page', params.page.toString());
             }
-        };
+            if (params.search) {
+                queryParams.append('search', params.search);
+            }
+            if (params.department_id && params.department_id !== 'all') {
+                queryParams.append('department_id', params.department_id);
+            }
 
-        fetchTechnicians();
-    }, [searchQuery, filters]);
+            const response = await axios.get(`/admin/users?${queryParams.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
 
-    // Handle filter changes
-    const handleFilterChange = (key: string, value: string) => {
-        // Don't allow role filtering since we only want technicians
-        if (key === 'role_id') {
-            return;
+            const userData = response.data.data;
+            setTechnicians(userData.data || []);
+            setPagination({
+                current_page: userData.current_page || 1,
+                last_page: userData.last_page || 1,
+                per_page: userData.per_page || 15,
+                total: userData.total || 0
+            });
+            setDepartments(response.data.departments || []);
+        } catch (error) {
+            console.error('Error fetching technicians:', error);
+            setTechnicians([]);
+        } finally {
+            setLoading(false);
         }
+    }, []);
 
-        setFilters(prev => ({
-            ...prev,
-            [key]: value === 'all' ? '' : value // Convert "all" to empty string for backend
-        }));
+    // Initial fetch
+    useEffect(() => {
+        fetchTechnicians();
+    }, [fetchTechnicians]);
+
+    // Define DataTable columns
+    const columns: DataTableColumn<User>[] = [
+        {
+            key: 'selection',
+            label: 'Select',
+            render: (value, row) => (
+                <RadioGroupItem
+                    value={row.employee_id.toString()}
+                    id={`tech-${row.employee_id}`}
+                />
+            ),
+            width: 'w-16'
+        },
+        {
+            key: 'name',
+            label: 'Name',
+            render: (value, row) => (
+                <div>
+                    <div className="font-medium">{row.full_name || `${row.first_name} ${row.last_name}`}</div>
+                    <div className="text-sm text-muted-foreground">{row.email}</div>
+                </div>
+            ),
+            sortable: true
+        },
+        {
+            key: 'role',
+            label: 'Role',
+            render: (value, row) => (
+                <Badge variant="secondary">
+                    {row.role?.role_name || 'Not assigned'}
+                </Badge>
+            )
+        },
+        {
+            key: 'department',
+            label: 'Department',
+            render: (value, row) => row.department?.department_name || 'Not assigned',
+            sortable: true
+        },
+        {
+            key: 'plant',
+            label: 'Plant',
+            render: (value, row) => row.plant?.plant_name || 'Not assigned'
+        }
+    ];
+
+    // Define DataTable filters
+    const filters: DataTableFilter[] = [
+        {
+            key: 'department_id',
+            label: 'Department',
+            type: 'select',
+            options: [
+                { value: 'all', label: 'All Departments' },
+                ...departments.map(dept => ({
+                    value: dept.department_id.toString(),
+                    label: dept.department_name
+                }))
+            ]
+        }
+    ];
+
+    // Handle DataTable events
+    const handleSearch = (search: string) => {
+        fetchTechnicians({ search, page: 1 });
     };
 
-    // Reset filters
-    const resetFilters = () => {
-        setFilters({
-            role_id: '', // Keep this but it won't be used
-            department_id: '',
-        });
-        setSearchQuery('');
+    const handleFilter = (filters: Record<string, any>) => {
+        fetchTechnicians({ ...filters, page: 1 });
+    };
+
+    const handlePageChange = (page: number) => {
+        fetchTechnicians({ page });
+    };
+
+    const handlePerPageChange = (perPage: number) => {
+        fetchTechnicians({ per_page: perPage, page: 1 });
     };
 
     // Check for technician selection error
@@ -109,70 +158,10 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>Select Technician</CardTitle>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                    <Filter className="h-4 w-4 mr-2" />
-                                    Filter
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56">
-                                <DropdownMenuLabel>Filter Technicians</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuGroup>
-                                    <DropdownMenuItem className="p-0 focus:bg-transparent">
-                                        <div className="p-2 w-full">
-                                            <Label htmlFor="department">Department</Label>
-                                            <Select
-                                                value={filters.department_id || 'all'}
-                                                onValueChange={(value) => handleFilterChange('department_id', value)}
-                                            >
-                                                <SelectTrigger id="department">
-                                                    <SelectValue placeholder="Select department" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">All Departments</SelectItem>
-                                                    {departments.map((dept) => (
-                                                        <SelectItem key={dept.department_id} value={dept.department_id.toString()}>
-                                                            {dept.department_name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </DropdownMenuItem>
-                                </DropdownMenuGroup>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild>
-                                    <Button
-                                        variant="ghost"
-                                        className="w-full justify-center"
-                                        onClick={resetFilters}
-                                    >
-                                        Reset Filters
-                                    </Button>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
+                    <CardTitle>Select Technician</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="mb-4">
-                        <div className="relative mt-1">
-                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                id="search-technician"
-                                placeholder="Search by name or email..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10"
-                            />
-                        </div>
-                    </div>
-
-                    <div className={`border rounded-md ${hasError ? 'border-destructive' : ''}`}>
+                    <div className={`${hasError ? 'border border-destructive rounded-md p-4' : ''}`}>
                         <RadioGroup
                             value={data?.employee_id?.toString() ?? ''}
                             onValueChange={(value) => {
@@ -180,60 +169,29 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
                                 onChange(selectedTech || null);
                             }}
                         >
-                            <div className="grid grid-cols-5 bg-muted px-4 py-2 text-sm font-medium">
-                                <div>Selection</div>
-                                <div>Name</div>
-                                <div>Role</div>
-                                <div>Department</div>
-                                <div>Plant</div>
-                            </div>
-
-                            {loading ? (
-                                <div className="divide-y">
-                                    {[1, 2, 3].map((i) => (
-                                        <div key={i} className="grid grid-cols-5 px-4 py-3 items-center">
-                                            <div><Skeleton className="h-4 w-4 rounded-full" /></div>
-                                            <div><Skeleton className="h-4 w-32" /></div>
-                                            <div><Skeleton className="h-4 w-24" /></div>
-                                            <div><Skeleton className="h-4 w-24" /></div>
-                                            <div><Skeleton className="h-4 w-24" /></div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : technicians.length > 0 ? (
-                                <div className="divide-y">
-                                        {technicians.map((tech) => (
-                                            <div
-                                                key={tech.employee_id}
-                                                className="grid grid-cols-5 px-4 py-3 items-center hover:bg-muted cursor-pointer"
-                                                onClick={() => onChange(tech)}
-                                            >
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <RadioGroupItem
-                                                        value={tech.employee_id.toString()}
-                                                        id={`tech-${tech.employee_id}`}
-                                                    />
-                                                </div>
-                                            <div>
-                                                <div className="font-medium">{tech.full_name || `${tech.first_name} ${tech.last_name}`}</div>
-                                                <div className="text-sm text-muted-foreground">{tech.email}</div>
-                                            </div>
-                                                <div>{tech.role?.role_name || 'Not assigned'}</div>
-                                            <div>{tech.department?.department_name || 'Not assigned'}</div>
-                                            <div>{tech.plant?.plant_name || 'Not assigned'}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="p-4 text-center text-muted-foreground">
-                                    No technicians found matching your search.
-                                </div>
-                            )}
+                            <DataTable
+                                data={technicians}
+                                columns={columns}
+                                loading={loading}
+                                pagination={pagination}
+                                filters={filters}
+                                onSearch={handleSearch}
+                                onFilter={handleFilter}
+                                onPageChange={handlePageChange}
+                                onPerPageChange={handlePerPageChange}
+                                searchable={true}
+                                filterable={true}
+                                emptyMessage="No technicians found matching your criteria."
+                                searchDebounceMs={500}
+                                rowKey="employee_id"
+                            />
                         </RadioGroup>
                     </div>
 
                     {/* Display validation error */}
-                    {errors.technician && <p className="text-sm text-destructive mt-2">{errors.technician}</p>}
+                    {errors.technician && (
+                        <p className="text-sm text-destructive mt-2">{errors.technician}</p>
+                    )}
                 </CardContent>
             </Card>
         </div>

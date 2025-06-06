@@ -19,31 +19,39 @@ class UserController extends Controller
 {
     public function index(Request $request): Response|JsonResponse
     {
-        $limit = $request->get('limit', 15);
-        
-        $users = User::with(['role', 'department', 'plant'])
-            ->when($request->search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('first_name', 'like', "%{$search}%")
-                      ->orWhere('last_name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
-                });
-            })
-            ->when($request->role_id, function ($query, $roleId) {
-                $query->where('role_id', $roleId);
-            })
-            ->when($request->department_id, function ($query, $departmentId) {
-                $query->where('department_id', $departmentId);
-            })
-            ->paginate($limit)
-            ->withQueryString();
-
         $roles = Role::all();
         $departments = Department::all();
         $plants = Plant::all();
 
-        // Return JSON only for non-Inertia AJAX requests
+        // For AJAX requests (old API compatibility), return paginated data
         if ($request->ajax() && !$request->header('X-Inertia')) {
+            $limit = $request->get('per_page', $request->get('limit', 15));
+            
+            $users = User::with(['role', 'department', 'plant'])
+                ->when($request->search, function ($query, $search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('first_name', 'like', "%{$search}%")
+                          ->orWhere('last_name', 'like', "%{$search}%")
+                          ->orWhere('email', 'like', "%{$search}%");
+                    });
+                })
+                ->when($request->role_id, function ($query, $roleId) {
+                    $query->where('role_id', $roleId);
+                })
+                ->when($request->role_name, function ($query, $roleName) {
+                    $query->whereHas('role', function ($q) use ($roleName) {
+                        $q->where('role_name', $roleName);
+                    });
+                })
+                ->when($request->department_id, function ($query, $departmentId) {
+                    $query->where('department_id', $departmentId);
+                })
+                ->when($request->plant_id, function ($query, $plantId) {
+                    $query->where('plant_id', $plantId);
+                })
+                ->paginate($limit)
+                ->withQueryString();
+
             return response()->json([
                 'data' => $users,
                 'roles' => $roles,
@@ -52,12 +60,11 @@ class UserController extends Controller
             ]);
         }
 
+        // For Inertia requests, only return necessary data for initial page load
         return Inertia::render('admin/users/index', [
-            'users' => $users,
             'roles' => $roles,
             'departments' => $departments,
             'plants' => $plants,
-            'filters' => $request->only(['search', 'role_id', 'department_id']),
         ]);
     }
 
@@ -243,5 +250,73 @@ class UserController extends Controller
                 'message' => 'Error searching for users'
             ], 500);
         }
+    }
+
+    /**
+     * Get paginated users data for DataTable
+     */
+    public function tableData(Request $request): JsonResponse
+    {
+        $query = User::with(['role', 'department', 'plant']);
+
+        // Apply search filters
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('first_name', 'like', '%' . $search . '%')
+                  ->orWhere('last_name', 'like', '%' . $search . '%')
+                  ->orWhere('full_name', 'like', '%' . $search . '%')
+                  ->orWhere('email', 'like', '%' . $search . '%')
+                  ->orWhere('employee_id', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Apply filters
+        if ($request->filled('role_name') && $request->get('role_name') !== 'all') {
+            $query->whereHas('role', function ($q) use ($request) {
+                $q->where('role_name', $request->get('role_name'));
+            });
+        }
+
+        if ($request->filled('department_id') && $request->get('department_id') !== 'all') {
+            $query->where('department_id', $request->get('department_id'));
+        }
+
+        if ($request->filled('plant_id') && $request->get('plant_id') !== 'all') {
+            $query->where('plant_id', $request->get('plant_id'));
+        }
+
+        // Apply sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortDirection = $request->get('sort_direction', 'desc');
+        
+        // Map frontend sort keys to database columns
+        $sortMapping = [
+            'name' => 'first_name',
+            'email' => 'email',
+            'role' => 'role_id',
+            'department' => 'department_id',
+            'plant' => 'plant_id',
+            'created_at' => 'created_at'
+        ];
+        
+        $dbSortBy = $sortMapping[$sortBy] ?? 'created_at';
+        $query->orderBy($dbSortBy, $sortDirection);
+
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $users = $query->paginate($perPage);
+
+        return response()->json([
+            'data' => $users->items(),
+            'meta' => [
+                'current_page' => $users->currentPage(),
+                'last_page' => $users->lastPage(),
+                'per_page' => $users->perPage(),
+                'total' => $users->total(),
+                'from' => $users->firstItem(),
+                'to' => $users->lastItem(),
+            ],
+        ]);
     }
 }

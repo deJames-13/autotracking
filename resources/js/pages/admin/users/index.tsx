@@ -2,14 +2,13 @@ import { UserForm } from '@/components/admin/users/user-form';
 import { UserTable } from '@/components/admin/users/user-table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type Department, type Plant, type Role, type User, type PaginationData } from '@/types';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Plus, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type BreadcrumbItem, type Department, type Plant, type Role, type User } from '@/types';
+import { Head, router } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -19,70 +18,119 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 interface UsersIndexProps {
-    users: PaginationData<User>;
     roles: Role[];
     departments: Department[];
     plants: Plant[];
-    filters: {
-        search?: string;
-        role_id?: number;
-        department_id?: number;
-    };
 }
 
-export default function UsersIndex({ users: initialUsers, roles, departments, plants, filters }: UsersIndexProps) {
+export default function UsersIndex({ roles, departments, plants }: UsersIndexProps) {
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-
-    // Use live page data instead of initial props
-    const { props } = usePage<UsersIndexProps>();
-    const users = props.users;
-
-    const { data, setData, get, processing } = useForm({
-        search: filters.search || '',
-        role_id: filters.role_id || '',
-        department_id: filters.department_id || '',
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({
+        current_page: 1,
+        last_page: 1,
+        per_page: 10,
+        total: 0
     });
+    const [filters, setFilters] = useState<Record<string, any>>({});
 
     // Redirect if user doesn't have permission
     useEffect(() => {
         if (!canManageUsers()) {
             router.visit('/dashboard');
         }
-    }, [canManageUsers]);
+    }, []);
 
-    const handleFilterChange = () => {
-        get(route('admin.users.index'), {
-            preserveState: true,
-            replace: true,
-        });
-    };
+    const fetchUsers = useCallback(async (params: Record<string, any> = {}) => {
+        setLoading(true);
+        try {
+            const queryParams = new URLSearchParams();
 
-    const refreshUsers = () => {
-        get(route('admin.users.index'), {
-            preserveState: true,
-            replace: true,
-        });
-    };
+            // Add parameters with proper defaults
+            queryParams.append('page', params.page?.toString() || '1');
+            queryParams.append('per_page', params.per_page?.toString() || '10');
 
-    useEffect(() => {
-        const delayedSearch = setTimeout(() => {
-            if (data.search !== filters.search) {
-                handleFilterChange();
+            // Add filters if provided
+            if (params.filters) {
+                Object.keys(params.filters).forEach(key => {
+                    const value = params.filters[key];
+                    if (value && value !== 'all') {
+                        queryParams.append(key, value);
+                    }
+                });
             }
-        }, 500);
 
-        return () => clearTimeout(delayedSearch);
-    }, [data.search]);
+            // Add search if provided
+            if (params.search) {
+                queryParams.append('search', params.search);
+            }
 
-    useEffect(() => {
-        if (data.role_id !== filters.role_id || data.department_id !== filters.department_id) {
-            handleFilterChange();
+            // Add sorting if provided
+            if (params.sort_by) {
+                queryParams.append('sort_by', params.sort_by);
+            }
+            if (params.sort_direction) {
+                queryParams.append('sort_direction', params.sort_direction);
+            }
+
+            const response = await axios.get(`/admin/users/table-data?${queryParams.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = response.data;
+            setUsers(data.data || []);
+            setPagination({
+                current_page: data.meta.current_page || 1,
+                last_page: data.meta.last_page || 1,
+                per_page: data.meta.per_page || 10,
+                total: data.meta.total || 0
+            });
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            setUsers([]);
+        } finally {
+            setLoading(false);
         }
-    }, [data.role_id, data.department_id]);
+    }, []);
+
+    // Initial fetch - only run once
+    useEffect(() => {
+        if (canManageUsers()) {
+            fetchUsers();
+        }
+    }, []);
+
+    // Handle DataTable search
+    const handleSearch = useCallback((search: string) => {
+        fetchUsers({ ...filters, search, page: 1 });
+    }, [filters]);
+
+    // Handle DataTable filters
+    const handleFilter = useCallback((newFilters: Record<string, any>) => {
+        setFilters(newFilters);
+        fetchUsers({ filters: newFilters, page: 1 });
+    }, []);
+
+    // Handle DataTable pagination
+    const handlePageChange = useCallback((page: number) => {
+        fetchUsers({ ...filters, page });
+    }, [filters]);
+
+    const handlePerPageChange = useCallback((perPage: number) => {
+        fetchUsers({ ...filters, per_page: perPage, page: 1 });
+    }, [filters]);
+
+    // Refresh users after actions
+    const refreshUsers = useCallback(() => {
+        fetchUsers({ ...filters });
+    }, [filters])
 
     if (!canManageUsers()) {
-        return null; // or loading spinner
+        return null; 
     }
 
     return (
@@ -126,67 +174,25 @@ export default function UsersIndex({ users: initialUsers, roles, departments, pl
                     </Dialog>
                 </div>
 
-                {/* Filters */}
-                <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search users by name or email..."
-                            value={data.search}
-                            onChange={(e) => setData('search', e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-
-                    <div className="flex gap-2">
-                        <Select value={data.role_id.toString()} onValueChange={(value) => setData('role_id', value === 'all' ? '' : value)}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filter by role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Roles</SelectItem>
-                                {roles.map((role) => (
-                                    <SelectItem key={role.role_id} value={role.role_id.toString()}>
-                                        {role.role_name.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        <Select value={data.department_id.toString()} onValueChange={(value) => setData('department_id', value === 'all' ? '' : value)}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filter by department" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Departments</SelectItem>
-                                {departments.map((department) => (
-                                    <SelectItem key={department.department_id} value={department.department_id.toString()}>
-                                        {department.department_name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
                 {/* Users Table */}
                 <UserTable
-                    users={users}
+                    users={{
+                        data: users,
+                        current_page: pagination.current_page,
+                        last_page: pagination.last_page,
+                        per_page: pagination.per_page,
+                        total: pagination.total
+                    }}
+                    loading={loading}
                     roles={roles}
                     departments={departments}
                     plants={plants}
                     onRefresh={refreshUsers}
+                    onSearch={handleSearch}
+                    onFilter={handleFilter}
+                    onPageChange={handlePageChange}
+                    onPerPageChange={handlePerPageChange}
                 />
-
-                {/* Pagination Info */}
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div>
-                        Showing {users.from || 0} to {users.to || 0} of {users.total} users
-                    </div>
-                    <div>
-                        Page {users.current_page} of {users.last_page}
-                    </div>
-                </div>
             </div>
         </AppLayout>
     );

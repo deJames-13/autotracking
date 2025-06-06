@@ -125,6 +125,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         
         // Users management - specific routes before resource
         Route::get('search-by-barcode/users', [AdminUserController::class, 'searchByBarcode'])->name('users.search-by-barcode');
+        Route::get('users/table-data', [AdminUserController::class, 'tableData'])->name('users.table-data');
         
         Route::resource('users', AdminUserController::class)->parameters([
             'users' => 'user:employee_id'

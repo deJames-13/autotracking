@@ -1,24 +1,40 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
 import { type Department, type Plant, type Role, type User, type PaginationData } from '@/types';
 import { router } from '@inertiajs/react';
 import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { UserForm } from './user-form';
 import Barcode from 'react-barcode';
 
 interface UserTableProps {
     users: PaginationData<User>;
+    loading?: boolean;
     roles: Role[];
     departments: Department[];
     plants: Plant[];
     onRefresh?: () => void;
+    onSearch?: (search: string) => void;
+    onFilter?: (filters: Record<string, any>) => void;
+    onPageChange?: (page: number) => void;
+    onPerPageChange?: (perPage: number) => void;
 }
 
-export function UserTable({ users, roles, departments, plants, onRefresh }: UserTableProps) {
+export function UserTable({
+    users,
+    loading = false,
+    roles,
+    departments,
+    plants,
+    onRefresh,
+    onSearch,
+    onFilter,
+    onPageChange,
+    onPerPageChange
+}: UserTableProps) {
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [viewingUser, setViewingUser] = useState<User | null>(null);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
@@ -63,108 +79,209 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
         return roleName.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
 
+    // Define DataTable columns
+    const columns: DataTableColumn<User>[] = [
+        {
+            key: 'name',
+            label: 'Name',
+            render: (value, row) => (
+                <div className="space-y-0.5">
+                    <div className="font-medium">
+                        {row.full_name || `${row.first_name} ${row.last_name}`}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        ID: {row.employee_id}
+                    </div>
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[200px]'
+        },
+        {
+            key: 'email',
+            label: 'Email',
+            render: (value, row) => (
+                <div className="text-sm">
+                    {row.email || (
+                        <span className="text-muted-foreground italic">No email</span>
+                    )}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[200px]'
+        },
+        {
+            key: 'role',
+            label: 'Role',
+            render: (value, row) => (
+                <Badge
+                    variant="secondary"
+                    className={getRoleBadgeColor(row.role?.role_name || '')}
+                >
+                    {formatRoleName(row.role?.role_name || 'Unknown')}
+                </Badge>
+            ),
+            sortable: true,
+            width: 'w-[120px]'
+        },
+        {
+            key: 'department',
+            label: 'Department',
+            render: (value, row) => (
+                <div className="text-sm">
+                    {row.department?.department_name || (
+                        <span className="text-muted-foreground italic">No department</span>
+                    )}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[150px]'
+        },
+        {
+            key: 'plant',
+            label: 'Plant',
+            render: (value, row) => (
+                <div className="text-sm">
+                    {row.plant?.plant_name || (
+                        <span className="text-muted-foreground italic">No plant</span>
+                    )}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[120px]'
+        },
+        {
+            key: 'created_at',
+            label: 'Created',
+            render: (value, row) => (
+                <div className="text-sm text-muted-foreground">
+                    {new Date(row.created_at).toLocaleDateString()}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[100px]'
+        },
+        {
+            key: 'actions',
+            label: 'Actions',
+            render: (value, row) => (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setViewingUser(row)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEditingUser(row)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => setDeletingUser(row)}
+                            className="text-destructive"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ),
+            width: 'w-[70px]'
+        }
+    ];
+
+    // Define DataTable filters
+    const filters: DataTableFilter[] = [
+        {
+            key: 'role_name',
+            label: 'Role',
+            type: 'select',
+            options: [
+                { value: 'all', label: 'All Roles' },
+                ...roles.map(role => ({
+                    value: role.role_name,
+                    label: formatRoleName(role.role_name)
+                }))
+            ]
+        },
+        {
+            key: 'department_id',
+            label: 'Department',
+            type: 'select',
+            options: [
+                { value: 'all', label: 'All Departments' },
+                ...departments.map(dept => ({
+                    value: dept.department_id.toString(),
+                    label: dept.department_name
+                }))
+            ]
+        },
+        {
+            key: 'plant_id',
+            label: 'Plant',
+            type: 'select',
+            options: [
+                { value: 'all', label: 'All Plants' },
+                ...plants.map(plant => ({
+                    value: plant.plant_id.toString(),
+                    label: plant.plant_name
+                }))
+            ]
+        }
+    ];
+
+    // Handle DataTable events
+    const handleSearch = useCallback((search: string) => {
+        if (onSearch) {
+            onSearch(search);
+        }
+    }, [onSearch]);
+
+    const handleFilter = useCallback((filters: Record<string, any>) => {
+        if (onFilter) {
+            onFilter(filters);
+        }
+    }, [onFilter]);
+
+    const handlePageChange = useCallback((page: number) => {
+        if (onPageChange) {
+            onPageChange(page);
+        }
+    }, [onPageChange]);
+
+    const handlePerPageChange = useCallback((perPage: number) => {
+        if (onPerPageChange) {
+            onPerPageChange(perPage);
+        }
+    }, [onPerPageChange]);
+
     return (
         <>
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[200px]">Name</TableHead>
-                            <TableHead className="w-[200px]">Email</TableHead>
-                            <TableHead className="w-[120px]">Role</TableHead>
-                            <TableHead className="w-[150px]">Department</TableHead>
-                            <TableHead className="w-[120px]">Plant</TableHead>
-                            <TableHead className="w-[100px]">Created</TableHead>
-                            <TableHead className="w-[70px]">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {users.data.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">
-                                    No users found.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            users.data.map((user) => (
-                                <TableRow key={user.employee_id}>
-                                    <TableCell className="font-medium">
-                                        <div className="space-y-0.5">
-                                            <div className="font-medium">
-                                                {user.full_name || `${user.first_name} ${user.last_name}`}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                ID: {user.employee_id}
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {user.email || (
-                                                <span className="text-muted-foreground italic">No email</span>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant="secondary"
-                                            className={getRoleBadgeColor(user.role?.role_name || '')}
-                                        >
-                                            {formatRoleName(user.role?.role_name || 'Unknown')}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {user.department?.department_name || (
-                                                <span className="text-muted-foreground italic">No department</span>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {user.plant?.plant_name || (
-                                                <span className="text-muted-foreground italic">No plant</span>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm text-muted-foreground">
-                                            {new Date(user.created_at).toLocaleDateString()}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Open menu</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => setViewingUser(user)}>
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    View
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => setEditingUser(user)}>
-                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                    Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => setDeletingUser(user)}
-                                                    className="text-destructive"
-                                                >
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+            <DataTable
+                data={users.data}
+                columns={columns}
+                filters={filters}
+                loading={loading}
+                pagination={{
+                    current_page: users.current_page,
+                    last_page: users.last_page,
+                    per_page: users.per_page,
+                    total: users.total
+                }}
+                onSearch={handleSearch}
+                onFilter={handleFilter}
+                onPageChange={handlePageChange}
+                onPerPageChange={handlePerPageChange}
+                searchable={true}
+                filterable={true}
+                emptyMessage="No users found."
+                rowKey="employee_id"
+            />
 
             {/* Edit User Dialog */}
             <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
