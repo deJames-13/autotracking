@@ -22,7 +22,7 @@ class EquipmentRequest extends FormRequest
                 'exists:users,employee_id'
             ],
             'recall_number' => [
-                'required', 
+                'nullable', 
                 'string', 
                 'max:255', 
             ],
@@ -78,7 +78,8 @@ class EquipmentRequest extends FormRequest
     {
         return [
             'employee_id.exists' => 'The selected employee does not exist.',
-            'recall_number.required' => 'Recall number is required.',
+            'recall_number.string' => 'Recall number must be text.',
+            'recall_number.max' => 'Recall number must be less than 255 characters.',
             'description.required' => 'Equipment description is required.',
             'plant_id.exists' => 'The selected plant does not exist.',
             'department_id.exists' => 'The selected department does not exist.',

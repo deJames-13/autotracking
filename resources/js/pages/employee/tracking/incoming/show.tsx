@@ -36,7 +36,7 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
             href: '/employee/tracking/incoming',
         },
         {
-            title: record.recall_number,
+            title: record.recall_number || 'Pending Assignment',
             href: `/employee/tracking/incoming/${record.id}`,
         },
     ];
@@ -71,7 +71,7 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
                     <div className="flex items-center gap-4">
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">
-                                Request: {record.recall_number}
+                                Request: {record.recall_number || 'Pending Assignment'}
                             </h1>
                             <p className="text-muted-foreground">Calibration request details</p>
                         </div>

@@ -20,6 +20,7 @@ interface ConfirmEmployeeTabProps {
 }
 
 const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange, errors = {} }) => {
+    console.log('changed', data.receivedBy)
     const { requestType, equipment } = useAppSelector(state => state.trackingRequest);
     const [locationNames, setLocationNames] = useState({
         plant: '',
@@ -114,7 +115,8 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                 <CardContent>
                     <div className="mb-6">
                         <h3 className="text-lg font-semibold mb-2">
-                            Request for Recall #{equipment.recallNumber || 'Not specified'}
+                            Request for Recall #{equipment.recallNumber ||
+                                (requestType === 'routine' ? 'Not specified' : 'Will be assigned during calibration')}
                         </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

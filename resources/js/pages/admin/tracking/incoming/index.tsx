@@ -166,7 +166,11 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
                                 {requests.data.map(request => (
                                     <tr key={request.id} className="hover:bg-muted/50" onDoubleClick={() => router.visit(route('admin.tracking.incoming.show', request.id))}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            {request.recall_number}
+                                            {request.recall_number || (
+                                                <span className="text-muted-foreground text-xs">
+                                                    {request.request_type === 'new' ? 'To be assigned' : 'N/A'}
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <div>

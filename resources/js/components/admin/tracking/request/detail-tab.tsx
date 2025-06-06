@@ -30,7 +30,7 @@ import {
 import { usePage } from '@inertiajs/react';
 import { type SharedData } from '@/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setScannedEmployee, updateEquipment } from '@/store/slices/trackingRequestSlice';
+import { setScannedEmployee, updateEquipment, setReceivedBy } from '@/store/slices/trackingRequestSlice';
 
 interface DetailTabProps {
     data: EquipmentSchema;
@@ -339,6 +339,25 @@ const DetailTab: React.FC<DetailTabProps> = ({
             fetchLocationsByDepartment(value as number);
         }
 
+        console.log(value)
+        // Special handling for receivedBy field
+        if (field === 'receivedBy' && value) {
+            // When receivedBy changes, we need to update both the equipment state and Redux receivedBy state
+            // First, find the user data from the loadUserOptions
+            loadUserOptions('').then(options => {
+                const selectedOption = options.find(opt => opt.value === value);
+                if (selectedOption && selectedOption.userData && onReceivedByChange) {
+                    // Update Redux receivedBy state with complete user data
+                    dispatch(setReceivedBy(selectedOption.userData));
+
+                    // Also call the callback for backward compatibility
+                    onReceivedByChange(selectedOption.userData);
+                }
+            }).catch(error => {
+                console.error('Error loading user data for receivedBy:', error);
+            });
+        }
+
         // Update Redux state with the single field change
         const updatedData = { [field]: value };
         onChange(updatedData);
@@ -468,10 +487,18 @@ const DetailTab: React.FC<DetailTabProps> = ({
                 },
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-
             return response.data.data.data.map((user: any) => ({
                 label: `${user.first_name} ${user.last_name}`,
-                value: user.user_id
+                value: user.user_id || user.employee_id,
+                // Store additional user data for later use
+                userData: {
+                    user_id: user.user_id,
+                    employee_id: user.employee_id || user.user_id,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    full_name: `${user.first_name} ${user.last_name}`,
+                    email: user.email || '',
+                }
             }));
         } catch (error) {
             console.error('Error loading users:', error);
@@ -522,11 +549,25 @@ const DetailTab: React.FC<DetailTabProps> = ({
         // Skip if hideReceivedBy is true
         if (!hideReceivedBy && !receivedBy && currentUser && onReceivedByChange) {
             // Set the current user as receivedBy
-            onReceivedByChange(currentUser);
+            const userObj = {
+                user_id: currentUser.user_id,
+                employee_id: currentUser.employee_id || currentUser.user_id,
+                first_name: currentUser.first_name,
+                last_name: currentUser.last_name,
+                full_name: `${currentUser.first_name} ${currentUser.last_name}`,
+                email: currentUser.email || '',
+            };
+
+            // Update Redux state
+            dispatch(setReceivedBy(userObj));
+
+            // Also call the callback for backward compatibility
+            onReceivedByChange(userObj);
+
             // Also update the equipment receivedBy field
             handleChange('receivedBy', currentUser.user_id);
         }
-    }, [receivedBy, onReceivedByChange, currentUser]);
+    }, [receivedBy, onReceivedByChange, currentUser, hideReceivedBy, dispatch]);
 
     // DONT REMOVE
     // console.log(recallNumber)
@@ -538,65 +579,68 @@ const DetailTab: React.FC<DetailTabProps> = ({
                     <CardTitle>Details</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {/* Recall Number Section for All Requests */}
-                    <div className="mb-6 p-4 border rounded-lg bg-muted/20">
-                        <label className="w-full block font-semibold mb-2">Recall Number</label>
-                        <div className="w-full flex gap-2 items-center ">
-                            <div className='w-full'>
-                                <InertiaSmartSelect
-                                    name="recallNumber"
-                                    value={recallNumber}
-                                    onChange={handleRecallNumberChange}
-                                    loadOptions={loadRecallOptions}
-                                    placeholder="Search or enter recall number"
-                                    isDisabled={recallLoading}
-                                    error={requestType && requestType == 'routine' ? errors.recallNumber : undefined}
-                                    minSearchLength={1}
-                                />
-                            </div>
-                            {/* Barcode scanner button for recall number */}
-                            <div>
-                                <Dialog open={showRecallScanner} onOpenChange={setShowRecallScanner}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="outline" className="w-full">
-                                            <Scan className="h-4 w-4 mr-2" />
-                                            Scan Recall Barcode
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="sm:max-w-md">
-                                        <DialogHeader>
-                                            <DialogTitle>Scan Recall Number Barcode</DialogTitle>
-                                            <DialogDescription>
-                                                Position the barcode within the camera frame to scan
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="flex items-center justify-center p-4">
-                                            <div className="w-full max-w-sm">
-                                                <Scanner
-                                                    onScan={handleRecallScan}
-                                                    onError={handleScanError}
-                                                    formats={['code_128', 'code_39']}
-                                                    constraints={{
-                                                        video: {
-                                                            facingMode: 'environment'
-                                                        }
-                                                    }}
-                                                    allowMultiple={false}
-                                                    scanDelay={500}
-                                                    components={{
-                                                        finder: true,
-                                                        torch: true,
-                                                        zoom: false
-                                                    }}
-                                                />
+                    {/* Recall Number Section - Only show for routine requests */}
+                    {requestType === 'routine' && (
+                        <div className="mb-6 p-4 border rounded-lg bg-muted/20">
+                            <label className="w-full block font-semibold mb-2">Recall Number</label>
+                            <div className="w-full flex gap-2 items-center ">
+                                <div className='w-full'>
+                                    <InertiaSmartSelect
+                                        name="recallNumber"
+                                        value={recallNumber}
+                                        onChange={handleRecallNumberChange}
+                                        loadOptions={loadRecallOptions}
+                                        placeholder="Search or enter recall number"
+                                        isDisabled={recallLoading}
+                                        error={errors.recallNumber}
+                                        minSearchLength={1}
+                                        required
+                                    />
+                                </div>
+                                {/* Barcode scanner button for recall number */}
+                                <div>
+                                    <Dialog open={showRecallScanner} onOpenChange={setShowRecallScanner}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="outline" className="w-full">
+                                                <Scan className="h-4 w-4 mr-2" />
+                                                Scan Recall Barcode
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-md">
+                                            <DialogHeader>
+                                                <DialogTitle>Scan Recall Number Barcode</DialogTitle>
+                                                <DialogDescription>
+                                                    Position the barcode within the camera frame to scan
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="flex items-center justify-center p-4">
+                                                <div className="w-full max-w-sm">
+                                                    <Scanner
+                                                        onScan={handleRecallScan}
+                                                        onError={handleScanError}
+                                                        formats={['code_128', 'code_39']}
+                                                        constraints={{
+                                                            video: {
+                                                                facingMode: 'environment'
+                                                            }
+                                                        }}
+                                                        allowMultiple={false}
+                                                        scanDelay={500}
+                                                        components={{
+                                                            finder: true,
+                                                            torch: true,
+                                                            zoom: false
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
                             </div>
+                            {recallBarcodeError && <div className="text-red-500 text-xs mt-1">{recallBarcodeError}</div>}
                         </div>
-                        {requestType && requestType == 'routine' && recallBarcodeError && <div className="text-red-500 text-xs mt-1">{recallBarcodeError}</div>}
-                    </div>
+                    )}
                     {/* Employee Barcode Section */}
                     <div className="mb-6 p-4 border rounded-lg bg-muted/20">
                         <h3 className="font-medium text-sm mb-4 flex items-center">
@@ -855,10 +899,11 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     <Label htmlFor="receivedBy" className={errors.receivedBy ? 'text-destructive' : ''}>
                                         Received By
                                     </Label>
+
                                     <InertiaSmartSelect
                                         name="receivedBy"
-                                        value={data.receivedBy?.employee_id}
-                                        label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : (data.receivedBy ? data.receivedBy.first_name + ' ' + data.receivedBy.last_name : undefined)}
+                                        value={receivedBy?.user_id || receivedBy?.employee_id}
+                                        label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : undefined}
                                         onChange={(value) => handleChange('receivedBy', value as string)}
                                         loadOptions={loadUserOptions}
                                         placeholder="Select user"

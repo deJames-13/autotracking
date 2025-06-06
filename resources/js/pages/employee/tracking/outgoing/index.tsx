@@ -157,7 +157,7 @@ const EmployeeTrackingOutgoingIndex: React.FC<EmployeeTrackingOutgoingIndexProps
                                     <tr key={completion.id} className="hover:bg-muted/50" onDoubleClick={() => router.visit(route('employee.tracking.outgoing.show', completion.id))}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex items-center gap-2">
-                                                {completion.recall_number}
+                                                    {completion.recall_number || 'N/A'}
                                                 {isRecalibrationDue(completion.cal_due_date) && (
                                                     <Badge variant="destructive" className="text-xs">
                                                         Recal Due

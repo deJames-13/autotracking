@@ -1,11 +1,14 @@
 
 
+-- TESTING
+- [x] Cycle time    
+    - [x] Manual inputs for CT Reqd (days) standard 
+    - [x] Manual inputs for Commit and Actual ETCs 
+    - [x] auto calculate queuing days, start to finish
+    - [x] auto calculate overdue
 
-- [ ] Cycle time    
-    - [ ] Manual inputs for CT Reqd (days) standard 
-    - [ ] Manual inputs for Commit and Actual ETCs 
-    - [ ] auto calculate queuing days, start to finish
-    - [ ] auto calculate overdue
+
+-- TODO
 - [ ] Incoming Request Revision
     - [ ] Received By not working properly when changing from select
     - [ ] Recall number should be after calibration
@@ -28,6 +31,8 @@
     - [ ] On user creation, email user with their employee id and pin
     - [ ] Admin can reset password immediately, email automatically on change  
 
+- [ ] Equipment
+    - [ ] process requirement range (for new items)
 
 - [x] Setup Routine Cal
     - [x] Recall number can not be unique to allow archiving of past records

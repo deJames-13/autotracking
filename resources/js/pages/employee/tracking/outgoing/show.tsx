@@ -39,7 +39,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
             href: '/employee/tracking/outgoing',
         },
         {
-            title: trackOutgoing.recall_number,
+            title: trackOutgoing.recall_number || 'N/A',
             href: `/employee/tracking/outgoing/${trackOutgoing.id}`,
         },
     ];

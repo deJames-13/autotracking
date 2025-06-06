@@ -13,9 +13,12 @@ class TrackIncomingRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             // Main data structure
             'data' => ['required', 'array'],
+            
+            // Request type validation
+            'data.requestType' => ['required', 'string', 'in:new,routine'],
             
             // Technician validation
             'data.technician' => ['required', 'array'],
@@ -32,7 +35,6 @@ class TrackIncomingRequest extends FormRequest
             'data.equipment.location' => ['required', 'exists:locations,location_id'],
             'data.equipment.description' => ['required', 'string', 'max:255'],
             'data.equipment.serialNumber' => ['required', 'string', 'max:100'],
-            'data.equipment.recallNumber' => ['nullable', 'string', 'max:100'],
             'data.equipment.model' => ['nullable', 'string', 'max:100'],
             'data.equipment.manufacturer' => ['nullable', 'string', 'max:100'],
             'data.equipment.dueDate' => ['required', 'date'],
@@ -44,12 +46,26 @@ class TrackIncomingRequest extends FormRequest
             // Confirmation pin
             'data.confirmation_pin' => ['required', 'string'],
         ];
+
+        // Dynamic recall number validation based on request type
+        $requestType = $this->input('data.requestType');
+        if ($requestType === 'routine') {
+            // For routine requests, recall number is required and must exist
+            $rules['data.equipment.recallNumber'] = ['required', 'string', 'max:100', 'exists:equipments,recall_number'];
+        } else {
+            // For new requests, recall number is optional
+            $rules['data.equipment.recallNumber'] = ['nullable', 'string', 'max:100'];
+        }
+
+        return $rules;
     }
 
     public function messages(): array
     {
         return [
             'data.required' => 'Request data is required.',
+            'data.requestType.required' => 'Request type is required.',
+            'data.requestType.in' => 'Request type must be either new or routine.',
             'data.technician.required' => 'Technician information is required.',
             'data.technician.employee_id.required' => 'Technician employee ID is required.',
             'data.technician.employee_id.exists' => 'Selected technician does not exist.',
@@ -62,6 +78,8 @@ class TrackIncomingRequest extends FormRequest
             'data.equipment.location.exists' => 'Selected location does not exist.',
             'data.equipment.description.required' => 'Equipment description is required.',
             'data.equipment.serialNumber.required' => 'Serial number is required.',
+            'data.equipment.recallNumber.required' => 'Recall number is required for routine calibration requests.',
+            'data.equipment.recallNumber.exists' => 'The selected recall number does not exist in the equipment records.',
             'data.equipment.model.required' => 'Equipment model is required.',
             'data.equipment.manufacturer.required' => 'Manufacturer is required.',
             'data.equipment.dueDate.required' => 'Due date is required.',

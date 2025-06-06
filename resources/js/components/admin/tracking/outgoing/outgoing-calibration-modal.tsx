@@ -79,9 +79,18 @@ export function OutgoingCalibrationModal({
             setCalDueDate(oneYearLater);
             setDateOut(currentDate);
 
+            // Generate recall number if not present (for new requests)
+            let recallNumber = incomingRecord.recall_number;
+            if (!recallNumber) {
+                // Generate a unique recall number for new requests
+                const timestamp = Date.now().toString();
+                const random = Math.floor(10000 + Math.random() * 90000);
+                recallNumber = `RCL-${timestamp.slice(-6)}-${random}`;
+            }
+
             setData({
                 incoming_id: incomingRecord.id,
-                recall_number: incomingRecord.recall_number,
+                recall_number: recallNumber,
                 cal_date: format(currentDate, 'yyyy-MM-dd'),
                 cal_due_date: format(oneYearLater, 'yyyy-MM-dd'),
                 date_out: format(currentDate, 'yyyy-MM-dd HH:mm:ss'),
@@ -406,7 +415,7 @@ export function OutgoingCalibrationModal({
                 <DialogHeader>
                     <DialogTitle>Complete Calibration</DialogTitle>
                     <DialogDescription>
-                        Record the completion of calibration for {incomingRecord.recall_number}
+                        Record the completion of calibration for {incomingRecord.recall_number || 'equipment without recall number'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -415,9 +424,20 @@ export function OutgoingCalibrationModal({
                     <div className="p-4 border rounded-lg bg-muted/50">
                         <h3 className="font-medium mb-2">Equipment Information</h3>
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <span className="font-medium">Recall Number:</span>
-                                <p>{incomingRecord.recall_number}</p>
+                            <div className="col-span-2">
+                                <Label htmlFor="recall_number">Recall Number *</Label>
+                                <Input
+                                    id="recall_number"
+                                    type="text"
+                                    value={data.recall_number}
+                                    onChange={(e) => setData('recall_number', e.target.value)}
+                                    placeholder="Enter recall number"
+                                    className="mt-1"
+                                    required
+                                />
+                                {errors.recall_number && (
+                                    <p className="text-sm text-destructive mt-1">{errors.recall_number}</p>
+                                )}
                             </div>
                             <div>
                                 <span className="font-medium">Description:</span>

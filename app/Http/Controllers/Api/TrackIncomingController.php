@@ -139,17 +139,43 @@ class TrackIncomingController extends Controller
             }
             
             // Create mode - existing logic
-            // Generate unique recall number if not provided
-            $recallNumber = $data['equipment']['recallNumber'] ?? TrackIncoming::generateUniqueRecallNumber();
+            $requestType = $data['requestType'] ?? 'new';
             
-            // Check if equipment with this recall number already exists
-            $equipment = Equipment::where('recall_number', $recallNumber)->first();
+            // Handle recall number based on request type
+            $recallNumber = null;
+            if ($requestType === 'routine') {
+                // For routine requests, recall number must be provided and validated
+                $recallNumber = $data['equipment']['recallNumber'];
+                if (!$recallNumber) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Recall number is required for routine calibration requests.'
+                    ], 400);
+                }
+            } else {
+                // For new requests, recall number is optional
+                // If not provided, it will be generated during calibration
+                $recallNumber = $data['equipment']['recallNumber'] ?? null;
+            }
+            
+            // Check if equipment with this recall number already exists (for routine)
+            $equipment = null;
+            if ($recallNumber) {
+                $equipment = Equipment::where('recall_number', $recallNumber)->first();
+                
+                if ($requestType === 'routine' && !$equipment) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Equipment with recall number ' . $recallNumber . ' not found.'
+                    ], 404);
+                }
+            }
             
             if (!$equipment) {
-                // Create new equipment record
+                // Create new equipment record (for new requests)
                 $equipment = Equipment::create([
                     'employee_id' => $data['technician']['employee_id'],
-                    'recall_number' => $recallNumber,
+                    'recall_number' => $recallNumber, // This can be null for new requests
                     'serial_number' => $data['equipment']['serialNumber'],
                     'description' => $data['equipment']['description'],
                     'model' => $data['equipment']['model'],
@@ -169,7 +195,7 @@ class TrackIncomingController extends Controller
             
             // Create track incoming record
             $trackIncoming = TrackIncoming::create([
-                'recall_number' => $recallNumber,
+                'recall_number' => $recallNumber, // This can be null for new requests
                 'technician_id' => $data['technician']['employee_id'],
                 'description' => $data['equipment']['description'],
                 'equipment_id' => $equipment->equipment_id,
@@ -185,9 +211,13 @@ class TrackIncomingController extends Controller
                 'notes' => 'Created via tracking request system',
             ]);
             
+            $message = $recallNumber 
+                ? 'Tracking request created successfully with recall number: ' . $recallNumber
+                : 'Tracking request created successfully. Recall number will be assigned during calibration.';
+            
             return response()->json([
                 'success' => true,
-                'message' => 'Tracking request created successfully with recall number: ' . $recallNumber,
+                'message' => $message,
                 'data' => [
                     'track_incoming' => $trackIncoming,
                     'equipment' => $equipment,
