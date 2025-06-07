@@ -106,7 +106,7 @@ export const PickupConfirmationModal: React.FC<PickupConfirmationModalProps> = (
                             <Input
                                 id="pin"
                                 type="password"
-                                placeholder="Enter your 4-digit PIN"
+                                placeholder="Enter your PIN"
                                 value={pin}
                                 onChange={(e) => setPin(e.target.value)}
                                 maxLength={4}
@@ -116,7 +116,7 @@ export const PickupConfirmationModal: React.FC<PickupConfirmationModalProps> = (
                                 className={error ? 'border-red-500' : ''}
                             />
                             <p className="text-xs text-muted-foreground">
-                                Enter your 4-digit PIN to confirm pickup
+                                Enter your PIN to confirm pickup
                             </p>
                         </div>
 

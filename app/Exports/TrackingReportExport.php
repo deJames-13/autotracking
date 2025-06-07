@@ -100,8 +100,7 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
                 break;
                 
             case 'admin':
-            case 'personnel_in_charge':
-                // Admins and personnel in charge can see all records (no additional filtering)
+                // Admins can see all records (no additional filtering)
                 \Log::info('TrackingReportExport - No additional filtering applied for role: ' . $roleName);
                 break;
                 

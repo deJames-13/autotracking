@@ -193,7 +193,7 @@ export function OutgoingCalibrationModal({
 
         // Check if departments match
         if (employeeOutDeptId !== employeeInDeptId) {
-            const message = `Department mismatch: Employee is from ${employeeOutDeptName} but equipment was received by ${employeeInDeptName} department. Only employees from the same department can complete calibrations.`;
+            const message = `Department mismatch: Employee is from ${employeeOutDeptName} but equipment was received by ${employeeInDeptName ?? 'Other'} department. Only employees from the same department can complete calibrations.`;
             setDepartmentValidation({
                 isValid: false,
                 message

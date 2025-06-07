@@ -105,7 +105,7 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
     // Initial fetch
     useEffect(() => {
         fetchTechnicians();
-    }, [fetchTechnicians]);
+    }, []);
 
     // Define DataTable columns
     const columns: DataTableColumn<User>[] = [

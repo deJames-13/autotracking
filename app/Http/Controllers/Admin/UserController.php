@@ -669,7 +669,7 @@ class UserController extends Controller
         try {
             // Get all admin users to notify
             $adminUsers = User::whereHas('role', function ($query) {
-                $query->whereIn('role_name', ['admin', 'personnel_in_charge']);
+                $query->where('role_name', 'admin');
             })->where('email', '!=', null)->get();
 
             if ($adminUsers->isEmpty()) {

@@ -11,6 +11,6 @@ export function useAuth() {
         isAdmin: () => auth.user?.role?.role_name === 'admin',
         isEmployee: () => auth.user?.role?.role_name === 'employee',
         isTechnician: () => auth.user?.role?.role_name === 'technician',
-        isPersonnelInCharge: () => auth.user?.role?.role_name === 'personnel_in_charge',
+        isPersonnelInCharge: () => false, // Role no longer exists
     };
 }

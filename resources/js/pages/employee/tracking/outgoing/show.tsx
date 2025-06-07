@@ -26,6 +26,10 @@ interface EmployeeTrackingOutgoingShowProps {
 }
 
 const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> = ({ trackOutgoing }) => {
+    if (!trackOutgoing) {
+        return router.visit(route('employee.tracking.outgoing.index'))
+    }
+
     const { canSubmitCalibrationRequest } = useRole();
     const [showPickupModal, setShowPickupModal] = useState(false);
 
@@ -39,7 +43,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
             href: '/employee/tracking/outgoing',
         },
         {
-            title: trackOutgoing.recall_number || 'N/A',
+            title: trackOutgoing.track_incoming?.recall_number || 'N/A',
             href: `/employee/tracking/outgoing/${trackOutgoing.id}`,
         },
     ];
@@ -69,7 +73,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Pickup Details: ${trackOutgoing.recall_number}`} />
+            <Head title={`Pickup Details: ${trackOutgoing.track_incoming?.recall_number}`} />
 
             <div className="space-y-6 p-6">
                 <Button variant="outline" size="sm" asChild>
@@ -83,7 +87,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                     <div className="flex items-center gap-4">
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">
-                                Pickup: {trackOutgoing.recall_number}
+                                Pickup: {trackOutgoing.track_incoming?.recall_number}
                             </h1>
                             <p className="text-muted-foreground">Calibration completion details</p>
                         </div>
@@ -97,7 +101,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                             </Badge>
                         )}
 
-                        {canConfirmPickup() && (
+                        {/* {canConfirmPickup() && (
                             <Button
                                 onClick={() => setShowPickupModal(true)}
                                 size="sm"
@@ -106,7 +110,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                                 <CheckCircle className="h-4 w-4 mr-2" />
                                 Confirm Pickup
                             </Button>
-                        )}
+                        )} */}
                     </div>
                 </div>
 

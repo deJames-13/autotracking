@@ -21,8 +21,8 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // Check if user is admin, personnel_in_charge, or technician
-        if (!in_array($user->role?->role_name, ['admin', 'personnel_in_charge', 'technician'])) {
+        // Check if user is admin or technician
+        if (!in_array($user->role?->role_name, ['admin', 'technician'])) {
             abort(403, 'Access denied.');
         }
 

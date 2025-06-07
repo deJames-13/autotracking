@@ -10,7 +10,7 @@ export function useRole() {
     };
 
     const canManageEquipment = () => {
-        return ['admin', 'personnel_in_charge'].includes(user.role?.role_name || '');
+        return user.role?.role_name === 'admin';
     };
 
     const canManagePlants = () => {
@@ -18,7 +18,7 @@ export function useRole() {
     };
 
     const canManageRequestIncoming = () => {
-        return ['admin', 'personnel_in_charge', 'technician'].includes(user.role?.role_name || '');
+        return ['admin', 'technician'].includes(user.role?.role_name || '');
     };
 
     const canViewEmployeeTracking = () => {
@@ -58,7 +58,7 @@ export function useRole() {
     };
 
     const isPersonnelInCharge = () => {
-        return user.role?.role_name === 'personnel_in_charge';
+        return false; // Role no longer exists
     };
 
     const isTechnician = () => {

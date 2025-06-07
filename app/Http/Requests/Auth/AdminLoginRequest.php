@@ -51,7 +51,7 @@ class AdminLoginRequest extends FormRequest
 
         // Check if the authenticated user has admin privileges
         $user = Auth::user();
-        if (!$user || !in_array($user->role?->role_name, ['admin', 'personnel_in_charge'])) {
+        if (!$user || $user->role?->role_name !== 'admin') {
             Auth::logout();
             
             throw ValidationException::withMessages([
