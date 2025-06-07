@@ -29,6 +29,8 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'pending_calibration', 'in_calibration', 'retired'])->default('active');
             $table->date('last_calibration_date')->nullable();
             $table->date('next_calibration_due')->nullable();
+            $table->text('process_req_range_start')->nullable();
+            $table->text('process_req_range_end')->nullable();
             
             $table->timestamps();
         });
