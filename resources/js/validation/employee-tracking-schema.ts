@@ -39,6 +39,8 @@ export const employeeEquipmentSchema = z.object({
     receivedBy: z.union([z.string(), z.number()]).optional().default(''),
     equipment_id: z.number().nullable().default(null),
     existing: z.boolean().default(false),
+    processReqRangeStart: z.string().optional().default(''),
+    processReqRangeEnd: z.string().optional().default(''),
 });
 
 // Employee calibration schema - optional for employees

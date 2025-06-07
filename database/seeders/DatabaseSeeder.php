@@ -86,21 +86,21 @@ class DatabaseSeeder extends Seeder
 
 
         // Create additional technicians with auto-generated info (6-digit employee IDs starting from 200004)
-        for ($i = 4; $i <= 8; $i++) { // Creates 5 more technicians (200004-200008)
-            User::factory()->create([
-                'employee_id' => 200000 + $i,
-                'role_id' => 3, // technician
-                'plant_id' => 1, // P1
-                'department_id' => 2, // Calibrations
-            ]);
-        }
-        for ($i = 3; $i <= 7; $i++) { // Creates 5 more employee (300003-300007)
-            User::factory()->create([
-                'employee_id' => 300000 + $i,
-                'role_id' => 2, // technician
-                'plant_id' => 1, // P1
-                'department_id' => 6, // Electrical
-            ]);
-        }
+        // for ($i = 4; $i <= 8; $i++) { // Creates 5 more technicians (200004-200008)
+        //     User::factory()->create([
+        //         'employee_id' => 200000 + $i,
+        //         'role_id' => 3, // technician
+        //         'plant_id' => 1, // P1
+        //         'department_id' => 2, // Calibrations
+        //     ]);
+        // }
+        // for ($i = 3; $i <= 7; $i++) { // Creates 5 more employee (300003-300007)
+        //     User::factory()->create([
+        //         'employee_id' => 300000 + $i,
+        //         'role_id' => 2, // technician
+        //         'plant_id' => 1, // P1
+        //         'department_id' => 6, // Electrical
+        //     ]);
+        // }
     }
 }

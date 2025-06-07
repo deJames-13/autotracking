@@ -209,11 +209,15 @@ class TrackIncomingController extends Controller
                     'location_id' => $data['equipment']['location'],
                     'status' => 'active',
                     'next_calibration_due' => $data['equipment']['dueDate'],
+                    'process_req_range_start' => $data['equipment']['processReqRangeStart'] ?? null,
+                    'process_req_range_end' => $data['equipment']['processReqRangeEnd'] ?? null,
                 ]);
             } else {
                 // Update existing equipment with new calibration due date if needed
                 $equipment->update([
                     'next_calibration_due' => $data['equipment']['dueDate'],
+                    'process_req_range_start' => $data['equipment']['processReqRangeStart'] ?? $equipment->process_req_range_start,
+                    'process_req_range_end' => $data['equipment']['processReqRangeEnd'] ?? $equipment->process_req_range_end,
                 ]);
             }
             

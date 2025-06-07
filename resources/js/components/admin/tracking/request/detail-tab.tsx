@@ -155,11 +155,17 @@ const DetailTab: React.FC<DetailTabProps> = ({
                     ...response.data.equipment,
                     recallNumber: recall,
                     serialNumber: response.data.equipment.serial_number || '',
+                    processReqRangeStart: response.data.equipment.process_req_range_start || '',
+                    processReqRangeEnd: response.data.equipment.process_req_range_end || '',
                     existing: true,
                     equipment_id: response.data.equipment.equipment_id
                 }));
-                // Auto-fill serial number in the form
-                onChange({ serialNumber: response.data.equipment.serial_number || '' });
+                // Auto-fill form fields including new process requirement range fields
+                onChange({
+                    serialNumber: response.data.equipment.serial_number || '',
+                    processReqRangeStart: response.data.equipment.process_req_range_start || '',
+                    processReqRangeEnd: response.data.equipment.process_req_range_end || ''
+                });
             } else {
                 dispatch(updateEquipment({
                     recallNumber: recall,
@@ -862,6 +868,39 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 />
                                 {errors.manufacturer && <p className="text-sm text-destructive mt-1">{errors.manufacturer}</p>}
                             </div>
+
+                            {/* Process Requirement Range fields - only for new equipment */}
+                            {requestType === 'new' && (
+                                <>
+                                    <div>
+                                        <Label htmlFor="processReqRangeStart" className={errors.processReqRangeStart ? 'text-destructive' : ''}>
+                                            Process Req Range Start
+                                        </Label>
+                                        <Input
+                                            id="processReqRangeStart"
+                                            value={data.processReqRangeStart || ''}
+                                            onChange={(e) => handleChange('processReqRangeStart', e.target.value)}
+                                            placeholder="Enter process requirement range start"
+                                            className={errors.processReqRangeStart ? 'border-destructive' : ''}
+                                        />
+                                        {errors.processReqRangeStart && <p className="text-sm text-destructive mt-1">{errors.processReqRangeStart}</p>}
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="processReqRangeEnd" className={errors.processReqRangeEnd ? 'text-destructive' : ''}>
+                                            Process Req Range End
+                                        </Label>
+                                        <Input
+                                            id="processReqRangeEnd"
+                                            value={data.processReqRangeEnd || ''}
+                                            onChange={(e) => handleChange('processReqRangeEnd', e.target.value)}
+                                            placeholder="Enter process requirement range end"
+                                            className={errors.processReqRangeEnd ? 'border-destructive' : ''}
+                                        />
+                                        {errors.processReqRangeEnd && <p className="text-sm text-destructive mt-1">{errors.processReqRangeEnd}</p>}
+                                    </div>
+                                </>
+                            )}
 
                         </div>
                     </div>

@@ -29,6 +29,9 @@
 - [x] Bar Code downloadables
 
 
+- [ ] Equipment
+    - [ ] process requirement range (start - end) (for new items) in request detail-tab
+
 - [ ] Roles
     - [ ] Admin
         - [ ] Can see all
@@ -40,10 +43,16 @@
     - [ ] Employee
         - [ ] Can only see theyre own incoming and outgoing
 
--- TODO
-
 - [ ] Equipment
     - [ ] process requirement range (start - end) (for new items) in request detail-tab 
+    
+-- TODO
+
+- [ ] Imports
+    - [ ] batch user imports
+    - [ ] batch department
+    - [ ] batch plant
+    - [ ] batch locations
 
 - [x] Setup Routine Cal
     - [x] Recall number can not be unique to allow archiving of past records

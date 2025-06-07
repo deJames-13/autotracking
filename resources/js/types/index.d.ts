@@ -104,6 +104,8 @@ export interface Equipment {
     status: 'active' | 'inactive' | 'pending_calibration' | 'in_calibration' | 'retired';
     last_calibration_date?: string | null;
     next_calibration_due?: string | null;
+    process_req_range_start?: string | null;
+    process_req_range_end?: string | null;
     created_at: string;
     updated_at: string;
     user?: User;
@@ -242,6 +244,8 @@ export interface EquipmentFormData {
     status?: 'active' | 'inactive' | 'pending_calibration' | 'in_calibration' | 'retired';
     last_calibration_date?: string | null;
     next_calibration_due?: string | null;
+    process_req_range_start?: string | null;
+    process_req_range_end?: string | null;
 }
 
 export interface DepartmentFormData {

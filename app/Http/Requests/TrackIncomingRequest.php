@@ -38,6 +38,8 @@ class TrackIncomingRequest extends FormRequest
             'data.equipment.model' => ['nullable', 'string', 'max:100'],
             'data.equipment.manufacturer' => ['nullable', 'string', 'max:100'],
             'data.equipment.dueDate' => ['required', 'date'],
+            'data.equipment.processReqRangeStart' => ['nullable', 'string', 'max:255'],
+            'data.equipment.processReqRangeEnd' => ['nullable', 'string', 'max:255'],
             
             // Received by validation
             'data.receivedBy' => ['required', 'array'],
@@ -84,6 +86,10 @@ class TrackIncomingRequest extends FormRequest
             'data.equipment.manufacturer.required' => 'Manufacturer is required.',
             'data.equipment.dueDate.required' => 'Due date is required.',
             'data.equipment.dueDate.date' => 'Due date must be a valid date.',
+            'data.equipment.processReqRangeStart.string' => 'Process requirement range start must be text.',
+            'data.equipment.processReqRangeStart.max' => 'Process requirement range start must be less than 255 characters.',
+            'data.equipment.processReqRangeEnd.string' => 'Process requirement range end must be text.',
+            'data.equipment.processReqRangeEnd.max' => 'Process requirement range end must be less than 255 characters.',
             'data.receivedBy.required' => 'Received by information is required.',
             'data.receivedBy.employee_id.required' => 'Received by employee ID is required.',
             'data.receivedBy.employee_id.exists' => 'Selected employee does not exist.',

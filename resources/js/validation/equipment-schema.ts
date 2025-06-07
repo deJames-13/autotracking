@@ -34,6 +34,12 @@ export const equipmentSchema = z.object({
         .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format")
         .optional()
         .or(z.literal('')),
+    process_req_range_start: z.string()
+        .optional()
+        .default(''),
+    process_req_range_end: z.string()
+        .optional()
+        .default(''),
 }).refine(data => {
     // If both calibration dates are provided, next_calibration_due should be after last_calibration_date
     if (data.last_calibration_date && data.next_calibration_due &&
@@ -76,6 +82,12 @@ export const equipmentFormSchema = z.object({
         .optional()
         .default(''),
     next_calibration_due: z.string()
+        .optional()
+        .default(''),
+    process_req_range_start: z.string()
+        .optional()
+        .default(''),
+    process_req_range_end: z.string()
         .optional()
         .default(''),
 }).refine(data => {

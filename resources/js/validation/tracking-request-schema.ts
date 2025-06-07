@@ -30,6 +30,8 @@ export const equipmentSchema = z.object({
     equipment_id: z.number().nullable().default(null),
     existing: z.boolean().default(false),
     requestType: z.enum(['new', 'routine']).optional(),
+    processReqRangeStart: z.string().optional().default(''),
+    processReqRangeEnd: z.string().optional().default(''),
 });
 
 // Dynamic equipment schema that validates recall number based on request type

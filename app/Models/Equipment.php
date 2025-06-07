@@ -21,7 +21,9 @@ class Equipment extends Model
         'location_id',
         'status',
         'last_calibration_date',
-        'next_calibration_due'
+        'next_calibration_due',
+        'process_req_range_start',
+        'process_req_range_end'
     ];
 
     protected $casts = [

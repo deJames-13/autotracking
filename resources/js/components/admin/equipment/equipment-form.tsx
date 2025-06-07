@@ -25,6 +25,8 @@ interface EquipmentFormData {
     status: string;
     last_calibration_date: string;
     next_calibration_due: string;
+    process_req_range_start: string;
+    process_req_range_end: string;
     [key: string]: any;
 }
 
@@ -56,6 +58,8 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
         status: equipment?.status || 'active',
         last_calibration_date: equipment?.last_calibration_date || '',
         next_calibration_due: equipment?.next_calibration_due || '',
+        process_req_range_start: equipment?.process_req_range_start || '',
+        process_req_range_end: equipment?.process_req_range_end || '',
     });
 
     // Load user options for SmartSelect
@@ -391,6 +395,30 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                             className={getCombinedErrors('next_calibration_due') ? 'border-destructive' : ''}
                         />
                         <InputError message={getCombinedErrors('next_calibration_due')} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="process_req_range_start">Process Req Range Start</Label>
+                        <Input
+                            id="process_req_range_start"
+                            value={data.process_req_range_start}
+                            onChange={(e) => setData('process_req_range_start', e.target.value)}
+                            placeholder="Enter process requirement range start"
+                            className={getCombinedErrors('process_req_range_start') ? 'border-destructive' : ''}
+                        />
+                        <InputError message={getCombinedErrors('process_req_range_start')} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="process_req_range_end">Process Req Range End</Label>
+                        <Input
+                            id="process_req_range_end"
+                            value={data.process_req_range_end}
+                            onChange={(e) => setData('process_req_range_end', e.target.value)}
+                            placeholder="Enter process requirement range end"
+                            className={getCombinedErrors('process_req_range_end') ? 'border-destructive' : ''}
+                        />
+                        <InputError message={getCombinedErrors('process_req_range_end')} />
                     </div>
 
                     <div className="space-y-2">

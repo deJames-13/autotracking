@@ -71,6 +71,16 @@ class EquipmentRequest extends FormRequest
                 'date',
                 'after:last_calibration_date'
             ],
+            'process_req_range_start' => [
+                'nullable',
+                'string',
+                'max:255'
+            ],
+            'process_req_range_end' => [
+                'nullable',
+                'string',
+                'max:255'
+            ],
         ];
     }
 
@@ -89,6 +99,10 @@ class EquipmentRequest extends FormRequest
             'last_calibration_date.before_or_equal' => 'Last calibration date cannot be in the future.',
             'next_calibration_due.date' => 'Next calibration due date must be a valid date.',
             'next_calibration_due.after' => 'Next calibration due date must be after the last calibration date.',
+            'process_req_range_start.string' => 'Process requirement range start must be text.',
+            'process_req_range_start.max' => 'Process requirement range start must be less than 255 characters.',
+            'process_req_range_end.string' => 'Process requirement range end must be text.',
+            'process_req_range_end.max' => 'Process requirement range end must be less than 255 characters.',
         ];
     }
 
@@ -107,6 +121,8 @@ class EquipmentRequest extends FormRequest
             'status' => 'status',
             'last_calibration_date' => 'last calibration date',
             'next_calibration_due' => 'next calibration due date',
+            'process_req_range_start' => 'process requirement range start',
+            'process_req_range_end' => 'process requirement range end',
         ];
     }
 
@@ -123,6 +139,8 @@ class EquipmentRequest extends FormRequest
             'location_id' => $this->location_id ?: null,
             'last_calibration_date' => $this->last_calibration_date ?: null,
             'next_calibration_due' => $this->next_calibration_due ?: null,
+            'process_req_range_start' => $this->process_req_range_start ?: null,
+            'process_req_range_end' => $this->process_req_range_end ?: null,
         ]);
     }
 }
