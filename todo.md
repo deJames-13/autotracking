@@ -34,10 +34,12 @@
     - [ ] Admin
         - [ ] Can see all
         - [x] Can for accept (no pin needed)
+
     - [ ] Technician
-        - [ ] Can only see incoming, calibration, outgoing, 
+        - [ ] Can only see theyre own incoming, calibration, outgoing, 
+        
     - [ ] Employee
-        - [ ] Can only see incoming and outgoing
+        - [ ] Can only see theyre own incoming and outgoing
 
 - [ ] Equipment
     - [ ] process requirement range (for new items)

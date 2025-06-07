@@ -182,6 +182,14 @@ class ReportTableController extends Controller
     {
         $filters = $request->all();
         
+        // Log the export request details
+        \Log::info('Export Request:', [
+            'format' => $format,
+            'filters' => $filters,
+            'request_url' => $request->fullUrl(),
+            'request_method' => $request->method()
+        ]);
+        
         switch ($format) {
             case 'xlsx':
                 return $this->exportExcel($filters);
@@ -190,6 +198,7 @@ class ReportTableController extends Controller
             case 'pdf':
                 return $this->exportPdf($filters);
             default:
+                \Log::error('Invalid export format requested:', ['format' => $format]);
                 return response()->json(['error' => 'Invalid export format'], 400);
         }
     }
@@ -199,7 +208,29 @@ class ReportTableController extends Controller
      */
     private function exportExcel(array $filters)
     {
-        return Excel::download(new TrackingReportExport($filters), 'tracking_reports_' . date('Y_m_d') . '.xlsx');
+        // Log the filters being applied
+        \Log::info('Excel Export - Filters applied:', $filters);
+        
+        // Create export instance and test data retrieval
+        $export = new TrackingReportExport($filters);
+        
+        // Get the data to verify it's not empty
+        $query = TrackIncoming::with([
+            'equipment', 
+            'technician', 
+            'location', 
+            'employeeIn',
+            'trackOutgoing.employeeOut'
+        ]);
+        
+        // Apply same filters as in export
+        $this->applyFilters($query, $filters);
+        $testData = $query->get();
+        
+        \Log::info('Excel Export - Data count before export:', ['count' => $testData->count()]);
+        \Log::info('Excel Export - Sample data:', $testData->take(2)->toArray());
+        
+        return Excel::download($export, 'tracking_reports_' . date('Y_m_d') . '.xlsx');
     }
 
     /**
@@ -207,7 +238,29 @@ class ReportTableController extends Controller
      */
     private function exportCsv(array $filters)
     {
-        return Excel::download(new TrackingReportExport($filters), 'tracking_reports_' . date('Y_m_d') . '.csv', \Maatwebsite\Excel\Excel::CSV);
+        // Log the filters being applied
+        \Log::info('CSV Export - Filters applied:', $filters);
+        
+        // Create export instance and test data retrieval
+        $export = new TrackingReportExport($filters);
+        
+        // Get the data to verify it's not empty
+        $query = TrackIncoming::with([
+            'equipment', 
+            'technician', 
+            'location', 
+            'employeeIn',
+            'trackOutgoing.employeeOut'
+        ]);
+        
+        // Apply same filters as in export
+        $this->applyFilters($query, $filters);
+        $testData = $query->get();
+        
+        \Log::info('CSV Export - Data count before export:', ['count' => $testData->count()]);
+        \Log::info('CSV Export - Sample data:', $testData->take(2)->toArray());
+        
+        return Excel::download($export, 'tracking_reports_' . date('Y_m_d') . '.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     /**
@@ -215,6 +268,25 @@ class ReportTableController extends Controller
      */
     private function exportPdf(array $filters)
     {
+        // Log the filters being applied
+        \Log::info('PDF Export - Filters applied:', $filters);
+        
+        // Get the data to verify it's not empty before creating export
+        $query = TrackIncoming::with([
+            'equipment', 
+            'technician', 
+            'location', 
+            'employeeIn',
+            'trackOutgoing.employeeOut'
+        ]);
+        
+        // Apply same filters as in export
+        $this->applyFilters($query, $filters);
+        $testData = $query->get();
+        
+        \Log::info('PDF Export - Data count before export:', ['count' => $testData->count()]);
+        \Log::info('PDF Export - Sample data:', $testData->take(2)->toArray());
+        
         // Use Laravel Excel with DOMPDF for PDF generation
         $export = new TrackingReportExport($filters, 'pdf');
         

@@ -41,17 +41,17 @@
         @forelse($reports ?? [] as $report)
             <tr>
                 <!-- TECHNICIAN Section -->
-                <td style="vertical-align: center; text-align: center; width: 90px">{{ $report->recall_number }}</td>
+                <td style="vertical-align: center; text-align: center; width: 90px; font-size: 8px">{{ $report->recall_number }}</td>
                 <td style="vertical-align: center; text-align: center; width: 90px">{{ $report->equipment ? $report->equipment->description : $report->description }}</td>
                 <td style="vertical-align: center; text-align: center; width: 90px">
                     @if($report->location)
                         {{ $report->location->location_name }}
                     @endif
                 </td>
-                <td style="vertical-align: center; text-align: center; width: 90px">{{ $report->due_date?->format('m/d/Y') }}</td>
+                <td style="vertical-align: center; text-align: center; width: 90px; font-size: 8px">{{ $report->due_date?->format('m/d/Y') }}</td>
                 
                 <!-- INCOMING Section -->
-                <td style="vertical-align: center; text-align: center; width: 90px">{{ $report->date_in?->format('m/d/Y') }}</td>
+                <td style="vertical-align: center; text-align: center; width: 90px; font-size: 8px">{{ $report->date_in?->format('m/d/Y') }}</td>
                 <td style="vertical-align: center; text-align: center; width: 90px">
                     @if($report->employeeIn)
                         {{ $report->employeeIn->first_name }} {{ $report->employeeIn->last_name }}
@@ -64,22 +64,22 @@
                 </td>
                 
                 <!-- OUTGOING Section -->
-                <td style="vertical-align: center; text-align: center; width: 30px">
+                <td style="vertical-align: center; text-align: center; width: 90px; font-size: 8px">
                     @if($report->trackOutgoing)
-                        {{ $report->trackOutgoing->recall_number }}
+                        {{ $report->recall_number }}
                     @endif
                 </td>
-                <td style="vertical-align: center; text-align: center; width: 90px">
+                <td style="vertical-align: center; text-align: center; width: 90px; font-size: 8px">
                     @if($report->trackOutgoing)
                         {{ $report->trackOutgoing->cal_date?->format('m/d/Y') }}
                     @endif
                 </td>
-                <td style="vertical-align: center; text-align: center; width: 90px">
+                <td style="vertical-align: center; text-align: center; width: 90px; font-size: 8px">
                     @if($report->trackOutgoing)
                         {{ $report->trackOutgoing->cal_due_date?->format('m/d/Y') }}
                     @endif
                 </td>
-                <td style="vertical-align: center; text-align: center; width: 90px">
+                <td style="vertical-align: center; text-align: center; width: 90px; font-size: 8px">
                     @if($report->trackOutgoing)
                         {{ $report->trackOutgoing->date_out?->format('m/d/Y') }}
                     @endif
@@ -90,13 +90,37 @@
                     @endif
                 </td>
                 
-                <!-- CYCLE TIME Section (all empty for now) -->
-                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- Queuing Time -->
-                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- CT Required -->
-                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- Commit ETC -->
-                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- Actual ETC -->
-                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- Actual # of CT -->
-                <td style="vertical-align: center; text-align: center; width: 30px"></td> <!-- Overdue ETC -->
+                <!-- CYCLE TIME Section -->
+                <td style="vertical-align: center; text-align: center; width: 30px">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->cycle_time }}
+                    @endif
+                </td>
+                <td style="vertical-align: center; text-align: center; width: 30px">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->ct_reqd }}
+                    @endif
+                </td>
+                <td style="vertical-align: center; text-align: center; width: 30px">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->commit_etc }}
+                    @endif
+                </td>
+                <td style="vertical-align: center; text-align: center; width: 30px">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->actual_etc }}
+                    @endif
+                </td>
+                <td style="vertical-align: center; text-align: center; width: 30px">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->cycle_time }}
+                    @endif
+                </td>
+                <td style="vertical-align: center; text-align: center; width: 30px">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->overdue }}
+                    @endif
+                </td>
             </tr>
         @empty
             <tr>

@@ -13,9 +13,8 @@ use Illuminate\Contracts\View\View;
 class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
 {
     protected $filters;
-    protected $type;
 
-    public function __construct(array $filters = [], $type = null)
+    public function __construct(array $filters = [], $type = NULL)
     {
         $this->filters = $filters;
         $this->type = $type;
@@ -23,33 +22,48 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
 
     public function view(): View
     {
-        \Log::info('TrackingReportExport - Starting data retrieval with filters:', $this->filters);
-        
         $query = TrackIncoming::with([
             'equipment', 
             'technician', 
             'location', 
             'employeeIn',
-            'trackOutgoing.employeeOut'
+            'trackOutgoing',
         ]);
 
         $this->applyFilters($query);
 
         $incomingRecords = $query->orderBy('date_in', 'desc')->get();
-        
-        \Log::info('TrackingReportExport - Data retrieved:', [
-            'count' => $incomingRecords->count(),
-            'sample_data' => $incomingRecords->take(2)->toArray()
-        ]);
+        $incomingIds = $incomingRecords->pluck('id')->filter();
 
-        return view('exports.report-template', [
-            'reports' => $incomingRecords
-        ]);
+        $outgoingRecords = TrackOutgoing::whereIn('incoming_id', $incomingIds)
+            ->with(['employeeOut' => function($query) {
+                $query->select(['employee_id', 'first_name', 'last_name']);
+            }])
+            ->get()
+            ->keyBy('incoming_id');
+
+        $incomingRecords->each(function($record) use ($outgoingRecords) {
+            if (isset($outgoingRecords[$record->id])) {
+                $record->setRelation('trackOutgoing', $outgoingRecords[$record->id]);
+            }
+        });
+
+        switch ($this->type) {
+            case 'pdf':
+                return view('exports.report-template', [
+                    'reports' => $incomingRecords
+                ]);
+            default:
+                return view('exports.report-template', [
+                    'reports' => $incomingRecords
+                ]);
+        }
+
+
     }
 
     private function applyFilters($query)
     {
-        // Apply search filters with proper syntax
         if (!empty($this->filters['search'])) {
             $search = $this->filters['search'];
             $query->where(function($q) use ($search) {
@@ -64,39 +78,28 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
             });
         }
 
-        // Handle both old and new parameter names for equipment filter
-        if (!empty($this->filters['equipment_name']) || !empty($this->filters['equipment_filter'])) {
-            $equipmentName = $this->filters['equipment_name'] ?? $this->filters['equipment_filter'];
-            $query->whereHas('equipment', function($eq) use ($equipmentName) {
-                $eq->where('description', 'like', '%' . $equipmentName . '%');
+        if (!empty($this->filters['equipment_name'])) {
+            $query->whereHas('equipment', function($eq) {
+                $eq->where('description', 'like', '%' . $this->filters['equipment_name'] . '%');
             });
         }
 
-        // Handle both old and new parameter names for recall number filter
-        if (!empty($this->filters['recall_number']) || !empty($this->filters['recall_filter'])) {
-            $recallNumber = $this->filters['recall_number'] ?? $this->filters['recall_filter'];
-            $query->where('recall_number', 'like', '%' . $recallNumber . '%');
+        if (!empty($this->filters['recall_number'])) {
+            $query->where('recall_number', 'like', '%' . $this->filters['recall_number'] . '%');
         }
 
-        // Handle both old and new parameter names for status filter
-        if (!empty($this->filters['status']) || !empty($this->filters['status_filter'])) {
-            $status = $this->filters['status'] ?? $this->filters['status_filter'];
-            $query->where('status', $status);
+        if (!empty($this->filters['status'])) {
+            $query->where('status', $this->filters['status']);
         }
 
-        // Handle both old and new parameter names for technician filter
-        if (!empty($this->filters['technician_id']) || !empty($this->filters['technician_filter'])) {
-            $technicianId = $this->filters['technician_id'] ?? $this->filters['technician_filter'];
-            $query->where('technician_id', $technicianId);
+        if (!empty($this->filters['technician_id'])) {
+            $query->where('technician_id', $this->filters['technician_id']);
         }
 
-        // Handle both old and new parameter names for location filter
-        if (!empty($this->filters['location_id']) || !empty($this->filters['location_filter'])) {
-            $locationId = $this->filters['location_id'] ?? $this->filters['location_filter'];
-            $query->where('location_id', $locationId);
+        if (!empty($this->filters['location_id'])) {
+            $query->where('location_id', $this->filters['location_id']);
         }
 
-        // Date range filters
         if (!empty($this->filters['date_from'])) {
             $query->where('date_in', '>=', $this->filters['date_from']);
         }

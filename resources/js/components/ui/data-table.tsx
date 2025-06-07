@@ -101,12 +101,12 @@ export function DataTable<T = any>({
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [showFilters, setShowFilters] = useState(false);
     const [dateRange, setDateRange] = useState<{
-        startDate: Date;
-        endDate: Date;
+        startDate: Date | null;
+        endDate: Date | null;
         key: string;
     }>({
-        startDate: new Date(),
-        endDate: new Date(),
+        startDate: null,
+        endDate: null,
         key: 'selection'
     });
     const isFirstRender = useRef(true);
@@ -185,8 +185,8 @@ export function DataTable<T = any>({
 
         setActiveFilters(resetFilters);
         setDateRange({
-            startDate: new Date(),
-            endDate: new Date(),
+            startDate: null,
+            endDate: null,
             key: 'selection'
         });
         setSearchTerm('');
@@ -298,8 +298,7 @@ export function DataTable<T = any>({
     };
 
     const activeFilterCount = Object.values(activeFilters).filter(value => Boolean(value) && value !== 'all').length +
-        (dateRange?.startDate && dateRange?.endDate &&
-            dateRange.startDate.getTime() !== dateRange.endDate.getTime() ? 1 : 0) +
+        (dateRange?.startDate && dateRange?.endDate ? 1 : 0) +
         (searchTerm ? 1 : 0);
 
     return (
@@ -409,13 +408,11 @@ export function DataTable<T = any>({
                                     variant="outline"
                                     className={cn(
                                         "w-full justify-start text-left font-normal",
-                                        (!dateRange?.startDate || !dateRange?.endDate ||
-                                            dateRange.startDate.getTime() === dateRange.endDate.getTime()) && "text-muted-foreground"
+                                        (!dateRange?.startDate || !dateRange?.endDate) && "text-muted-foreground"
                                     )}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {dateRange?.startDate && dateRange?.endDate &&
-                                        dateRange.startDate.getTime() !== dateRange.endDate.getTime() ? (
+                                    {dateRange?.startDate && dateRange?.endDate ? (
                                         <>
                                             {formatDate(dateRange.startDate, "LLL dd, y")} -{" "}
                                             {formatDate(dateRange.endDate, "LLL dd, y")}
@@ -427,7 +424,11 @@ export function DataTable<T = any>({
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                                 <DateRangePicker
-                                    ranges={[dateRange]}
+                                    ranges={[{
+                                        startDate: dateRange?.startDate || new Date(),
+                                        endDate: dateRange?.endDate || new Date(),
+                                        key: 'selection'
+                                    }]}
                                     onChange={(ranges: any) => {
                                         const selection = ranges.selection;
                                         setDateRange({
