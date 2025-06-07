@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Eye, FileDown, AlertCircle, CheckCircle2, Calendar, MapPin, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -57,8 +59,6 @@ interface TrackingRecord {
 }
 
 interface FilterOptions {
-    equipmentNames: Array<{ value: string; label: string }>;
-    technicians: Array<{ value: string; label: string }>;
     locations: Array<{ value: string; label: string }>;
     statuses: Array<{ value: string; label: string }>;
 }
@@ -249,9 +249,8 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
         total: 0
     });
     const [filters, setFilters] = useState<Record<string, any>>({});
+    const [exportAllData, setExportAllData] = useState(false);
     const [filterOptions, setFilterOptions] = useState<FilterOptions>({
-        equipmentNames: [],
-        technicians: [],
         locations: [],
         statuses: []
     });
@@ -449,22 +448,8 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
         },
     ], []);
 
-    // Define filters for the DataTable
+    // Define filters for the DataTable (removed equipment and technician filters)
     const tableFilters = useMemo(() => [
-        {
-            key: 'equipment_filter',
-            label: 'Equipment',
-            type: 'select' as const,
-            placeholder: 'Filter by equipment...',
-            options: filterOptions.equipmentNames,
-        },
-        {
-            key: 'technician_filter',
-            label: 'Technician',
-            type: 'select' as const,
-            placeholder: 'Filter by technician...',
-            options: filterOptions.technicians,
-        },
         {
             key: 'status_filter',
             label: 'Status',
@@ -474,7 +459,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
         },
     ], [filterOptions]);
 
-    // Define export options
+    // Define export options (removed Print All options)
     const exportOptions = useMemo(() => [
         {
             label: 'Export Excel',
@@ -517,12 +502,20 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
             // Build query parameters from filters
             const queryParams = new URLSearchParams();
 
-            // Add filters as query parameters
+            // Check if "Export All Data" is enabled
+            const isPrintAll = exportAllData;
+
+            // Add filters as query parameters (except print_all which goes in the URL path)
             Object.keys(exportFilters).forEach(key => {
-                if (exportFilters[key] !== null && exportFilters[key] !== undefined && exportFilters[key] !== '') {
+                if (key !== 'print_all' && exportFilters[key] !== null && exportFilters[key] !== undefined && exportFilters[key] !== '') {
                     queryParams.append(key, String(exportFilters[key]));
                 }
             });
+
+            // Add print_all parameter if needed
+            if (isPrintAll) {
+                queryParams.append('print_all', 'true');
+            }
 
             // Build the URL with format in path and filters as query params
             const url = `/api/reports/table/export/${exportFormat}?${queryParams.toString()}`;
@@ -550,7 +543,9 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = downloadUrl;
-                a.download = `tracking-reports-${format(new Date(), 'MMM_dd_yyyy_HH_mm')}.${exportFormat}`;
+                // Use different filename for print all exports
+                const filePrefix = isPrintAll ? 'tracking-reports-all' : 'tracking-reports';
+                a.download = `${filePrefix}-${format(new Date(), 'MMM_dd_yyyy_HH_mm')}.${exportFormat}`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(downloadUrl);
@@ -561,7 +556,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
         } catch (error) {
             console.error('Export failed:', error);
         }
-    }, []);
+    }, [exportAllData]);
 
     return (
         <div className={cn('space-y-4', className)}>
@@ -573,6 +568,26 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className='h-full'>
+                    {/* Custom Export All Data Toggle */}
+                    <div className="mb-4 p-4 border rounded-lg bg-muted/20">
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="export-all-data"
+                                checked={exportAllData}
+                                onCheckedChange={(checked) => setExportAllData(!!checked)}
+                            />
+                            <Label
+                                htmlFor="export-all-data"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                                Export All Data (ignore current filters)
+                            </Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            When enabled, exports will include all records regardless of current filters and search terms.
+                        </p>
+                    </div>
+
                     <DataTable
                         data={data}
                         columns={columns}

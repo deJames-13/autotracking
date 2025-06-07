@@ -192,7 +192,7 @@ export function DataTable<T = any>({
         setSearchTerm('');
     };
 
-    const handleExport = (exportFormat: string) => {
+    const handleExport = (exportFormat: string, printAll?: boolean) => {
         if (onExport) {
             // Filter out "all" values from activeFilters
             const cleanFilters = Object.entries(activeFilters).reduce((acc, [key, value]) => {
@@ -207,6 +207,7 @@ export function DataTable<T = any>({
                 ...cleanFilters,
                 ...(dateRange?.startDate && { date_from: formatDate(dateRange.startDate, 'yyyy-MM-dd') }),
                 ...(dateRange?.endDate && { date_to: formatDate(dateRange.endDate, 'yyyy-MM-dd') }),
+                ...(printAll && { print_all: true }),
             };
             onExport(exportFormat, exportFilters);
         }
@@ -353,7 +354,7 @@ export function DataTable<T = any>({
                                 key={`export-${exportOption.format}-${exportIndex}`}
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleExport(exportOption.format)}
+                                onClick={() => handleExport(exportOption.format, exportOption.printAll)}
                             >
                                 {exportOption.format === 'xlsx' && <FileSpreadsheet className="h-4 w-4 mr-2" />}
                                 {exportOption.format === 'csv' && <File className="h-4 w-4 mr-2" />}

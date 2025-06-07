@@ -42,13 +42,6 @@ class ReportTableController extends Controller
         }
 
         // Apply filters - handle both old and new parameter names
-        if ($request->filled('equipment_name') || $request->filled('equipment_filter')) {
-            $equipmentName = $request->get('equipment_name') ?: $request->get('equipment_filter');
-            $query->whereHas('equipment', function($eq) use ($equipmentName) {
-                $eq->where('description', 'like', '%' . $equipmentName . '%');
-            });
-        }
-
         if ($request->filled('recall_number') || $request->filled('recall_filter')) {
             $recallNumber = $request->get('recall_number') ?: $request->get('recall_filter');
             $query->where('recall_number', 'like', '%' . $recallNumber . '%');
@@ -57,11 +50,6 @@ class ReportTableController extends Controller
         if ($request->filled('status') || $request->filled('status_filter')) {
             $status = $request->get('status') ?: $request->get('status_filter');
             $query->where('status', $status);
-        }
-
-        if ($request->filled('technician_id') || $request->filled('technician_filter')) {
-            $technicianId = $request->get('technician_id') ?: $request->get('technician_filter');
-            $query->where('technician_id', $technicianId);
         }
 
         if ($request->filled('location_id') || $request->filled('location_filter')) {
@@ -143,16 +131,6 @@ class ReportTableController extends Controller
      */
     public function filterOptions(): JsonResponse
     {
-        $technicians = \App\Models\User::whereHas('trackIncomingAsTechnician')
-            ->select('employee_id', 'first_name', 'last_name')
-            ->get()
-            ->map(function($user) {
-                return [
-                    'value' => $user->employee_id,
-                    'label' => $user->first_name . ' ' . $user->last_name
-                ];
-            });
-
         $locations = \App\Models\Location::whereHas('trackIncoming')
             ->select('location_id', 'location_name')
             ->get()
@@ -169,7 +147,6 @@ class ReportTableController extends Controller
         ];
 
         return response()->json([
-            'technicians' => $technicians,
             'locations' => $locations,
             'statuses' => $statuses,
         ]);
@@ -181,22 +158,24 @@ class ReportTableController extends Controller
     public function export(Request $request, string $format)
     {
         $filters = $request->all();
+        $printAll = $request->boolean('print_all', false);
         
         // Log the export request details
         \Log::info('Export Request:', [
             'format' => $format,
             'filters' => $filters,
+            'print_all' => $printAll,
             'request_url' => $request->fullUrl(),
             'request_method' => $request->method()
         ]);
         
         switch ($format) {
             case 'xlsx':
-                return $this->exportExcel($filters);
+                return $this->exportExcel($filters, $printAll);
             case 'csv':
-                return $this->exportCsv($filters);
+                return $this->exportCsv($filters, $printAll);
             case 'pdf':
-                return $this->exportPdf($filters);
+                return $this->exportPdf($filters, $printAll);
             default:
                 \Log::error('Invalid export format requested:', ['format' => $format]);
                 return response()->json(['error' => 'Invalid export format'], 400);
@@ -206,13 +185,16 @@ class ReportTableController extends Controller
     /**
      * Export to Excel
      */
-    private function exportExcel(array $filters)
+    private function exportExcel(array $filters, bool $printAll = false)
     {
         // Log the filters being applied
-        \Log::info('Excel Export - Filters applied:', $filters);
+        \Log::info('Excel Export - Filters applied:', [
+            'filters' => $filters,
+            'print_all' => $printAll
+        ]);
         
         // Create export instance and test data retrieval
-        $export = new TrackingReportExport($filters);
+        $export = new TrackingReportExport($filters, null, $printAll);
         
         // Get the data to verify it's not empty
         $query = TrackIncoming::with([
@@ -223,26 +205,34 @@ class ReportTableController extends Controller
             'trackOutgoing.employeeOut'
         ]);
         
-        // Apply same filters as in export
-        $this->applyFilters($query, $filters);
+        // Apply same filters as in export (unless print all mode)
+        if (!$printAll) {
+            $this->applyFilters($query, $filters);
+        }
         $testData = $query->get();
         
-        \Log::info('Excel Export - Data count before export:', ['count' => $testData->count()]);
-        \Log::info('Excel Export - Sample data:', $testData->take(2)->toArray());
+        \Log::info('Excel Export - Data count before export:', [
+            'count' => $testData->count(),
+            'mode' => $printAll ? 'print_all' : 'filtered'
+        ]);
         
-        return Excel::download($export, 'tracking_reports_' . date('Y_m_d') . '.xlsx');
+        $filename = $printAll ? 'tracking_reports_all_' . date('Y_m_d') . '.xlsx' : 'tracking_reports_' . date('Y_m_d') . '.xlsx';
+        return Excel::download($export, $filename);
     }
 
     /**
      * Export to CSV
      */
-    private function exportCsv(array $filters)
+    private function exportCsv(array $filters, bool $printAll = false)
     {
         // Log the filters being applied
-        \Log::info('CSV Export - Filters applied:', $filters);
+        \Log::info('CSV Export - Filters applied:', [
+            'filters' => $filters,
+            'print_all' => $printAll
+        ]);
         
         // Create export instance and test data retrieval
-        $export = new TrackingReportExport($filters);
+        $export = new TrackingReportExport($filters, null, $printAll);
         
         // Get the data to verify it's not empty
         $query = TrackIncoming::with([
@@ -253,23 +243,31 @@ class ReportTableController extends Controller
             'trackOutgoing.employeeOut'
         ]);
         
-        // Apply same filters as in export
-        $this->applyFilters($query, $filters);
+        // Apply same filters as in export (unless print all mode)
+        if (!$printAll) {
+            $this->applyFilters($query, $filters);
+        }
         $testData = $query->get();
         
-        \Log::info('CSV Export - Data count before export:', ['count' => $testData->count()]);
-        \Log::info('CSV Export - Sample data:', $testData->take(2)->toArray());
+        \Log::info('CSV Export - Data count before export:', [
+            'count' => $testData->count(),
+            'mode' => $printAll ? 'print_all' : 'filtered'
+        ]);
         
-        return Excel::download($export, 'tracking_reports_' . date('Y_m_d') . '.csv', \Maatwebsite\Excel\Excel::CSV);
+        $filename = $printAll ? 'tracking_reports_all_' . date('Y_m_d') . '.csv' : 'tracking_reports_' . date('Y_m_d') . '.csv';
+        return Excel::download($export, $filename, \Maatwebsite\Excel\Excel::CSV);
     }
 
     /**
      * Export to PDF
      */
-    private function exportPdf(array $filters)
+    private function exportPdf(array $filters, bool $printAll = false)
     {
         // Log the filters being applied
-        \Log::info('PDF Export - Filters applied:', $filters);
+        \Log::info('PDF Export - Filters applied:', [
+            'filters' => $filters,
+            'print_all' => $printAll
+        ]);
         
         // Get the data to verify it's not empty before creating export
         $query = TrackIncoming::with([
@@ -280,23 +278,29 @@ class ReportTableController extends Controller
             'trackOutgoing.employeeOut'
         ]);
         
-        // Apply same filters as in export
-        $this->applyFilters($query, $filters);
+        // Apply same filters as in export (unless print all mode)
+        if (!$printAll) {
+            $this->applyFilters($query, $filters);
+        }
         $testData = $query->get();
         
-        \Log::info('PDF Export - Data count before export:', ['count' => $testData->count()]);
-        \Log::info('PDF Export - Sample data:', $testData->take(2)->toArray());
+        \Log::info('PDF Export - Data count before export:', [
+            'count' => $testData->count(),
+            'mode' => $printAll ? 'print_all' : 'filtered'
+        ]);
         
         // Use Laravel Excel with DOMPDF for PDF generation
-        $export = new TrackingReportExport($filters, 'pdf');
+        $export = new TrackingReportExport($filters, 'pdf', $printAll);
         
         // Generate the PDF content
         $pdf = Excel::raw($export, \Maatwebsite\Excel\Excel::DOMPDF);
         
+        $filename = $printAll ? 'tracking_reports_all_' . date('Y_m_d') . '.pdf' : 'tracking_reports_' . date('Y_m_d') . '.pdf';
+        
         // Stream the PDF for inline viewing (preview mode)
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="tracking_reports_' . date('Y_m_d') . '.pdf"',
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
             'Pragma' => 'no-cache',
             'Expires' => '0'
@@ -322,13 +326,6 @@ class ReportTableController extends Controller
             });
         }
 
-        if (!empty($filters['equipment_name']) || !empty($filters['equipment_filter'])) {
-            $equipmentName = $filters['equipment_name'] ?? $filters['equipment_filter'];
-            $query->whereHas('equipment', function($eq) use ($equipmentName) {
-                $eq->where('description', 'like', '%' . $equipmentName . '%');
-            });
-        }
-
         if (!empty($filters['recall_number']) || !empty($filters['recall_filter'])) {
             $recallNumber = $filters['recall_number'] ?? $filters['recall_filter'];
             $query->where('recall_number', 'like', '%' . $recallNumber . '%');
@@ -337,11 +334,6 @@ class ReportTableController extends Controller
         if (!empty($filters['status']) || !empty($filters['status_filter'])) {
             $status = $filters['status'] ?? $filters['status_filter'];
             $query->where('status', $status);
-        }
-
-        if (!empty($filters['technician_id']) || !empty($filters['technician_filter'])) {
-            $technicianId = $filters['technician_id'] ?? $filters['technician_filter'];
-            $query->where('technician_id', $technicianId);
         }
 
         if (!empty($filters['location_id']) || !empty($filters['location_filter'])) {

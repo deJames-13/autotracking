@@ -14,16 +14,21 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
 {
     protected $filters;
     protected $type;
+    protected $printAll;
 
-    public function __construct(array $filters = [], $type = null)
+    public function __construct(array $filters = [], $type = null, $printAll = false)
     {
         $this->filters = $filters;
         $this->type = $type;
+        $this->printAll = $printAll;
     }
 
     public function view(): View
     {
-        \Log::info('TrackingReportExport - Starting data retrieval with filters:', $this->filters);
+        \Log::info('TrackingReportExport - Starting data retrieval with filters:', [
+            'filters' => $this->filters,
+            'printAll' => $this->printAll
+        ]);
         
         $query = TrackIncoming::with([
             'equipment', 
@@ -33,12 +38,16 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
             'trackOutgoing.employeeOut'
         ]);
 
-        $this->applyFilters($query);
+        // Only apply filters if not in "print all" mode
+        if (!$this->printAll) {
+            $this->applyFilters($query);
+        }
 
         $incomingRecords = $query->orderBy('date_in', 'desc')->get();
         
         \Log::info('TrackingReportExport - Data retrieved:', [
             'count' => $incomingRecords->count(),
+            'mode' => $this->printAll ? 'print_all' : 'filtered',
             'sample_data' => $incomingRecords->take(2)->toArray()
         ]);
 
@@ -64,14 +73,6 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
             });
         }
 
-        // Handle both old and new parameter names for equipment filter
-        if (!empty($this->filters['equipment_name']) || !empty($this->filters['equipment_filter'])) {
-            $equipmentName = $this->filters['equipment_name'] ?? $this->filters['equipment_filter'];
-            $query->whereHas('equipment', function($eq) use ($equipmentName) {
-                $eq->where('description', 'like', '%' . $equipmentName . '%');
-            });
-        }
-
         // Handle both old and new parameter names for recall number filter
         if (!empty($this->filters['recall_number']) || !empty($this->filters['recall_filter'])) {
             $recallNumber = $this->filters['recall_number'] ?? $this->filters['recall_filter'];
@@ -82,12 +83,6 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
         if (!empty($this->filters['status']) || !empty($this->filters['status_filter'])) {
             $status = $this->filters['status'] ?? $this->filters['status_filter'];
             $query->where('status', $status);
-        }
-
-        // Handle both old and new parameter names for technician filter
-        if (!empty($this->filters['technician_id']) || !empty($this->filters['technician_filter'])) {
-            $technicianId = $this->filters['technician_id'] ?? $this->filters['technician_filter'];
-            $query->where('technician_id', $technicianId);
         }
 
         // Handle both old and new parameter names for location filter
