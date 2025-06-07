@@ -335,23 +335,23 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                     </div>
                     <div className="flex items-center gap-2">
                         {getStatusBadge()}
+                        {(trackOutgoing.status === 'for_pickup' || (trackOutgoing.status === 'completed' && isAdmin())) && (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href={route('admin.tracking.outgoing.edit', trackOutgoing.id)}>
+                                    <Edit className="h-3 w-3 mr-1" />
+                                    Edit
+                                </Link>
+                            </Button>
+                        )}
                         {(trackOutgoing.status === 'for_pickup') && (
-                            <>
-                                <Button variant="outline" size="sm" asChild>
-                                    <Link href={route('admin.tracking.outgoing.edit', trackOutgoing.id)}>
-                                        <Edit className="h-3 w-3 mr-1" />
-                                        Edit
-                                    </Link>
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    onClick={() => setShowPickupForm(!showPickupForm)}
-                                    variant={showPickupForm ? "outline" : "default"}
-                                >
-                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                    {showPickupForm ? 'Cancel Pickup' : 'Confirm Pickup'}
-                                </Button>
-                            </>
+                            <Button
+                                size="sm"
+                                onClick={() => setShowPickupForm(!showPickupForm)}
+                                variant={showPickupForm ? "outline" : "default"}
+                            >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                {showPickupForm ? 'Cancel Pickup' : 'Confirm Pickup'}
+                            </Button>
                         )}
                     </div>
                 </div>

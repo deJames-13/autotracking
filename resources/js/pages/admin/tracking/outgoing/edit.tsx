@@ -17,7 +17,7 @@ interface TrackingOutgoingEditProps {
 }
 
 const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoing }) => {
-    const { canManageRequestIncoming } = useRole();
+    const { canManageRequestIncoming, isAdmin } = useRole();
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -49,8 +49,8 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
         return null;
     }
 
-    // Prevent editing if equipment has already been picked up
-    if (trackOutgoing.status === 'completed') {
+    // Prevent editing if equipment has already been picked up (unless user is admin)
+    if (trackOutgoing.status === 'completed' && !isAdmin()) {
         return (
             <AppLayout breadcrumbs={breadcrumbs}>
                 <Head title={`Edit Outgoing Completion: ${trackOutgoing.recall_number}`} />
@@ -64,7 +64,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                     <div className="text-center py-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">Cannot Edit Completed Record</h2>
                         <p className="text-gray-600 mb-6">
-                            This equipment has already been picked up and cannot be edited.
+                            This equipment has already been picked up and cannot be edited. Only administrators can edit completed records.
                         </p>
                         <Button asChild>
                             <Link href={`/admin/tracking/outgoing/${trackOutgoing.id}`}>

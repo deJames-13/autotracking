@@ -6,6 +6,7 @@ import { type TrackOutgoing, type PaginationData, type User } from '@/types';
 import { router } from '@inertiajs/react';
 import { Eye, MoreHorizontal, Pencil, FileText } from 'lucide-react';
 import { useCallback } from 'react';
+import { useRole } from '@/hooks/use-role';
 
 interface TrackOutgoingTableProps {
     trackOutgoing: PaginationData<TrackOutgoing>;
@@ -33,6 +34,7 @@ export function TrackOutgoingTable({
     onPageChange,
     onPerPageChange
 }: TrackOutgoingTableProps) {
+    const { isAdmin } = useRole();
 
     const getStatusBadge = (status: string) => {
         const statusConfig = {
@@ -220,10 +222,12 @@ export function TrackOutgoingTable({
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.visit(route('admin.tracking.outgoing.edit', row.id))}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                        </DropdownMenuItem>
+                        {(row.status === 'for_pickup' || (row.status === 'completed' && isAdmin())) && (
+                            <DropdownMenuItem onClick={() => router.visit(route('admin.tracking.outgoing.edit', row.id))}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                            </DropdownMenuItem>
+                        )}
                         {row.track_incoming?.recall_number && (
                             <DropdownMenuItem onClick={() => router.visit(route('admin.tracking.outgoing.certificate', row.id))}>
                                 <FileText className="mr-2 h-4 w-4" />

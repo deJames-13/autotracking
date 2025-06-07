@@ -106,6 +106,11 @@ class TrackOutgoingController extends Controller
 
     public function update(TrackOutgoingRequest $request, TrackOutgoing $trackOutgoing): TrackOutgoingResource
     {
+        // Check if user is trying to edit a completed record and is not an admin
+        if ($trackOutgoing->status === 'completed' && auth()->user()->role->role_name !== 'admin') {
+            abort(403, 'Only administrators can edit completed records.');
+        }
+
         $validatedData = $request->validated();
         
         // Auto-calculate overdue (due date vs cal date)
