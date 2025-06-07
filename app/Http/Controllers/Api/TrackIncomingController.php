@@ -26,6 +26,20 @@ class TrackIncomingController extends Controller
     {
         $query = TrackIncoming::with(['equipment', 'technician', 'location', 'employeeIn', 'trackOutgoing']);
 
+        // Apply role-based filtering
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            // Technicians can only see records they are assigned to
+            $query->where(function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        } elseif ($user->role->role_name === 'employee') {
+            // Employees can only see their own submitted records
+            $query->where('employee_id_in', $user->employee_id);
+        }
+        // Admin users can see all records (no additional filtering)
+
         if ($request->has('search')) {
             $search = $request->get('search');
             $query->where('description', 'like', "%{$search}%")
@@ -112,12 +126,22 @@ class TrackIncomingController extends Controller
                     ]);
                 }
 
-                // Update the tracking record
-                $trackIncoming->update([
-                    'technician_id' => $data['technician']['employee_id'],
-                    'description' => $data['equipment']['description'],
-                    'location_id' => $data['equipment']['location'],
-                    'received_by_id' => $data['receivedBy']['employee_id'],
+            // Auto-assign technician and received_by if user is a technician
+            $user = Auth::user();
+            $technicianId = $data['technician']['employee_id'];
+            $receivedById = $data['receivedBy']['employee_id'];
+            
+            if ($user->role->role_name === 'technician') {
+                $technicianId = $user->employee_id;
+                $receivedById = $user->employee_id;
+            }
+
+            // Update the tracking record
+            $trackIncoming->update([
+                'technician_id' => $technicianId,
+                'description' => $data['equipment']['description'],
+                'location_id' => $data['equipment']['location'],
+                'received_by_id' => $receivedById,
                     'serial_number' => $data['equipment']['serialNumber'],
                     'model' => $data['equipment']['model'],
                     'manufacturer' => $data['equipment']['manufacturer'],
@@ -193,14 +217,24 @@ class TrackIncomingController extends Controller
                 ]);
             }
             
+            // Auto-assign technician and received_by if user is a technician
+            $user = Auth::user();
+            $technicianId = $data['technician']['employee_id'];
+            $receivedById = $data['receivedBy']['employee_id'];
+            
+            if ($user->role->role_name === 'technician') {
+                $technicianId = $user->employee_id;
+                $receivedById = $user->employee_id;
+            }
+
             // Create track incoming record
             $trackIncoming = TrackIncoming::create([
                 'recall_number' => $recallNumber, // This can be null for new requests
-                'technician_id' => $data['technician']['employee_id'],
+                'technician_id' => $technicianId,
                 'description' => $data['equipment']['description'],
                 'equipment_id' => $equipment->equipment_id,
                 'location_id' => $data['equipment']['location'],
-                'received_by_id' => $data['receivedBy']['employee_id'],
+                'received_by_id' => $receivedById,
                 'serial_number' => $data['equipment']['serialNumber'],
                 'model' => $data['equipment']['model'],
                 'manufacturer' => $data['equipment']['manufacturer'],
@@ -675,6 +709,28 @@ class TrackIncomingController extends Controller
     public function confirmEmployeeRequest(Request $request, TrackIncoming $trackIncoming): JsonResponse
     {
         try {
+            // Apply role-based access control
+            $user = Auth::user();
+            
+            // Only allow admins and technicians to confirm employee requests
+            if ($user->role->role_name === 'employee') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Only administrators and technicians can confirm employee requests.'
+                ], 403);
+            }
+            
+            // For technicians, ensure they can only confirm requests assigned to them
+            if ($user->role->role_name === 'technician') {
+                if ($trackIncoming->technician_id !== $user->employee_id && 
+                    $trackIncoming->received_by_id !== $user->employee_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized. You can only confirm requests assigned to you.'
+                    ], 403);
+                }
+            }
+
             // Only allow confirmation if status is for_confirmation
             if ($trackIncoming->status !== 'for_confirmation') {
                 return response()->json([

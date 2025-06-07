@@ -116,7 +116,7 @@ export default function TrackIncomingIndex({ }: TrackIncomingIndexProps) {
                     </div>
 
                     <Button
-                        onClick={() => router.visit(route('admin.tracking.request'))}
+                        onClick={() => router.visit(route('admin.tracking.request.index'))}
                         size="sm"
                     >
                         <Plus className="mr-2 h-4 w-4" />

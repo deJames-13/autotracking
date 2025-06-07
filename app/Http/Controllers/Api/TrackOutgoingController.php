@@ -20,6 +20,22 @@ class TrackOutgoingController extends Controller
     {
         $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']);
 
+        // Apply role-based filtering
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            // Technicians can only see records from their assigned incoming requests
+            $query->whereHas('trackIncoming', function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        } elseif ($user->role->role_name === 'employee') {
+            // Employees can only see outgoing records from their department
+            $query->whereHas('trackIncoming.employeeIn', function($q) use ($user) {
+                $q->where('department_id', $user->department_id);
+            });
+        }
+        // Admin users can see all records (no additional filtering)
+
         if ($request->has('search')) {
             $search = $request->get('search');
             $query->whereHas('trackIncoming', function($q) use ($search) {

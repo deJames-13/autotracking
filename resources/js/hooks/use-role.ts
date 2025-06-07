@@ -18,7 +18,7 @@ export function useRole() {
     };
 
     const canManageRequestIncoming = () => {
-        return ['admin', 'personnel_in_charge'].includes(user.role?.role_name || '');
+        return ['admin', 'personnel_in_charge', 'technician'].includes(user.role?.role_name || '');
     };
 
     const canViewEmployeeTracking = () => {
@@ -31,6 +31,22 @@ export function useRole() {
 
     const canSubmitCalibrationRequest = () => {
         return ['employee', 'technician', 'admin'].includes(user.role?.role_name || '');
+    };
+
+    const canAccessAdminRoutes = () => {
+        return ['admin', 'technician'].includes(user.role?.role_name || '');
+    };
+
+    const canOnlySeeOwnRecords = () => {
+        return user.role?.role_name === 'technician';
+    };
+
+    const canApproveRequests = () => {
+        return ['admin', 'technician'].includes(user.role?.role_name || '');
+    };
+
+    const canManageOutgoing = () => {
+        return ['admin', 'technician'].includes(user.role?.role_name || '');
     };
 
     const isAdmin = () => {
@@ -57,6 +73,10 @@ export function useRole() {
         canViewEmployeeTracking,
         canCheckInOut,
         canSubmitCalibrationRequest,
+        canAccessAdminRoutes,
+        canOnlySeeOwnRecords,
+        canApproveRequests,
+        canManageOutgoing,
         isAdmin,
         isEmployee,
         isPersonnelInCharge,

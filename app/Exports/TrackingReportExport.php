@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\BeforeSheet;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Auth;
 
 class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
 {
@@ -38,7 +39,10 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
             'trackOutgoing.employeeOut'
         ]);
 
-        // Only apply filters if not in "print all" mode
+        // Apply role-based filtering first
+        $this->applyRoleBasedFiltering($query);
+
+        // Only apply additional filters if not in "print all" mode
         if (!$this->printAll) {
             $this->applyFilters($query);
         }
@@ -48,12 +52,65 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
         \Log::info('TrackingReportExport - Data retrieved:', [
             'count' => $incomingRecords->count(),
             'mode' => $this->printAll ? 'print_all' : 'filtered',
+            'user_role' => Auth::user()->role->role_name ?? 'unknown',
             'sample_data' => $incomingRecords->take(2)->toArray()
         ]);
 
         return view('exports.report-template', [
             'reports' => $incomingRecords
         ]);
+    }
+
+    /**
+     * Apply role-based filtering to the query based on current user's role
+     */
+    private function applyRoleBasedFiltering($query)
+    {
+        $user = Auth::user();
+        
+        if (!$user || !$user->role) {
+            \Log::warning('TrackingReportExport - User or role not found, restricting access');
+            // If no user or role, restrict to empty results for security
+            $query->whereRaw('1 = 0');
+            return;
+        }
+
+        $roleName = $user->role->role_name;
+        
+        \Log::info('TrackingReportExport - Applying role-based filtering', [
+            'user_id' => $user->id,
+            'employee_id' => $user->employee_id,
+            'role' => $roleName
+        ]);
+        
+        switch ($roleName) {
+            case 'technician':
+                // Technicians can only see records they are assigned to (as technician or received_by)
+                $query->where(function($q) use ($user) {
+                    $q->where('technician_id', $user->employee_id)
+                      ->orWhere('received_by_id', $user->employee_id);
+                });
+                \Log::info('TrackingReportExport - Applied technician filtering for employee_id: ' . $user->employee_id);
+                break;
+                
+            case 'employee':
+                // Employees can only see their own submitted records
+                $query->where('employee_id_in', $user->employee_id);
+                \Log::info('TrackingReportExport - Applied employee filtering for employee_id: ' . $user->employee_id);
+                break;
+                
+            case 'admin':
+            case 'personnel_in_charge':
+                // Admins and personnel in charge can see all records (no additional filtering)
+                \Log::info('TrackingReportExport - No additional filtering applied for role: ' . $roleName);
+                break;
+                
+            default:
+                // Unknown roles get no access for security
+                \Log::warning('TrackingReportExport - Unknown role detected, restricting access: ' . $roleName);
+                $query->whereRaw('1 = 0');
+                break;
+        }
     }
 
     private function applyFilters($query)

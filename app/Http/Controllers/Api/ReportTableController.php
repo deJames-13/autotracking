@@ -7,6 +7,7 @@ use App\Models\TrackIncoming;
 use App\Models\TrackOutgoing;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\TrackingReportExport;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -25,6 +26,15 @@ class ReportTableController extends Controller
             'employeeIn', 
             'trackOutgoing.employeeOut'
         ]);
+
+        // Role-based filtering for technicians
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            $query->where(function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        }
 
         // Apply search filters
         if ($request->filled('search')) {
@@ -329,6 +339,15 @@ class ReportTableController extends Controller
      */
     private function applyFilters($query, array $filters)
     {
+        // Role-based filtering for technicians
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            $query->where(function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        }
+
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function($q) use ($search) {

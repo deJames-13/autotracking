@@ -97,6 +97,15 @@ class TrackingController extends Controller
     {
         $query = TrackIncoming::with(['equipment', 'technician', 'location', 'employeeIn', 'trackOutgoing']);
 
+        // Role-based filtering for technicians
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            $query->where(function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        }
+
         // Apply filters
         if ($request->filled('search')) {
             $search = $request->get('search');
@@ -157,6 +166,15 @@ class TrackingController extends Controller
     public function trackOutgoingIndex(Request $request)
     {
         $query = TrackOutgoing::with(['equipment', 'technician', 'employeeOut', 'releasedBy', 'trackIncoming']);
+
+        // Role-based filtering for technicians
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            $query->whereHas('trackIncoming', function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        }
 
         // Apply filters
         if ($request->filled('search')) {
@@ -253,6 +271,15 @@ class TrackingController extends Controller
     public function trackIncomingTableData(Request $request): JsonResponse
     {
         $query = TrackIncoming::with(['equipment', 'technician', 'location', 'employeeIn', 'receivedBy', 'trackOutgoing']);
+
+        // Role-based filtering for technicians
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            $query->where(function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        }
 
         // Apply search filters
         if ($request->filled('search')) {
@@ -358,6 +385,15 @@ class TrackingController extends Controller
     public function trackOutgoingTableData(Request $request): JsonResponse
     {
         $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician', 'location']);
+
+        // Role-based filtering for technicians
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            $query->whereHas('trackIncoming', function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        }
 
         // Apply search filters
         if ($request->filled('search')) {
