@@ -82,7 +82,20 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
         // Handle both old and new parameter names for status filter
         if (!empty($this->filters['status']) || !empty($this->filters['status_filter'])) {
             $status = $this->filters['status'] ?? $this->filters['status_filter'];
-            $query->where('status', $status);
+            
+            // Check if it's an incoming or outgoing status
+            $incomingOnlyStatuses = ['for_confirmation', 'pending_calibration'];
+            $outgoingStatuses = ['for_pickup', 'completed'];
+            
+            if (in_array($status, $incomingOnlyStatuses)) {
+                // Filter by track_incoming status only
+                $query->where('status', $status);
+            } elseif (in_array($status, $outgoingStatuses)) {
+                // Filter by track_outgoing status only
+                $query->whereHas('trackOutgoing', function($outgoing) use ($status) {
+                    $outgoing->where('status', $status);
+                });
+            }
         }
 
         // Handle both old and new parameter names for location filter

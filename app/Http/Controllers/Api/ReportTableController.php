@@ -49,7 +49,20 @@ class ReportTableController extends Controller
 
         if ($request->filled('status') || $request->filled('status_filter')) {
             $status = $request->get('status') ?: $request->get('status_filter');
-            $query->where('status', $status);
+            
+            // Check if it's an incoming or outgoing status
+            $incomingOnlyStatuses = ['for_confirmation', 'pending_calibration'];
+            $outgoingStatuses = ['for_pickup', 'completed'];
+            
+            if (in_array($status, $incomingOnlyStatuses)) {
+                // Filter by track_incoming status only
+                $query->where('status', $status);
+            } elseif (in_array($status, $outgoingStatuses)) {
+                // Filter by track_outgoing status only
+                $query->whereHas('trackOutgoing', function($outgoing) use ($status) {
+                    $outgoing->where('status', $status);
+                });
+            }
         }
 
         if ($request->filled('location_id') || $request->filled('location_filter')) {
@@ -142,7 +155,11 @@ class ReportTableController extends Controller
             });
 
         $statuses = [
+            // Incoming-only statuses
+            ['value' => 'for_confirmation', 'label' => 'For Confirmation'],
             ['value' => 'pending_calibration', 'label' => 'Pending Calibration'],
+            // Outgoing-only statuses
+            ['value' => 'for_pickup', 'label' => 'For Pickup'],
             ['value' => 'completed', 'label' => 'Completed'],
         ];
 
@@ -333,7 +350,20 @@ class ReportTableController extends Controller
 
         if (!empty($filters['status']) || !empty($filters['status_filter'])) {
             $status = $filters['status'] ?? $filters['status_filter'];
-            $query->where('status', $status);
+            
+            // Check if it's an incoming or outgoing status
+            $incomingStatuses = ['for_confirmation', 'pending_calibration', 'completed'];
+            $outgoingStatuses = ['for_pickup'];
+            
+            if (in_array($status, $incomingStatuses)) {
+                // Filter by track_incoming status
+                $query->where('status', $status);
+            } elseif (in_array($status, $outgoingStatuses)) {
+                // Filter by track_outgoing status
+                $query->whereHas('trackOutgoing', function($outgoing) use ($status) {
+                    $outgoing->where('status', $status);
+                });
+            }
         }
 
         if (!empty($filters['location_id']) || !empty($filters['location_filter'])) {

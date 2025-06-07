@@ -63,6 +63,12 @@ interface FilterOptions {
     statuses: Array<{ value: string; label: string }>;
 }
 
+interface StatusOption {
+    value: string;
+    label: string;
+    type: 'incoming' | 'outgoing';
+}
+
 interface ReportsTableProps {
     className?: string;
 }
@@ -368,11 +374,29 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
             label: 'Status',
             sortable: true,
             filterable: true,
-            render: (value: string) => (
-                <Badge variant={value === 'completed' ? 'default' : 'secondary'}>
-                    {value.replace('_', ' ').toUpperCase()}
-                </Badge>
-            ),
+            render: (value: string) => {
+                // Define status configurations based on database schema
+                const statusConfig = {
+                    // Incoming statuses
+                    'for_confirmation': { variant: 'secondary' as const, label: 'For Confirmation' },
+                    'pending_calibration': { variant: 'default' as const, label: 'Pending Calibration' },
+                    // Shared status
+                    'completed': { variant: 'default' as const, label: 'Completed' },
+                    // Outgoing statuses
+                    'for_pickup': { variant: 'outline' as const, label: 'For Pickup' }
+                };
+
+                const config = statusConfig[value as keyof typeof statusConfig] || {
+                    variant: 'secondary' as const,
+                    label: value.replace('_', ' ').toUpperCase()
+                };
+
+                return (
+                    <Badge variant={config.variant}>
+                        {config.label}
+                    </Badge>
+                );
+            },
         },
         {
             key: 'date_in',
@@ -448,16 +472,51 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
         },
     ], []);
 
-    // Define filters for the DataTable (removed equipment and technician filters)
-    const tableFilters = useMemo(() => [
-        {
-            key: 'status_filter',
-            label: 'Status',
-            type: 'select' as const,
-            placeholder: 'Filter by status...',
-            options: filterOptions.statuses,
-        },
-    ], [filterOptions]);
+    // Define filters for the DataTable
+    const tableFilters = useMemo(() => {
+        // Create status options with proper incoming/outgoing labels
+        const statusOptions = [
+            // { value: 'all', label: 'All Statuses' },
+            // Map backend status options to include type labels
+            ...filterOptions.statuses.map(status => {
+                // Determine if it's incoming-only or outgoing-only
+                const incomingOnlyStatuses = ['for_confirmation', 'pending_calibration'];
+                const outgoingStatuses = ['for_pickup', 'completed'];
+
+                let typeLabel = '';
+                if (incomingOnlyStatuses.includes(status.value)) {
+                    typeLabel = ' (Incoming)';
+                } else if (outgoingStatuses.includes(status.value)) {
+                    typeLabel = ' (Outgoing)';
+                }
+
+                return {
+                    value: status.value,
+                    label: status.label + typeLabel
+                };
+            })
+        ];
+
+        return [
+            {
+                key: 'status_filter',
+                label: 'Status',
+                type: 'select' as const,
+                placeholder: 'Filter by status...',
+                options: statusOptions,
+            },
+            {
+                key: 'location_filter',
+                label: 'Location',
+                type: 'select' as const,
+                placeholder: 'Filter by location...',
+                options: [
+                    { value: 'all', label: 'All Locations' },
+                    ...filterOptions.locations,
+                ],
+            },
+        ];
+    }, [filterOptions]);
 
     // Define export options (removed Print All options)
     const exportOptions = useMemo(() => [
