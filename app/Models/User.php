@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\CustomResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -95,5 +96,30 @@ class User extends Authenticatable
     public function trackOutgoingAsEmployeeOut()
     {
         return $this->hasMany(TrackOutgoing::class, 'employee_id_out', 'employee_id');
+    }
+
+    /**
+     * Send the password reset notification with custom content.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new CustomResetPasswordNotification($token));
+    }
+
+    /**
+     * Get the email address for password reset notifications.
+     * Override if needed to use a different field.
+     */
+    public function getEmailForPasswordReset(): string
+    {
+        return $this->email ?? '';
+    }
+
+    /**
+     * Get the full name of the user.
+     */
+    public function getFullNameAttribute(): string
+    {
+        return trim($this->first_name . ' ' . $this->last_name);
     }
 }

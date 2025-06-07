@@ -11,7 +11,10 @@ use App\Models\User;
 use App\Notifications\UserCreatedNotification;
 use App\Notifications\PasswordResetNotification;
 use App\Notifications\PasswordUpdatedNotification;
+use App\Notifications\SuspiciousEmailRegistrationNotification;
 use App\Services\EmailValidationService;
+use App\Services\EnhancedEmailService;
+use App\Services\MailConfigurationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -94,6 +97,7 @@ class UserController extends Controller
         
         // Validate email if provided
         $emailWarnings = [];
+        $emailValidation = null;
         if (!empty($data['email'])) {
             $emailValidator = app(EmailValidationService::class);
             $emailValidation = $emailValidator->validateEmail($data['email']);
@@ -144,6 +148,11 @@ class UserController extends Controller
                     'error' => $e->getMessage()
                 ]);
             }
+        }
+
+        // Send admin notification for suspicious email registrations
+        if (!empty($emailWarnings) || ($emailValidation && $emailValidation['is_disposable'])) {
+            $this->sendAdminSuspiciousEmailNotification($user, $emailValidation, Auth::user());
         }
 
         // Prepare response message
@@ -242,6 +251,11 @@ class UserController extends Controller
         }
 
         $user->update($data);
+
+        // Send admin notification for suspicious email updates
+        if (!empty($emailWarnings) && isset($emailValidation)) {
+            $this->sendAdminSuspiciousEmailNotification($user, $emailValidation, Auth::user());
+        }
 
         // Send email notification if password was changed
         $emailSent = false;
@@ -607,6 +621,7 @@ class UserController extends Controller
             );
     }
 
+
     /**
      * Generate a unique employee ID based on role
      */
@@ -644,5 +659,92 @@ class UserController extends Controller
         }
 
         return $nextId;
+    }
+
+    /**
+     * Send admin notification for suspicious email registrations
+     */
+    private function sendAdminSuspiciousEmailNotification(User $user, array $emailValidation, User $createdBy): void
+    {
+        try {
+            // Get all admin users to notify
+            $adminUsers = User::whereHas('role', function ($query) {
+                $query->whereIn('role_name', ['admin', 'personnel_in_charge']);
+            })->where('email', '!=', null)->get();
+
+            if ($adminUsers->isEmpty()) {
+                Log::warning('No admin users with email found to send suspicious email notification', [
+                    'user_id' => $user->employee_id,
+                    'email' => $user->email
+                ]);
+                return;
+            }
+
+            $createdByName = $createdBy ? trim($createdBy->first_name . ' ' . $createdBy->last_name) : 'System';
+
+            // Send notification to each admin
+            foreach ($adminUsers as $admin) {
+                try {
+                    $admin->notify(new SuspiciousEmailRegistrationNotification(
+                        $user, 
+                        $emailValidation, 
+                        $createdByName
+                    ));
+                    
+                    Log::info('Suspicious email notification sent to admin', [
+                        'admin_id' => $admin->employee_id,
+                        'admin_email' => $admin->email,
+                        'user_id' => $user->employee_id,
+                        'user_email' => $user->email
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send suspicious email notification to admin', [
+                        'admin_id' => $admin->employee_id,
+                        'admin_email' => $admin->email,
+                        'user_id' => $user->employee_id,
+                        'user_email' => $user->email,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Error in sendAdminSuspiciousEmailNotification', [
+                'user_id' => $user->employee_id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Check email system health
+     */
+    public function checkEmailHealth(): JsonResponse
+    {
+        $enhancedEmailService = app(EnhancedEmailService::class);
+        $healthStatus = $enhancedEmailService->getSystemHealth();
+
+        return response()->json([
+            'status' => $healthStatus,
+            'is_healthy' => $healthStatus['overall_status'],
+            'timestamp' => now()->toISOString()
+        ]);
+    }
+
+    /**
+     * Test email system functionality
+     */
+    public function testEmailSystem(Request $request): JsonResponse
+    {
+        $request->validate([
+            'test_email' => 'required|email'
+        ]);
+
+        $enhancedEmailService = app(EnhancedEmailService::class);
+        $testResult = $enhancedEmailService->testEmailSystem($request->test_email);
+
+        return response()->json([
+            'test_result' => $testResult,
+            'timestamp' => now()->toISOString()
+        ]);
     }
 }

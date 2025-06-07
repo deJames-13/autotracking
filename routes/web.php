@@ -129,6 +129,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('users/generate-employee-id', [AdminUserController::class, 'generateNewEmployeeId'])->name('users.generate-employee-id');
         Route::post('users/{user:employee_id}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
         Route::post('users/validate-email', [AdminUserController::class, 'validateEmail'])->name('users.validate-email');
+        Route::get('email/health', [AdminUserController::class, 'checkEmailHealth'])->name('email.health');
+        Route::post('email/test', [AdminUserController::class, 'testEmailSystem'])->name('email.test');
         
         // Tracking table data routes
         Route::get('tracking/incoming/table-data', [AdminTrackingController::class, 'trackIncomingTableData'])->name('tracking.incoming.table-data');
