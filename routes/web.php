@@ -84,6 +84,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         
     // Tracking management - API routes (AJAX)
+    // TODO: because it is in web, meaning it is accessible in web
     Route::prefix('api')->name('api.')->group(function () {
         Route::get('tracking/request/generate-recall', [ApiTrackingController::class, 'generateUniqueRecall'])->name('tracking.request.generate-recall');
         Route::post('tracking/request', [ApiTrackingController::class, 'store'])->name('tracking.request.store');
