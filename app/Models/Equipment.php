@@ -21,13 +21,27 @@ class Equipment extends Model
         'location_id',
         'status',
         'last_calibration_date',
-        'next_calibration_due'
+        'next_calibration_due',
+        'qr_code',
+        'bar_code'
     ];
 
     protected $casts = [
         'last_calibration_date' => 'date',
         'next_calibration_due' => 'date'
     ];
+
+    // Accessor for camelCase serialNumber
+    public function getSerialNumberAttribute($value)
+    {
+        return $value;
+    }
+
+    // Accessor for camelCase compatibility
+    public function getSerialNumberCamelAttribute()
+    {
+        return $this->serial_number;
+    }
     
     public function user()
     {

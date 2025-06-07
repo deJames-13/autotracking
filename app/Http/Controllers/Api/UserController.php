@@ -96,4 +96,48 @@ class UserController extends Controller
             
         return TrackIncomingResource::collection($records);
     }
+
+    /**
+     * Search for employees by name, employee ID, or email
+     */
+    public function search(Request $request)
+    {
+        try {
+            $term = $request->input('term');
+            
+            if (empty($term)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Search term is required',
+                    'employees' => []
+                ]);
+            }
+
+            $employees = User::query()
+                ->with(['role', 'department', 'plant'])
+                ->where(function ($query) use ($term) {
+                    $query->where('first_name', 'LIKE', "%{$term}%")
+                          ->orWhere('last_name', 'LIKE', "%{$term}%")
+                          ->orWhere('employee_id', 'LIKE', "%{$term}%")
+                          ->orWhere('email', 'LIKE', "%{$term}%")
+                          ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$term}%"]);
+                })
+                ->limit(10)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'employees' => $employees
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Employee search error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error searching employees',
+                'employees' => []
+            ], 500);
+        }
+    }
 }

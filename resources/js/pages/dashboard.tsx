@@ -24,17 +24,19 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ trackingStats = { activeRequests: 0, equipmentTracked: 0, recentUpdates: 0 } }: DashboardProps) {
-    const { isAdmin, isEmployee } = useRole();
+    const { isAdmin, isEmployee, isTechnician } = useRole();
 
     useEffect(() => {
         // Redirect based on user role
         if (isAdmin()) {
             router.visit(route('admin.dashboard'));
+        } else if (isTechnician()) {
+            router.visit(route('technician.tracking.index'));
         } else if (isEmployee()) {
             router.visit(route('employee.tracking.index'));
         }
-        // If neither admin nor employee, stay on this page (fallback)
-    }, [isAdmin, isEmployee]);
+        // If no specific role match, stay on this page (fallback)
+    }, [isAdmin, isEmployee, isTechnician]);
 
 
     return (

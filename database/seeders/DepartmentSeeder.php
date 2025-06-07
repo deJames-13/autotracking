@@ -13,6 +13,7 @@ class DepartmentSeeder extends Seeder
     public function run(): void
     {
         $departments = [
+            ['department_name' => 'Admin'],
             ['department_name' => 'Calibrations'],
             ['department_name' => 'Tracking'],
             ['department_name' => 'Constructions'],

@@ -18,6 +18,9 @@ use App\Http\Controllers\Admin\TrackingController as AdminTrackingController;
 //EMPLOYEE
 use App\Http\Controllers\Employee\TrackingController as EmployeeTrackingController;
 
+//TECHNICIAN
+use App\Http\Controllers\Technician\TrackingController as TechnicianTrackingController;
+
 
 
 // API
@@ -40,7 +43,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Employee Routes (authenticated)
-Route::prefix('employee')->name('employee.')->middleware('auth')->group(function () {
+Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee'])->group(function () {
     // Employee tracking routes
     Route::prefix('tracking')->name('tracking.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Employee\TrackingController::class, 'index'])->name('index');
@@ -58,6 +61,12 @@ Route::prefix('employee')->name('employee.')->middleware('auth')->group(function
         
         // API routes for employee tracking
         Route::prefix('api')->name('api.')->group(function () {
+            // Dashboard API routes
+            Route::get('dashboard/stats', [\App\Http\Controllers\Api\Employee\DashboardController::class, 'stats'])->name('dashboard.stats');
+            Route::get('dashboard/recent-activities', [\App\Http\Controllers\Api\Employee\DashboardController::class, 'recentActivities'])->name('dashboard.recent-activities');
+            Route::get('dashboard/calendar', [\App\Http\Controllers\Api\Employee\DashboardController::class, 'calendarData'])->name('dashboard.calendar');
+            Route::get('dashboard/equipment-status', [\App\Http\Controllers\Api\Employee\DashboardController::class, 'equipmentStatus'])->name('dashboard.equipment-status');
+            
             // Incoming API routes
             Route::get('incoming', [\App\Http\Controllers\Api\Employee\TrackIncomingController::class, 'index'])->name('incoming.index');
             Route::post('incoming', [\App\Http\Controllers\Api\Employee\TrackIncomingController::class, 'store'])->name('incoming.store');
@@ -76,6 +85,46 @@ Route::prefix('employee')->name('employee.')->middleware('auth')->group(function
     });
 });
 
+// Technician Routes (authenticated)
+Route::prefix('technician')->name('technician.')->middleware(['auth', 'role:technician'])->group(function () {
+    // Technician tracking routes
+    Route::prefix('tracking')->name('tracking.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Technician\TrackingController::class, 'index'])->name('index');
+        
+        // Request routes
+        Route::get('request', [\App\Http\Controllers\Technician\TrackingController::class, 'requestIndex'])->name('request.index');
+        
+        // Incoming routes
+        Route::get('incoming', [\App\Http\Controllers\Technician\TrackingController::class, 'trackIncomingIndex'])->name('incoming.index');
+        Route::get('incoming/{trackIncoming}', [\App\Http\Controllers\Technician\TrackingController::class, 'trackIncomingShow'])->name('incoming.show');
+        
+        // Outgoing routes
+        Route::get('outgoing', [\App\Http\Controllers\Technician\TrackingController::class, 'trackOutgoingIndex'])->name('outgoing.index');
+        Route::get('outgoing/{trackOutgoing}', [\App\Http\Controllers\Technician\TrackingController::class, 'trackOutgoingShow'])->name('outgoing.show');
+        
+        // API routes for technician tracking
+        Route::prefix('api')->name('api.')->group(function () {
+            // Dashboard API routes
+            Route::get('dashboard/stats', [\App\Http\Controllers\Api\Technician\DashboardController::class, 'getStats'])->name('dashboard.stats');
+            Route::get('dashboard/calendar', [\App\Http\Controllers\Api\Technician\DashboardController::class, 'getCalendarData'])->name('dashboard.calendar');
+            
+            // Incoming API routes
+            Route::get('incoming', [\App\Http\Controllers\Api\Technician\TrackIncomingController::class, 'index'])->name('incoming.index');
+            Route::post('incoming', [\App\Http\Controllers\Api\Technician\TrackIncomingController::class, 'store'])->name('incoming.store');
+            Route::get('incoming/{trackIncoming}', [\App\Http\Controllers\Api\Technician\TrackIncomingController::class, 'show'])->name('incoming.show');
+            Route::put('incoming/{trackIncoming}', [\App\Http\Controllers\Api\Technician\TrackIncomingController::class, 'update'])->name('incoming.update');
+            
+            // Outgoing API routes
+            Route::get('outgoing', [\App\Http\Controllers\Api\Technician\TrackOutgoingController::class, 'index'])->name('outgoing.index');
+            Route::post('outgoing', [\App\Http\Controllers\Api\Technician\TrackOutgoingController::class, 'store'])->name('outgoing.store');
+            Route::get('outgoing/{trackOutgoing}', [\App\Http\Controllers\Api\Technician\TrackOutgoingController::class, 'show'])->name('outgoing.show');
+            Route::put('outgoing/{trackOutgoing}', [\App\Http\Controllers\Api\Technician\TrackOutgoingController::class, 'update'])->name('outgoing.update');
+            Route::delete('outgoing/{trackOutgoing}', [\App\Http\Controllers\Api\Technician\TrackOutgoingController::class, 'destroy'])->name('outgoing.destroy');
+            Route::get('outgoing/due/soon', [\App\Http\Controllers\Api\Technician\TrackOutgoingController::class, 'dueSoon'])->name('outgoing.due-soon');
+        });
+    });
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Main dashboard - redirects based on role
     Route::get('dashboard', function () {
@@ -84,18 +133,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         
     // Tracking management - API routes (AJAX)
-    Route::prefix('api')->name('api.')->group(function () {
+    Route::prefix('api')->name('api.')->middleware(['auth'])->group(function () {
         Route::get('tracking/request/generate-recall', [ApiTrackingController::class, 'generateUniqueRecall'])->name('tracking.request.generate-recall');
         Route::post('tracking/request', [ApiTrackingController::class, 'store'])->name('tracking.request.store');
         Route::post('tracking/request/confirm-pin', [ApiTrackingController::class, 'confirmRequestPin'])->name('tracking.request.confirm-pin');
-        Route::post('tracking/incoming/{trackIncoming}/confirm', [ApiTrackingController::class, 'confirmEmployeeRequest'])->name('tracking.incoming.confirm');
+        Route::post('tracking/incoming/{trackIncoming}/confirm', [ApiTrackingController::class, 'confirmEmployeeRequest'])->name('tracking.incoming.confirm')->middleware('role:admin');
         Route::get('track-outgoing/search', [ApiTrackingController::class, 'searchTrackOutgoing'])->name('track-outgoing.search');
         Route::get('track-incoming/search', [ApiTrackingController::class, 'searchTrackIncoming'])->name('track-incoming.search');
-        Route::post('track-outgoing', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'store'])->name('track-outgoing.store');
+        Route::post('track-outgoing', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'store'])->name('track-outgoing.store')->middleware('role:admin');
         Route::post('track-outgoing/confirm-pickup/{trackOutgoing}', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'confirmPickup'])->name('track-outgoing.confirm-pickup');
 
-        // Report Table API Routes
-        Route::prefix('reports')->name('reports.')->group(function () {
+        // Report Table API Routes - Admin only
+        Route::prefix('reports')->name('reports.')->middleware('role:admin')->group(function () {
             Route::get('table', [ReportTableController::class, 'index'])->name('table.index');
             Route::get('table/filter-options', [ReportTableController::class, 'filterOptions'])->name('table.filter-options');
             Route::get('table/export/{format}', [ReportTableController::class, 'export'])->name('table.export');
@@ -103,7 +152,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('users/search', [AdminUserController::class, 'searchUsers'])->name('users.search');
     });
-    
 });
 
 // Admin Authentication Routes
@@ -115,7 +163,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('login.store');
     });
 
-    Route::middleware('auth')->group(function () {
+    Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('logout', [AdminLoginController::class, 'destroy'])
             ->name('logout');
         
@@ -183,8 +231,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
     });
 });
 
-// Equipment API route for searching by recall number
+// Equipment API routes
 Route::get('equipment/search-by-recall', [\App\Http\Controllers\Api\EquipmentController::class, 'searchByRecall'])->name('api.equipment.search-by-recall');
+Route::get('equipment/search', [\App\Http\Controllers\Api\EquipmentController::class, 'search'])->name('api.equipment.search');
+
+// Employee/User API routes
+Route::get('employees/search', [\App\Http\Controllers\Api\UserController::class, 'search'])->name('api.employees.search');
+
+// Tracking API routes
+Route::get('tracking/request/generate-recall', [\App\Http\Controllers\Api\TrackingController::class, 'generateRecall'])->name('api.tracking.request.generate-recall');
+Route::post('tracking/request/validate-recall', [\App\Http\Controllers\Api\TrackingController::class, 'validateRecall'])->name('api.tracking.request.validate-recall');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

@@ -20,6 +20,19 @@ class TrackOutgoingController extends Controller
     {
         $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']);
 
+        // Role-based filtering
+        $user = Auth::user();
+        $user->load('role');
+        
+        if ($user->role && $user->role->role_name === 'technician') {
+            // Technicians can only see records they handled
+            $query->where('technician_id', $user->employee_id);
+        } elseif ($user->role && $user->role->role_name === 'employee') {
+            // Employees can only see their own outgoing records
+            $query->where('employee_id_out', $user->employee_id);
+        }
+        // Admin can see all records (no additional filtering)
+
         if ($request->has('search')) {
             $search = $request->get('search');
             $query->whereHas('trackIncoming', function($q) use ($search) {
@@ -71,6 +84,18 @@ class TrackOutgoingController extends Controller
         // Set released_by_id to current authenticated user (admin/operator releasing the equipment)
         $validatedData['released_by_id'] = auth()->user()->employee_id;
 
+        // Auto-assign technician based on user role
+        $user = Auth::user();
+        $user->load('role');
+        
+        if ($user->role && $user->role->role_name === 'technician') {
+            // If technician is creating the record, assign themselves
+            $validatedData['technician_id'] = $user->employee_id;
+        } elseif (!isset($validatedData['technician_id']) && $user->role && $user->role->role_name === 'admin') {
+            // Admin can assign technician, but if not specified, don't auto-assign
+            // This allows flexibility for admin to assign later
+        }
+
         // Auto-calculate overdue (due date vs cal date)
         if ($incoming && isset($validatedData['cal_date'])) {
             $dueDate = new \DateTime($incoming->due_date);
@@ -100,18 +125,59 @@ class TrackOutgoingController extends Controller
 
     public function show(TrackOutgoing $trackOutgoing): TrackOutgoingResource
     {
+        // Role-based access control
+        $user = Auth::user();
+        $user->load('role');
+        
+        if ($user->role && $user->role->role_name === 'technician') {
+            // Technicians can only see records they handled
+            if ($trackOutgoing->technician_id !== $user->employee_id) {
+                abort(403, 'Access denied. You can only view records you handled.');
+            }
+        } elseif ($user->role && $user->role->role_name === 'employee') {
+            // Employees can only see their own outgoing records
+            if ($trackOutgoing->employee_id_out !== $user->employee_id) {
+                abort(403, 'Access denied. You can only view your own records.');
+            }
+        }
+        // Admin can see all records (no additional checks)
+
         $trackOutgoing->load(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']);
         return new TrackOutgoingResource($trackOutgoing);
     }
 
     public function update(TrackOutgoingRequest $request, TrackOutgoing $trackOutgoing): TrackOutgoingResource
     {
+        // Role-based access control
+        $user = Auth::user();
+        $user->load('role');
+        
+        if ($user->role && $user->role->role_name === 'technician') {
+            // Technicians can only edit records they handled
+            if ($trackOutgoing->technician_id !== $user->employee_id) {
+                abort(403, 'Access denied. You can only edit records you handled.');
+            }
+        } elseif ($user->role && $user->role->role_name === 'employee') {
+            // Employees can only edit their own outgoing records if status is pending
+            if ($trackOutgoing->employee_id_out !== $user->employee_id) {
+                abort(403, 'Access denied. You can only edit your own records.');
+            }
+            if ($trackOutgoing->status === 'completed') {
+                abort(403, 'Cannot edit completed records.');
+            }
+        }
+
         // Check if user is trying to edit a completed record and is not an admin
-        if ($trackOutgoing->status === 'completed' && auth()->user()->role->role_name !== 'admin') {
+        if ($trackOutgoing->status === 'completed' && $user->role && $user->role->role_name !== 'admin') {
             abort(403, 'Only administrators can edit completed records.');
         }
 
         $validatedData = $request->validated();
+        
+        // Prevent non-admin users from changing technician assignment
+        if ($user->role && $user->role->role_name !== 'admin' && isset($validatedData['technician_id'])) {
+            unset($validatedData['technician_id']);
+        }
         
         // Auto-calculate overdue (due date vs cal date)
         if (isset($validatedData['cal_date']) && $trackOutgoing->trackIncoming) {
@@ -143,6 +209,21 @@ class TrackOutgoingController extends Controller
 
     public function destroy(TrackOutgoing $trackOutgoing): JsonResponse
     {
+        // Role-based access control
+        $user = Auth::user();
+        $user->load('role');
+        
+        if ($user->role && $user->role->role_name === 'technician') {
+            // Technicians can only delete records they handled
+            if ($trackOutgoing->technician_id !== $user->employee_id) {
+                abort(403, 'Access denied. You can only delete records you handled.');
+            }
+        } elseif ($user->role && $user->role->role_name === 'employee') {
+            // Employees cannot delete records
+            abort(403, 'Access denied. You cannot delete records.');
+        }
+        // Admin can delete all records (no additional checks)
+
         $trackOutgoing->delete();
         return response()->json(['message' => 'Track outgoing record deleted successfully']);
     }
@@ -156,6 +237,19 @@ class TrackOutgoingController extends Controller
                 now()->addDays($daysAhead)
             ])
             ->with(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']);
+
+        // Role-based filtering
+        $user = Auth::user();
+        $user->load('role');
+        
+        if ($user->role && $user->role->role_name === 'technician') {
+            // Technicians can only see records they handled
+            $query->where('technician_id', $user->employee_id);
+        } elseif ($user->role && $user->role->role_name === 'employee') {
+            // Employees can only see their own outgoing records
+            $query->where('employee_id_out', $user->employee_id);
+        }
+        // Admin can see all records (no additional filtering)
             
         $records = $query->orderBy('cal_due_date', 'asc')->paginate($request->get('per_page', 15));
         

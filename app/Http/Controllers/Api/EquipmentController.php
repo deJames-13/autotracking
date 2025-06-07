@@ -124,4 +124,46 @@ class EquipmentController extends Controller
             ]);
         }
     }
+
+    /**
+     * Search for equipment by recall number or serial number
+     */
+    public function search(Request $request)
+    {
+        try {
+            $code = $request->input('code');
+            
+            if (empty($code)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Search code is required',
+                    'equipment' => []
+                ]);
+            }
+
+            $equipment = Equipment::query()
+                ->with(['plant', 'department', 'location', 'user'])
+                ->where(function ($query) use ($code) {
+                    $query->where('recall_number', 'LIKE', "%{$code}%")
+                          ->orWhere('serial_number', 'LIKE', "%{$code}%")
+                          ->orWhere('equipment_id', 'LIKE', "%{$code}%");
+                })
+                ->limit(10)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'equipment' => $equipment
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Equipment search error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error searching equipment',
+                'equipment' => []
+            ], 500);
+        }
+    }
 }

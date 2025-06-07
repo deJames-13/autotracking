@@ -15,7 +15,6 @@ class RoleSeeder extends Seeder
         $roles = [
             ['role_name' => 'admin', 'created_at' => now(), 'updated_at' => now()],
             ['role_name' => 'employee', 'created_at' => now(), 'updated_at' => now()],
-            ['role_name' => 'personnel_in_charge', 'created_at' => now(), 'updated_at' => now()],
             ['role_name' => 'technician', 'created_at' => now(), 'updated_at' => now()],
         ];
 

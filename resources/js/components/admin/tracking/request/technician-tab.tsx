@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { User, Role, Department, Plant } from '@/types';
+import { useRole } from '@/hooks/use-role';
 import axios from 'axios';
 
 interface TechnicianTabProps {
@@ -23,6 +24,15 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
         per_page: 15,
         total: 0
     });
+
+    const { isTechnician, user } = useRole();
+
+    // Auto-select technician if current user is a technician
+    useEffect(() => {
+        if (isTechnician() && user && !data) {
+            onChange(user);
+        }
+    }, [isTechnician, user, data, onChange]);
 
     // Fetch technicians with pagination
     const fetchTechnicians = useCallback(async (params: Record<string, any> = {}) => {
@@ -153,6 +163,38 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
 
     // Check for technician selection error
     const hasError = !!errors.technician;
+
+    // If current user is technician, show read-only view
+    if (isTechnician() && user) {
+        return (
+            <div className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Assigned Technician</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="p-4 bg-muted rounded-md">
+                            <div className="flex items-center space-x-4">
+                                <div className="flex-1">
+                                    <div className="font-medium">{user.full_name || `${user.first_name} ${user.last_name}`}</div>
+                                    <div className="text-sm text-muted-foreground">{user.email}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                        {user.department?.department_name} - {user.plant?.plant_name}
+                                    </div>
+                                </div>
+                                <Badge variant="secondary">
+                                    {user.role?.role_name || 'technician'}
+                                </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">
+                                You are automatically assigned as the technician for this request.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

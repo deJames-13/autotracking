@@ -24,7 +24,26 @@ class TrackIncomingController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
+        $user = Auth::user();
+        $user->load('role');
+        
         $query = TrackIncoming::with(['equipment', 'technician', 'location', 'employeeIn', 'trackOutgoing']);
+
+        // Apply role-based filtering
+        switch ($user->role->role_name) {
+            case 'technician':
+                // Technicians can only see records assigned to them
+                $query->where('technician_id', $user->employee_id);
+                break;
+            case 'employee':
+                // Employees can only see their own records
+                $query->where('employee_id_in', $user->employee_id);
+                break;
+            case 'admin':
+            default:
+                // Admin can see all records - no additional filtering
+                break;
+        }
 
         if ($request->has('search')) {
             $search = $request->get('search');
