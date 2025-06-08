@@ -19,34 +19,33 @@
 
     - [ ] incoming
     - [ ] outgoing
-        - [ ] remove export button
+        - [x] remove export button
 
-- [ ] Accounts
-    - [ ] Manual input or auto generated of id (unique)
-    - [ ] On user creation, email user with their employee id and pin
+- [x] Accounts
+    - [x] Manual input or auto generated of id (unique)
+    - [x] On user creation, email user with their employee id and pin
     - [x] Admin can reset password immediately, email automatically on change  
 
 - [x] Bar Code downloadables
 
 
-- [ ] Equipment
-    - [ ] process requirement range (start - end) (for new items) in request detail-tab
+- [x] Equipment
+    - [x] process requirement range (start - end) (for new items) in request detail-tab
 
-- [ ] Roles
-    - [ ] Admin
-        - [ ] Can see all
+- [x] Roles
+    - [x] Admin
+        - [x] Can see all
         - [x] Can for accept (no pin needed)
 
-    - [ ] Technician
-        - [ ] Can only see theyre own incoming, calibration, outgoing, 
+    - [x] Technician
+        - [x] Can only see theyre own incoming, calibration, outgoing, 
         
-    - [ ] Employee
-        - [ ] Can only see theyre own incoming and outgoing
+    - [x] Employee
+        - [x] Can only see theyre own incoming and outgoing
 
-- [ ] Equipment
-    - [ ] process requirement range (start - end) (for new items) in request detail-tab 
-    
 -- TODO
+- [ ] Latest modified on top
+
 
 - [ ] Imports
     - [ ] batch user imports

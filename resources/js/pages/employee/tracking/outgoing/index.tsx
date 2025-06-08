@@ -85,7 +85,7 @@ const EmployeeTrackingOutgoingIndex: React.FC<EmployeeTrackingOutgoingIndexProps
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Equipment Ready for Pickup" />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
                     <Link href={route('employee.tracking.index')}>
                         <ArrowLeft className="h-4 w-4 mr-2" />

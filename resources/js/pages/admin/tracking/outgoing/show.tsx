@@ -73,6 +73,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
             setDepartmentValidation({ isValid: true, message: '' });
             return;
         }
+        console.log(trackOutgoing.track_incoming)
 
         // Get employee_in with fallback for different property names
         const employeeIn = trackOutgoing.track_incoming.employee_in || trackOutgoing.track_incoming.employeeIn;
@@ -316,7 +317,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Outgoing Completion: ${trackOutgoing.track_incoming?.recall_number}`} />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
                     <Link href={route('admin.tracking.outgoing.index')}>
                         <ArrowLeft className="h-4 w-4 mr-2" />

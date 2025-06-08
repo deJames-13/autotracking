@@ -79,7 +79,7 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="My Calibration Requests" />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
                     <Link href={route('employee.tracking.index')}>
                         <ArrowLeft className="h-4 w-4 mr-2" />

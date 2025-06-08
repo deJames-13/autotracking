@@ -75,7 +75,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Pickup Details: ${trackOutgoing.track_incoming?.recall_number}`} />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
                     <Link href={route('employee.tracking.outgoing.index')}>
                         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -191,16 +191,16 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                                 </div>
                             )}
 
-                            {trackOutgoing.certificate_number && (
+                            {/* {trackOutgoing.certificate_number && (
                                 <div>
                                     <Label className="text-sm font-medium">Certificate Number</Label>
                                     <p className="text-sm text-muted-foreground">
                                         {trackOutgoing.certificate_number}
                                     </p>
                                 </div>
-                            )}
+                            )} */}
 
-                            {trackOutgoing.cycle_time && (
+                            {trackOutgoing.cycle_time != undefined && (
                                 <div>
                                     <Label className="text-sm font-medium">Cycle Time</Label>
                                     <p className="text-sm text-muted-foreground">

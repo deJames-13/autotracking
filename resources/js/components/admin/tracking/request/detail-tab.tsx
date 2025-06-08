@@ -349,8 +349,6 @@ const DetailTab: React.FC<DetailTabProps> = ({
             setLoadingLocations(true);
             fetchLocationsByDepartment(value as number);
         }
-
-        console.log(value)
         // Special handling for receivedBy field
         if (field === 'receivedBy' && value) {
             // When receivedBy changes, we need to update both the equipment state and Redux receivedBy state
@@ -581,7 +579,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
     }, [receivedBy, onReceivedByChange, currentUser, hideReceivedBy, dispatch]);
 
     // DONT REMOVE
-    // console.log(recallNumber)
+    console.log(data)
 
     return (
         <div className="space-y-6">
@@ -869,38 +867,34 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 {errors.manufacturer && <p className="text-sm text-destructive mt-1">{errors.manufacturer}</p>}
                             </div>
 
-                            {/* Process Requirement Range fields - only for new equipment */}
-                            {requestType === 'new' && (
-                                <>
-                                    <div>
-                                        <Label htmlFor="processReqRangeStart" className={errors.processReqRangeStart ? 'text-destructive' : ''}>
-                                            Process Req Range Start
-                                        </Label>
-                                        <Input
-                                            id="processReqRangeStart"
-                                            value={data.processReqRangeStart || ''}
-                                            onChange={(e) => handleChange('processReqRangeStart', e.target.value)}
-                                            placeholder="Enter process requirement range start"
-                                            className={errors.processReqRangeStart ? 'border-destructive' : ''}
-                                        />
-                                        {errors.processReqRangeStart && <p className="text-sm text-destructive mt-1">{errors.processReqRangeStart}</p>}
-                                    </div>
+                            {/* Process Requirement Range fields */}
+                            <div>
+                                <Label htmlFor="processReqRangeStart" className={errors.processReqRangeStart ? 'text-destructive' : ''}>
+                                    Process Req Range Start
+                                </Label>
+                                <Input
+                                    id="processReqRangeStart"
+                                    value={data.processReqRangeStart || data.process_req_range_start || ''}
+                                    onChange={(e) => handleChange('processReqRangeStart', e.target.value)}
+                                    placeholder="Enter process requirement range start"
+                                    className={errors.processReqRangeStart ? 'border-destructive' : ''}
+                                />
+                                {errors.processReqRangeStart && <p className="text-sm text-destructive mt-1">{errors.processReqRangeStart}</p>}
+                            </div>
 
-                                    <div>
-                                        <Label htmlFor="processReqRangeEnd" className={errors.processReqRangeEnd ? 'text-destructive' : ''}>
-                                            Process Req Range End
-                                        </Label>
-                                        <Input
-                                            id="processReqRangeEnd"
-                                            value={data.processReqRangeEnd || ''}
-                                            onChange={(e) => handleChange('processReqRangeEnd', e.target.value)}
-                                            placeholder="Enter process requirement range end"
-                                            className={errors.processReqRangeEnd ? 'border-destructive' : ''}
-                                        />
-                                        {errors.processReqRangeEnd && <p className="text-sm text-destructive mt-1">{errors.processReqRangeEnd}</p>}
-                                    </div>
-                                </>
-                            )}
+                            <div>
+                                <Label htmlFor="processReqRangeEnd" className={errors.processReqRangeEnd ? 'text-destructive' : ''}>
+                                    Process Req Range End
+                                </Label>
+                                <Input
+                                    id="processReqRangeEnd"
+                                    value={data.processReqRangeEnd || data.process_req_range_end || ''}
+                                    onChange={(e) => handleChange('processReqRangeEnd', e.target.value)}
+                                    placeholder="Enter process requirement range end"
+                                    className={errors.processReqRangeEnd ? 'border-destructive' : ''}
+                                />
+                                {errors.processReqRangeEnd && <p className="text-sm text-destructive mt-1">{errors.processReqRangeEnd}</p>}
+                            </div>
 
                         </div>
                     </div>
@@ -949,7 +943,6 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     <Label htmlFor="receivedBy" className={errors.receivedBy ? 'text-destructive' : ''}>
                                         Received By
                                     </Label>
-                                    {console.log(receivedBy)}
                                     <InertiaSmartSelect
                                         name="receivedBy"
                                         value={receivedBy?.employee_id}

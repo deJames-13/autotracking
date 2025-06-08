@@ -54,7 +54,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
         return (
             <AppLayout breadcrumbs={breadcrumbs}>
                 <Head title={`Edit Outgoing Completion: ${trackOutgoing.recall_number}`} />
-                <div className="space-y-6 p-6">
+                <div className="space-y-6 p-2">
                     <Button variant="outline" size="sm" asChild>
                         <Link href={`/admin/tracking/outgoing/${trackOutgoing.id}`}>
                             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -119,7 +119,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Edit Outgoing Completion: ${trackOutgoing.track_incoming?.recall_number || trackOutgoing.incoming_id}`} />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
                     <Link href={`/admin/tracking/outgoing/${trackOutgoing.id}`}>
                         <ArrowLeft className="h-4 w-4 mr-2" />

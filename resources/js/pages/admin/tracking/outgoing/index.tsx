@@ -114,7 +114,7 @@ export default function TrackOutgoingIndex({ }: TrackOutgoingIndexProps) {
                         </p>
                     </div>
 
-                    <Button
+                    {/* <Button
                         onClick={() => {
                             // Export functionality can be added here
                             toast.success('Export feature coming soon');
@@ -124,7 +124,7 @@ export default function TrackOutgoingIndex({ }: TrackOutgoingIndexProps) {
                     >
                         <Download className="mr-2 h-4 w-4" />
                         Export
-                    </Button>
+                    </Button> */}
                 </div>
 
                 {trackOutgoing && (

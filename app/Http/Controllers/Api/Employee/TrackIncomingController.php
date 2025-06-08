@@ -142,6 +142,8 @@ class TrackIncomingController extends Controller
                             'description' => $requestData['equipment']['description'] ?? $equipment->description,
                             'model' => $requestData['equipment']['model'] ?? $equipment->model,
                             'manufacturer' => $requestData['equipment']['manufacturer'] ?? $equipment->manufacturer,
+                            'process_req_range_start' => $requestData['equipment']['processReqRangeStart'] ?? $equipment->process_req_range_start,
+                            'process_req_range_end' => $requestData['equipment']['processReqRangeEnd'] ?? $equipment->process_req_range_end,
                         ]);
                     }
                 }
@@ -175,11 +177,15 @@ class TrackIncomingController extends Controller
                     'location_id' => $requestData['equipment']['location'],
                     'status' => 'active',
                     'next_calibration_due' => $requestData['equipment']['dueDate'],
+                    'process_req_range_start' => $requestData['equipment']['processReqRangeStart'] ?? null,
+                    'process_req_range_end' => $requestData['equipment']['processReqRangeEnd'] ?? null,
                 ]);
             } else {
                 // Update existing equipment with new calibration due date if needed
                 $equipment->update([
                     'next_calibration_due' => $requestData['equipment']['dueDate'],
+                    'process_req_range_start' => $requestData['equipment']['processReqRangeStart'] ?? $equipment->process_req_range_start,
+                    'process_req_range_end' => $requestData['equipment']['processReqRangeEnd'] ?? $equipment->process_req_range_end,
                 ]);
             }
             

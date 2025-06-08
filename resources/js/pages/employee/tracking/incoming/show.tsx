@@ -59,7 +59,7 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`My Request: ${record.recall_number}`} />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
                     <Link href={route('employee.tracking.incoming.index')}>
                         <ArrowLeft className="h-4 w-4 mr-2" />

@@ -609,7 +609,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                 : (edit ? 'Edit Tracking Request' : 'New Tracking Request')}
             />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">
                         {isConfirmMode

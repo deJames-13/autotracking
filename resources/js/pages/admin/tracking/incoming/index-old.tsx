@@ -85,7 +85,7 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Incoming Calibration Requests" />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">Incoming Calibration Requests</h1>

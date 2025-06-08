@@ -116,6 +116,8 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
                     plant: currentUserWithRelations.plant?.plant_id,
                     location: firstLocation.location_id,
                     location_name: firstLocation.location_name,
+                    processReqRangeStart: '',
+                    processReqRangeEnd: '',
                     dueDate: format(new Date(), 'yyyy-MM-dd'),
                 }))
 
@@ -162,6 +164,8 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
                 recallNumber: editData.recall_number || '',
                 model: editData.model || editData.equipment?.model || '',
                 manufacturer: editData.manufacturer || editData.equipment?.manufacturer || '',
+                processReqRangeStart: editData.process_req_range_start || editData.equipment?.process_req_range_start || '',
+                processReqRangeEnd: editData.process_req_range_end || editData.equipment?.process_req_range_end || '',
                 dueDate: editData.due_date ?
                     format(new Date(editData.due_date), 'yyyy-MM-dd') :
                     (editData.equipment?.next_calibration_due ?
@@ -370,6 +374,8 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
                 recallNumber: editData.recall_number || '',
                 model: editData.model || editData.equipment?.model || '',
                 manufacturer: editData.manufacturer || editData.equipment?.manufacturer || '',
+                processReqRangeStart: editData.process_req_range_start || editData.equipment?.process_req_range_start || '',
+                processReqRangeEnd: editData.process_req_range_end || editData.equipment?.process_req_range_end || '',
                 dueDate: editData.due_date ?
                     format(new Date(editData.due_date), 'yyyy-MM-dd') :
                     (editData.equipment?.next_calibration_due ?

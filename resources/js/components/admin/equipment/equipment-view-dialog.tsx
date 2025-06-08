@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, ArrowRight } from 'lucide-react';
 import { type Equipment } from '@/types';
 import Barcode from 'react-barcode';
 import { toast } from 'sonner';
@@ -147,6 +147,22 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
                                 <label className="text-sm font-medium text-muted-foreground">Manufacturer</label>
                                 <p className="text-sm">{equipment.manufacturer}</p>
                             </div>
+                            {equipment?.process_req_range_start && (
+                                <div>
+                                    <label className="text-sm font-medium">
+                                        Process Request Range
+                                    </label>
+                                    <span className="flex gap-2 items-center">
+                                        <p className="text-sm text-muted-foreground">
+                                            {equipment?.process_req_range_start}
+                                        </p>
+                                        <ArrowRight className='text-sm' />
+                                        <p className="text-sm text-muted-foreground">
+                                            {equipment?.process_req_range_end}
+                                        </p>
+                                    </span>
+                                </div>
+                            )}
                             <div className="space-y-1">
                                 <label className="text-sm font-medium text-muted-foreground">Assignment Status</label>
                                 <div>

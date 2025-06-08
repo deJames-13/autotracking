@@ -7,7 +7,7 @@ import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackIncoming } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, User, MapPin, Calendar, Package, FileText, CheckCircle, Edit } from 'lucide-react';
+import { ArrowLeft, ArrowRight, User, MapPin, Calendar, Package, FileText, CheckCircle, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { OutgoingCalibrationModal } from '@/components/admin/tracking/outgoing/outgoing-calibration-modal';
@@ -140,7 +140,7 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Incoming Request: ${trackIncoming.recall_number}`} />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
                     <Link href={route('admin.tracking.incoming.index')}>
                         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -251,6 +251,22 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
                                     <div>
                                         <Badge variant="outline">{trackIncoming.equipment.status}</Badge>
                                     </div>
+                                </div>
+                            )}
+                            {trackIncoming.equipment?.process_req_range_start && (
+                                <div>
+                                    <Label className="text-sm font-medium">
+                                        Process Request Range
+                                    </Label>
+                                    <span className="flex gap-2 items-center">
+                                        <p className="text-sm text-muted-foreground">
+                                            {trackIncoming.equipment?.process_req_range_start}
+                                        </p>
+                                        <ArrowRight className='text-sm' />
+                                        <p className="text-sm text-muted-foreground">
+                                            {trackIncoming.equipment?.process_req_range_end}
+                                        </p>
+                                    </span>
                                 </div>
                             )}
                         </CardContent>
@@ -431,14 +447,14 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
                                         View Completion Details
                                     </Link>
                                 </Button>
-                                {trackIncoming.certificate_number && (
+                                {/* {trackIncoming.certificate_number && (
                                     <Button variant="outline" asChild>
                                         <Link href={route('admin.tracking.outgoing.certificate', trackIncoming.id)}>
                                             <FileText className="h-3 w-3 mr-1" />
                                             View Certificate
                                         </Link>
                                     </Button>
-                                )}
+                                )} */}
                             </div>
                         </CardContent>
                     </Card>

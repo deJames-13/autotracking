@@ -228,12 +228,12 @@ export function TrackOutgoingTable({
                                 Edit
                             </DropdownMenuItem>
                         )}
-                        {row.track_incoming?.recall_number && (
+                        {/* {row.track_incoming?.recall_number && (
                             <DropdownMenuItem onClick={() => router.visit(route('admin.tracking.outgoing.certificate', row.id))}>
                                 <FileText className="mr-2 h-4 w-4" />
                                 View Certificate
                             </DropdownMenuItem>
-                        )}
+                        )} */}
                     </DropdownMenuContent>
                 </DropdownMenu>
             ),

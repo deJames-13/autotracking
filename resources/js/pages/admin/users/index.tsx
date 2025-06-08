@@ -137,7 +137,7 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="User Management" />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">User Management</h1>

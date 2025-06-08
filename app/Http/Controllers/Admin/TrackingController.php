@@ -218,6 +218,7 @@ class TrackingController extends Controller
             'employeeOut', 
             'releasedBy',
             'trackIncoming.employeeIn',
+            'trackIncoming.employeeIn.department',
             'trackIncoming.receivedBy',
         ]);
         
