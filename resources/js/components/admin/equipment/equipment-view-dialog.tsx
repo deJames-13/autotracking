@@ -1,9 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download, ArrowRight } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { type Equipment } from '@/types';
+import { ArrowRight, Download } from 'lucide-react';
 import Barcode from 'react-barcode';
 import { toast } from 'react-hot-toast';
 
@@ -93,7 +93,7 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-lg max-h-[85vh]">
+            <DialogContent className="max-h-[85vh] max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Equipment Details</DialogTitle>
                 </DialogHeader>
@@ -101,26 +101,14 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
                     <div className="space-y-6">
                         {/* Barcode for Recall Number */}
                         {equipment.recall_number && (
-                            <div className="flex flex-col items-center mb-4">
+                            <div className="mb-4 flex flex-col items-center">
                                 <div className="equipment-barcode-container">
-                                    <Barcode
-                                        value={equipment.recall_number}
-                                        width={2}
-                                        height={60}
-                                        displayValue={true}
-                                        fontSize={16}
-                                        margin={8}
-                                    />
+                                    <Barcode value={equipment.recall_number} width={2} height={60} displayValue={true} fontSize={16} margin={8} />
                                 </div>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-xs text-muted-foreground">Recall Number Barcode</span>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleDownloadBarcode}
-                                        className="h-6 px-2"
-                                    >
-                                        <Download className="h-3 w-3 mr-1" />
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-muted-foreground text-xs">Recall Number Barcode</span>
+                                    <Button variant="outline" size="sm" onClick={handleDownloadBarcode} className="h-6 px-2">
+                                        <Download className="mr-1 h-3 w-3" />
                                         Download
                                     </Button>
                                 </div>
@@ -128,101 +116,85 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
                         )}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Equipment ID</label>
+                                <label className="text-muted-foreground text-sm font-medium">Equipment ID</label>
                                 <p className="text-sm">{equipment.equipment_id}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Recall Number</label>
+                                <label className="text-muted-foreground text-sm font-medium">Recall Number</label>
                                 <p className="text-sm">{equipment.recall_number}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Serial Number</label>
+                                <label className="text-muted-foreground text-sm font-medium">Serial Number</label>
                                 <p className="text-sm">{equipment.serial_number || 'N/A'}</p>
                             </div>
-                            <div className="space-y-1 col-span-2">
-                                <label className="text-sm font-medium text-muted-foreground">Description</label>
+                            <div className="col-span-2 space-y-1">
+                                <label className="text-muted-foreground text-sm font-medium">Description</label>
                                 <p className="text-sm">{equipment.description}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Manufacturer</label>
+                                <label className="text-muted-foreground text-sm font-medium">Manufacturer</label>
                                 <p className="text-sm">{equipment.manufacturer}</p>
                             </div>
                             {equipment?.process_req_range_start && (
                                 <div>
-                                    <label className="text-sm font-medium">
-                                        Process Request Range
-                                    </label>
-                                    <span className="flex gap-2 items-center">
-                                        <p className="text-sm text-muted-foreground">
-                                            {equipment?.process_req_range_start}
-                                        </p>
-                                        <ArrowRight className='text-sm' />
-                                        <p className="text-sm text-muted-foreground">
-                                            {equipment?.process_req_range_end}
-                                        </p>
+                                    <label className="text-sm font-medium">Process Request Range</label>
+                                    <span className="flex items-center gap-2">
+                                        <p className="text-muted-foreground text-sm">{equipment?.process_req_range_start}</p>
+                                        <ArrowRight className="text-sm" />
+                                        <p className="text-muted-foreground text-sm">{equipment?.process_req_range_end}</p>
                                     </span>
                                 </div>
                             )}
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Assignment Status</label>
+                                <label className="text-muted-foreground text-sm font-medium">Assignment Status</label>
                                 <div>
-                                    <Badge variant={equipment.user ? "default" : "secondary"}>
-                                        {equipment.user ? 'Assigned' : 'Unassigned'}
-                                    </Badge>
+                                    <Badge variant={equipment.user ? 'default' : 'secondary'}>{equipment.user ? 'Assigned' : 'Unassigned'}</Badge>
                                 </div>
                             </div>
                             {equipment.user && (
                                 <>
                                     <div className="space-y-1">
-                                        <label className="text-sm font-medium text-muted-foreground">Assigned User</label>
+                                        <label className="text-muted-foreground text-sm font-medium">Assigned User</label>
                                         <p className="text-sm">
                                             {equipment.user.full_name || `${equipment.user.first_name} ${equipment.user.last_name}`}
                                         </p>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-sm font-medium text-muted-foreground">User Details</label>
+                                        <label className="text-muted-foreground text-sm font-medium">User Details</label>
                                         <div className="text-sm">
                                             <div>ID: {equipment.user.employee_id}</div>
-                                            {equipment.user.role && (
-                                                <div>Role: {equipment.user.role.role_name.replace('_', ' ')}</div>
-                                            )}
-                                            {equipment.user.department && (
-                                                <div>Department: {equipment.user.department.department_name}</div>
-                                            )}
+                                            {equipment.user.role && <div>Role: {equipment.user.role.role_name.replace('_', ' ')}</div>}
+                                            {equipment.user.department && <div>Department: {equipment.user.department.department_name}</div>}
                                         </div>
                                     </div>
                                 </>
                             )}
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Total Records</label>
+                                <label className="text-muted-foreground text-sm font-medium">Total Records</label>
                                 <p className="text-sm">{equipment.track_incoming?.length || 0} tracking records</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Created</label>
-                                <p className="text-sm">
-                                    {new Date(equipment.created_at).toLocaleString()}
-                                </p>
+                                <label className="text-muted-foreground text-sm font-medium">Created</label>
+                                <p className="text-sm">{new Date(equipment.created_at).toLocaleString()}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
-                                <p className="text-sm">
-                                    {new Date(equipment.updated_at).toLocaleString()}
-                                </p>
+                                <label className="text-muted-foreground text-sm font-medium">Last Updated</label>
+                                <p className="text-sm">{new Date(equipment.updated_at).toLocaleString()}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Plant</label>
+                                <label className="text-muted-foreground text-sm font-medium">Plant</label>
                                 <p className="text-sm">{equipment.plant?.plant_name || 'Not assigned'}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Department</label>
+                                <label className="text-muted-foreground text-sm font-medium">Department</label>
                                 <p className="text-sm">{equipment.department?.department_name || 'Not assigned'}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Location</label>
+                                <label className="text-muted-foreground text-sm font-medium">Location</label>
                                 <p className="text-sm">{equipment.location?.location_name || 'Not assigned'}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Status</label>
+                                <label className="text-muted-foreground text-sm font-medium">Status</label>
                                 <p className="text-sm">
                                     <Badge variant={equipment.status === 'active' ? 'default' : 'secondary'}>
                                         {equipment.status?.replace('_', ' ').toUpperCase()}
@@ -230,11 +202,11 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
                                 </p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Last Calibration</label>
+                                <label className="text-muted-foreground text-sm font-medium">Last Calibration</label>
                                 <p className="text-sm">{equipment.last_calibration_date || 'Never'}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Next Due Date</label>
+                                <label className="text-muted-foreground text-sm font-medium">Next Due Date</label>
                                 <p className="text-sm">{equipment.next_calibration_due || 'Not set'}</p>
                             </div>
                         </div>

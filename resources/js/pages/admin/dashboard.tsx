@@ -1,12 +1,11 @@
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package, Clock, AlertTriangle, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
-import { useRole } from '@/hooks/use-role';
+import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Clock, Package, Plus, Users } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -46,19 +45,16 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={isAdmin() ? "Admin Dashboard" : "Technician Dashboard"} />
+            <Head title={isAdmin() ? 'Admin Dashboard' : 'Technician Dashboard'} />
             <div className="flex h-full flex-1 flex-col gap-4">
                 {/* Header */}
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">
-                            {isAdmin() ? "Admin Dashboard" : "Technician Dashboard"}
-                        </h1>
+                        <h1 className="text-3xl font-bold tracking-tight">{isAdmin() ? 'Admin Dashboard' : 'Technician Dashboard'}</h1>
                         <p className="text-muted-foreground">
                             {isAdmin()
-                                ? "Overview of system activity and equipment tracking"
-                                : "Your assigned equipment tracking and calibration activities"
-                            }
+                                ? 'Overview of system activity and equipment tracking'
+                                : 'Your assigned equipment tracking and calibration activities'}
                         </p>
                     </div>
                     <Button asChild>
@@ -74,39 +70,33 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Equipment</CardTitle>
-                            <Package className="h-4 w-4 text-muted-foreground" />
+                            <Package className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.total_equipment}</div>
-                            <p className="text-xs text-muted-foreground">
-                                {isTechnician() ? "In your scope" : "Registered in system"}
-                            </p>
+                            <p className="text-muted-foreground text-xs">{isTechnician() ? 'In your scope' : 'Registered in system'}</p>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Active Requests</CardTitle>
-                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <Clock className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.active_requests}</div>
-                            <p className="text-xs text-muted-foreground">
-                                {isTechnician() ? "Assigned to you" : "Pending calibration"}
-                            </p>
+                            <p className="text-muted-foreground text-xs">{isTechnician() ? 'Assigned to you' : 'Pending calibration'}</p>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Equipment Tracked</CardTitle>
-                            <Package className="h-4 w-4 text-muted-foreground" />
+                            <Package className="text-muted-foreground h-4 w-4" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.equipment_tracked}</div>
-                            <p className="text-xs text-muted-foreground">
-                                {isTechnician() ? "You're handling" : "Currently out"}
-                            </p>
+                            <p className="text-muted-foreground text-xs">{isTechnician() ? "You're handling" : 'Currently out'}</p>
                         </CardContent>
                     </Card>
 
@@ -115,24 +105,24 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                                <Users className="h-4 w-4 text-muted-foreground" />
+                                <Users className="text-muted-foreground h-4 w-4" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{stats.total_users}</div>
-                                <p className="text-xs text-muted-foreground">Active accounts</p>
+                                <p className="text-muted-foreground text-xs">Active accounts</p>
                             </CardContent>
                         </Card>
                     ) : (
-                            <Card>
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Overdue Equipment</CardTitle>
-                                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-2xl font-bold text-destructive">{stats.overdue_equipment}</div>
-                                    <p className="text-xs text-muted-foreground">Needs attention</p>
-                                </CardContent>
-                            </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Overdue Equipment</CardTitle>
+                                <AlertTriangle className="text-destructive h-4 w-4" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-destructive text-2xl font-bold">{stats.overdue_equipment}</div>
+                                <p className="text-muted-foreground text-xs">Needs attention</p>
+                            </CardContent>
+                        </Card>
                     )}
                 </div>
 
@@ -150,16 +140,16 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
                                         <div key={activity.id} className="flex items-center space-x-4">
                                             <div className="flex-1 space-y-1">
                                                 <p className="text-sm font-medium">{activity.description}</p>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-muted-foreground text-xs">
                                                     by {activity.user} • {new Date(activity.created_at).toLocaleDateString()}
                                                 </p>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                        <p className="text-sm text-muted-foreground">
-                                            {isTechnician() ? "No recent activities for your assignments" : "No recent activities"}
-                                        </p>
+                                    <p className="text-muted-foreground text-sm">
+                                        {isTechnician() ? 'No recent activities for your assignments' : 'No recent activities'}
+                                    </p>
                                 )}
                             </div>
                         </CardContent>
@@ -168,9 +158,7 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
                     {/* Pending Requests */}
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>
-                                {isTechnician() ? "Your Pending Requests" : "Pending Requests"}
-                            </CardTitle>
+                            <CardTitle>{isTechnician() ? 'Your Pending Requests' : 'Pending Requests'}</CardTitle>
                             <Button variant="outline" size="sm" asChild>
                                 <Link href={route('admin.tracking.incoming.index')}>View All</Link>
                             </Button>
@@ -181,10 +169,8 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
                                     pendingRequests.map((request) => (
                                         <div key={request.id} className="flex items-center justify-between">
                                             <div className="space-y-1">
-                                                <p className="text-sm font-medium">
-                                                    {request.equipment?.recall_number}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-sm font-medium">{request.equipment?.recall_number}</p>
+                                                <p className="text-muted-foreground text-xs">
                                                     Requested by {request.requested_by?.first_name} {request.requested_by?.last_name}
                                                 </p>
                                             </div>
@@ -192,9 +178,9 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
                                         </div>
                                     ))
                                 ) : (
-                                        <p className="text-sm text-muted-foreground">
-                                            {isTechnician() ? "No pending requests assigned to you" : "No pending requests"}
-                                        </p>
+                                    <p className="text-muted-foreground text-sm">
+                                        {isTechnician() ? 'No pending requests assigned to you' : 'No pending requests'}
+                                    </p>
                                 )}
                             </div>
                         </CardContent>
@@ -203,17 +189,15 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
 
                 {/* Quick Actions - Role-based visibility */}
                 <div className="grid gap-4 md:grid-cols-4">
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                    <Card className="cursor-pointer transition-shadow hover:shadow-md">
                         <Link href={route('admin.tracking.incoming.index')}>
                             <CardContent className="p-6">
                                 <div className="flex items-center space-x-4">
-                                    <ArrowDownToLine className="h-8 w-8 text-primary" />
+                                    <ArrowDownToLine className="text-primary h-8 w-8" />
                                     <div>
-                                        <h3 className="font-semibold">
-                                            {isTechnician() ? "My Incoming Requests" : "Incoming Requests"}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            {isTechnician() ? "Equipment assigned to you" : "Review equipment submissions"}
+                                        <h3 className="font-semibold">{isTechnician() ? 'My Incoming Requests' : 'Incoming Requests'}</h3>
+                                        <p className="text-muted-foreground text-sm">
+                                            {isTechnician() ? 'Equipment assigned to you' : 'Review equipment submissions'}
                                         </p>
                                     </div>
                                 </div>
@@ -221,17 +205,15 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
                         </Link>
                     </Card>
 
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                    <Card className="cursor-pointer transition-shadow hover:shadow-md">
                         <Link href={route('admin.tracking.outgoing.index')}>
                             <CardContent className="p-6">
                                 <div className="flex items-center space-x-4">
-                                    <ArrowUpFromLine className="h-8 w-8 text-primary" />
+                                    <ArrowUpFromLine className="text-primary h-8 w-8" />
                                     <div>
-                                        <h3 className="font-semibold">
-                                            {isTechnician() ? "My Completions" : "Outgoing Completions"}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            {isTechnician() ? "Equipment you've completed" : "Process completed calibrations"}
+                                        <h3 className="font-semibold">{isTechnician() ? 'My Completions' : 'Outgoing Completions'}</h3>
+                                        <p className="text-muted-foreground text-sm">
+                                            {isTechnician() ? "Equipment you've completed" : 'Process completed calibrations'}
                                         </p>
                                     </div>
                                 </div>
@@ -241,14 +223,14 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
 
                     {/* Equipment Management - Only show if user can manage equipment */}
                     {canManageEquipment() && (
-                        <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                        <Card className="cursor-pointer transition-shadow hover:shadow-md">
                             <Link href={route('admin.equipment.index')}>
                                 <CardContent className="p-6">
                                     <div className="flex items-center space-x-4">
-                                        <Package className="h-8 w-8 text-primary" />
+                                        <Package className="text-primary h-8 w-8" />
                                         <div>
                                             <h3 className="font-semibold">Manage Equipment</h3>
-                                            <p className="text-sm text-muted-foreground">View and manage all equipment</p>
+                                            <p className="text-muted-foreground text-sm">View and manage all equipment</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -258,14 +240,14 @@ export default function AdminDashboard({ stats, recentActivities, pendingRequest
 
                     {/* User Management - Only show if user can manage users */}
                     {canManageUsers() && (
-                        <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                        <Card className="cursor-pointer transition-shadow hover:shadow-md">
                             <Link href={route('admin.users.index')}>
                                 <CardContent className="p-6">
                                     <div className="flex items-center space-x-4">
-                                        <Users className="h-8 w-8 text-primary" />
+                                        <Users className="text-primary h-8 w-8" />
                                         <div>
                                             <h3 className="font-semibold">Manage Users</h3>
-                                            <p className="text-sm text-muted-foreground">View and manage user accounts</p>
+                                            <p className="text-muted-foreground text-sm">View and manage user accounts</p>
                                         </div>
                                     </div>
                                 </CardContent>

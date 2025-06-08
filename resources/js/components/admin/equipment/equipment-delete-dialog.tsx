@@ -16,7 +16,7 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
         if (!equipment) return;
 
         console.log('EquipmentDeleteDialog: Archiving equipment', equipment.equipment_id);
-        
+
         router.delete(route('admin.equipment.destroy', equipment.equipment_id), {
             preserveState: true,
             preserveScroll: true,
@@ -40,7 +40,7 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
 
                 // Generic fallback error
                 toast.error('Failed to archive equipment. Please try again.');
-            }
+            },
         });
     };
 
@@ -60,18 +60,18 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                    <div className="p-4 border rounded-lg bg-muted/50">
-                        <div className="font-medium">
-                            Recall #: {equipment.recall_number}
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
+                    <div className="bg-muted/50 rounded-lg border p-4">
+                        <div className="font-medium">Recall #: {equipment.recall_number}</div>
+                        <div className="text-muted-foreground mt-1 text-sm">
                             <div>ID: {equipment.equipment_id}</div>
                             <div>Serial #: {equipment.serial_number || 'N/A'}</div>
                             <div>Manufacturer: {equipment.manufacturer}</div>
-                            <div>Assigned to: {equipment.user ?
-                                (equipment.user.full_name || `${equipment.user.first_name} ${equipment.user.last_name}`) :
-                                'Unassigned'
-                            }</div>
+                            <div>
+                                Assigned to:{' '}
+                                {equipment.user
+                                    ? equipment.user.full_name || `${equipment.user.first_name} ${equipment.user.last_name}`
+                                    : 'Unassigned'}
+                            </div>
                             <div>Records: {equipment.track_incoming?.length || 0}</div>
                         </div>
                     </div>

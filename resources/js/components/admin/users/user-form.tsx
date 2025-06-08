@@ -1,17 +1,17 @@
 import InputError from '@/components/input-error';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { type Department, type Plant, type Role, type User, type UserFormData } from '@/types';
+import { type Department, type Plant, type Role, type User } from '@/types';
 import { userSchema, UserSchema } from '@/validation/user-schema';
 import { useForm } from '@inertiajs/react';
 import axios from 'axios';
-import { FormEventHandler, useCallback, useMemo, useState, useEffect } from 'react';
+import { AlertTriangle, CheckCircle, Eye, EyeOff, Info } from 'lucide-react';
+import { FormEventHandler, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { Eye, EyeOff, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
 interface UserFormProps {
     user?: User;
@@ -33,47 +33,53 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
     const [emailValidating, setEmailValidating] = useState(false);
 
     // Memoize the initial form data to prevent unnecessary rerenders
-    const initialData = useMemo(() => ({
-        employee_id: user?.employee_id || undefined,
-        first_name: user?.first_name || '',
-        last_name: user?.last_name || '',
-        middle_name: user?.middle_name || '',
-        email: user?.email || '',
-        password: '',
-        password_confirmation: '',
-        role_id: user?.role_id || roles[0]?.role_id || 1,
-        department_id: user?.department_id || null,
-        plant_id: user?.plant_id || null,
-        avatar: user?.avatar || '',
-    }), [user, roles]);
+    const initialData = useMemo(
+        () => ({
+            employee_id: user?.employee_id || undefined,
+            first_name: user?.first_name || '',
+            last_name: user?.last_name || '',
+            middle_name: user?.middle_name || '',
+            email: user?.email || '',
+            password: '',
+            password_confirmation: '',
+            role_id: user?.role_id || roles[0]?.role_id || 1,
+            department_id: user?.department_id || null,
+            plant_id: user?.plant_id || null,
+            avatar: user?.avatar || '',
+        }),
+        [user, roles],
+    );
 
     const { data, setData, post, put, processing, errors, reset } = useForm<UserSchema>(initialData);
 
     // Load department options for SmartSelect
-    const loadDepartmentOptions = useCallback(async (inputValue: string): Promise<SelectOption[]> => {
-        try {
-            setLoadingDepartments(true);
-            // In a real app, this would be an API call to search departments
-            const filteredDepartments = departments.filter(dept =>
-                dept.department_name.toLowerCase().includes(inputValue.toLowerCase())
-            ).map(dept => ({
-                label: dept.department_name,
-                value: dept.department_id
-            }));
-            return filteredDepartments;
-        } catch (error) {
-            console.error('Error loading departments:', error);
-            return [];
-        } finally {
-            setLoadingDepartments(false);
-        }
-    }, [departments]);
+    const loadDepartmentOptions = useCallback(
+        async (inputValue: string): Promise<SelectOption[]> => {
+            try {
+                setLoadingDepartments(true);
+                // In a real app, this would be an API call to search departments
+                const filteredDepartments = departments
+                    .filter((dept) => dept.department_name.toLowerCase().includes(inputValue.toLowerCase()))
+                    .map((dept) => ({
+                        label: dept.department_name,
+                        value: dept.department_id,
+                    }));
+                return filteredDepartments;
+            } catch (error) {
+                console.error('Error loading departments:', error);
+                return [];
+            } finally {
+                setLoadingDepartments(false);
+            }
+        },
+        [departments],
+    );
 
     // Create department option - similar to location form
     const createDepartmentOption = useCallback(async (inputValue: string): Promise<SelectOption> => {
         try {
             const response = await axios.post(route('admin.departments.create-department'), {
-                name: inputValue
+                name: inputValue,
             });
             toast.success(`Department "${inputValue}" created successfully`);
             return response.data;
@@ -92,30 +98,33 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
     }, []);
 
     // Load plant options for SmartSelect
-    const loadPlantOptions = useCallback(async (inputValue: string): Promise<SelectOption[]> => {
-        try {
-            setLoadingPlants(true);
-            // In a real app, this would be an API call to search plants
-            const filteredPlants = plants.filter(plant =>
-                plant.plant_name.toLowerCase().includes(inputValue.toLowerCase())
-            ).map(plant => ({
-                label: plant.plant_name,
-                value: plant.plant_id
-            }));
-            return filteredPlants;
-        } catch (error) {
-            console.error('Error loading plants:', error);
-            return [];
-        } finally {
-            setLoadingPlants(false);
-        }
-    }, [plants]);
+    const loadPlantOptions = useCallback(
+        async (inputValue: string): Promise<SelectOption[]> => {
+            try {
+                setLoadingPlants(true);
+                // In a real app, this would be an API call to search plants
+                const filteredPlants = plants
+                    .filter((plant) => plant.plant_name.toLowerCase().includes(inputValue.toLowerCase()))
+                    .map((plant) => ({
+                        label: plant.plant_name,
+                        value: plant.plant_id,
+                    }));
+                return filteredPlants;
+            } catch (error) {
+                console.error('Error loading plants:', error);
+                return [];
+            } finally {
+                setLoadingPlants(false);
+            }
+        },
+        [plants],
+    );
 
     // Create plant option
     const createPlantOption = useCallback(async (inputValue: string): Promise<SelectOption> => {
         try {
             const response = await axios.post(route('admin.plants.create-plant'), {
-                name: inputValue
+                name: inputValue,
             });
             toast.success(`Plant "${inputValue}" created successfully`);
             return response.data;
@@ -143,17 +152,19 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
         try {
             setEmailValidating(true);
             const response = await axios.post(route('admin.users.validate-email'), {
-                email: email
+                email: email,
             });
             setEmailValidation(response.data);
         } catch (error: any) {
             console.error('Email validation error:', error);
             setEmailValidation({
                 validation: { is_valid: false, warnings: ['Failed to validate email'] },
-                recommendations: [{
-                    type: 'error',
-                    message: 'Failed to validate email. Please check your connection.'
-                }]
+                recommendations: [
+                    {
+                        type: 'error',
+                        message: 'Failed to validate email. Please check your connection.',
+                    },
+                ],
             });
         } finally {
             setEmailValidating(false);
@@ -174,7 +185,7 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
     // Validate form using Zod
     const validateForm = (): boolean => {
         try {
-            // For editing users, if no password is provided, we create a temporary object 
+            // For editing users, if no password is provided, we create a temporary object
             // without password fields to validate the rest of the form
             let dataToValidate = data;
             if (isEditing && !data.password) {
@@ -252,15 +263,15 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
     };
 
     return (
-        <form onSubmit={submit} className="space-y-6 w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <form onSubmit={submit} className="w-full space-y-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {/* Left column */}
                 <div className="space-y-6">
                     {/* Employee ID field */}
                     <div className="space-y-2">
                         <Label htmlFor="employee_id" className={allErrors.employee_id ? 'text-destructive' : ''}>
                             Employee ID
-                            {!isEditing && <span className="text-xs text-muted-foreground block">(will be auto-generated if not provided)</span>}
+                            {!isEditing && <span className="text-muted-foreground block text-xs">(will be auto-generated if not provided)</span>}
                         </Label>
                         <div className="flex gap-2">
                             <Input
@@ -286,7 +297,7 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
 
                                         try {
                                             const response = await axios.post(route('admin.users.generate-employee-id'), {
-                                                role_id: data.role_id
+                                                role_id: data.role_id,
                                             });
 
                                             if (response.data.success) {
@@ -308,9 +319,7 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                             )}
                         </div>
                         <InputError message={allErrors.employee_id} />
-                        {isEditing && (
-                            <span className="text-xs text-muted-foreground">Employee ID cannot be changed after creation</span>
-                        )}
+                        {isEditing && <span className="text-muted-foreground text-xs">Employee ID cannot be changed after creation</span>}
                     </div>
 
                     {/* Name fields */}
@@ -360,7 +369,7 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
 
                     <div className="space-y-2">
                         <Label htmlFor="email" className={allErrors.email ? 'text-destructive' : ''}>
-                            Email {emailValidating && <span className="text-xs text-muted-foreground">(validating...)</span>}
+                            Email {emailValidating && <span className="text-muted-foreground text-xs">(validating...)</span>}
                         </Label>
                         <Input
                             id="email"
@@ -371,26 +380,26 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                             placeholder="Enter email address (optional)"
                         />
                         <InputError message={allErrors.email} />
-                        
+
                         {/* Email validation feedback */}
                         {emailValidation && emailValidation.recommendations && (
                             <div className="space-y-2">
                                 {emailValidation.recommendations.map((rec: any, index: number) => (
-                                    <Alert 
-                                        key={index} 
+                                    <Alert
+                                        key={index}
                                         variant={rec.type === 'error' ? 'destructive' : rec.type === 'success' ? 'default' : 'default'}
                                         className={`text-sm ${
-                                            rec.type === 'error' ? 'border-red-200 bg-red-50' : 
-                                            rec.type === 'warning' ? 'border-yellow-200 bg-yellow-50' : 
-                                            'border-green-200 bg-green-50'
+                                            rec.type === 'error'
+                                                ? 'border-red-200 bg-red-50'
+                                                : rec.type === 'warning'
+                                                  ? 'border-yellow-200 bg-yellow-50'
+                                                  : 'border-green-200 bg-green-50'
                                         }`}
                                     >
                                         {rec.type === 'error' && <AlertTriangle className="h-4 w-4" />}
                                         {rec.type === 'warning' && <Info className="h-4 w-4" />}
                                         {rec.type === 'success' && <CheckCircle className="h-4 w-4" />}
-                                        <AlertDescription className="text-xs">
-                                            {rec.message}
-                                        </AlertDescription>
+                                        <AlertDescription className="text-xs">{rec.message}</AlertDescription>
                                     </Alert>
                                 ))}
                             </div>
@@ -405,32 +414,26 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                         <div className="space-y-2">
                             <Label htmlFor="password" className={allErrors.password ? 'text-destructive' : ''}>
                                 Password {!isEditing && <span className="text-destructive">*</span>}
-                                {isEditing && <span className="text-xs text-muted-foreground block">(leave blank to keep current)</span>}
+                                {isEditing && <span className="text-muted-foreground block text-xs">(leave blank to keep current)</span>}
                             </Label>
                             <div className="relative">
                                 <Input
                                     id="password"
-                                    type={showPassword ? "text" : "password"}
+                                    type={showPassword ? 'text' : 'password'}
                                     value={data.password}
                                     onChange={(e) => setData('password', e.target.value)}
                                     className={allErrors.password ? 'border-destructive pr-10' : 'pr-10'}
-                                    placeholder={isEditing ? "New password" : "Enter password"}
+                                    placeholder={isEditing ? 'New password' : 'Enter password'}
                                 />
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
-                                    {showPassword ? (
-                                        <EyeOff className="h-4 w-4" />
-                                    ) : (
-                                        <Eye className="h-4 w-4" />
-                                    )}
-                                    <span className="sr-only">
-                                        {showPassword ? "Hide password" : "Show password"}
-                                    </span>
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
                                 </Button>
                             </div>
                             <InputError message={allErrors.password} />
@@ -443,7 +446,7 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                             <div className="relative">
                                 <Input
                                     id="password_confirmation"
-                                    type={showPasswordConfirmation ? "text" : "password"}
+                                    type={showPasswordConfirmation ? 'text' : 'password'}
                                     value={data.password_confirmation}
                                     onChange={(e) => setData('password_confirmation', e.target.value)}
                                     className={allErrors.password_confirmation ? 'border-destructive pr-10' : 'pr-10'}
@@ -453,17 +456,11 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                                     onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
                                 >
-                                    {showPasswordConfirmation ? (
-                                        <EyeOff className="h-4 w-4" />
-                                    ) : (
-                                        <Eye className="h-4 w-4" />
-                                    )}
-                                    <span className="sr-only">
-                                        {showPasswordConfirmation ? "Hide password" : "Show password"}
-                                    </span>
+                                    {showPasswordConfirmation ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    <span className="sr-only">{showPasswordConfirmation ? 'Hide password' : 'Show password'}</span>
                                 </Button>
                             </div>
                             <InputError message={allErrors.password_confirmation} />
@@ -474,17 +471,14 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                         <Label htmlFor="role_id" className={allErrors.role_id ? 'text-destructive' : ''}>
                             Role <span className="text-destructive">*</span>
                         </Label>
-                        <Select
-                            value={data.role_id.toString()}
-                            onValueChange={(value) => setData('role_id', parseInt(value))}
-                        >
+                        <Select value={data.role_id.toString()} onValueChange={(value) => setData('role_id', parseInt(value))}>
                             <SelectTrigger className={allErrors.role_id ? 'border-destructive' : ''}>
                                 <SelectValue placeholder="Select a role" />
                             </SelectTrigger>
                             <SelectContent>
                                 {roles.map((role) => (
                                     <SelectItem key={role.role_id} value={role.role_id.toString()}>
-                                        {role.role_name.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                        {role.role_name.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
                                     </SelectItem>
                                 ))}
                             </SelectContent>

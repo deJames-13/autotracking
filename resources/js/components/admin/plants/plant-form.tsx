@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { type Plant } from '@/types';
 import { useForm } from '@inertiajs/react';
-import { FormEventHandler, useEffect } from 'react';
+import { FormEventHandler } from 'react';
 import { z } from 'zod';
 
 // Define Zod schema for form validation
@@ -39,7 +39,7 @@ export function PlantForm({ plant, onSuccess, onCancel }: PlantFormProps) {
             return [];
         } catch (error) {
             if (error instanceof z.ZodError) {
-                return error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
+                return error.errors.map((err) => `${err.path.join('.')}: ${err.message}`);
             }
             return ['An unexpected error occurred'];
         }

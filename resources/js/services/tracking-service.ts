@@ -1,20 +1,14 @@
+import type { TrackIncoming, TrackOutgoing } from '@/types';
 import axios from 'axios';
-import type { TrackIncoming, TrackOutgoing, TrackingRecord } from '@/types';
 
 // API service for tracking operations
 export class TrackingService {
     // Search incoming calibration requests
-    static async searchIncoming(params: {
-        search?: string;
-        status?: string;
-        department_id?: number;
-        limit?: number;
-        page?: number;
-    }) {
+    static async searchIncoming(params: { search?: string; status?: string; department_id?: number; limit?: number; page?: number }) {
         try {
             const response = await axios.get('/admin/track-incoming/search', {
                 params,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             return response.data;
         } catch (error) {
@@ -24,17 +18,11 @@ export class TrackingService {
     }
 
     // Search outgoing calibration completions
-    static async searchOutgoing(params: {
-        search?: string;
-        status?: string;
-        department_id?: number;
-        limit?: number;
-        page?: number;
-    }) {
+    static async searchOutgoing(params: { search?: string; status?: string; department_id?: number; limit?: number; page?: number }) {
         try {
             const response = await axios.get('/admin/track-outgoing/search', {
                 params,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             return response.data;
         } catch (error) {
@@ -44,16 +32,11 @@ export class TrackingService {
     }
 
     // Legacy search for backward compatibility
-    static async searchTrackingRecords(params: {
-        search?: string;
-        department_id?: number;
-        limit?: number;
-        page?: number;
-    }) {
+    static async searchTrackingRecords(params: { search?: string; department_id?: number; limit?: number; page?: number }) {
         try {
             const response = await axios.get('/admin/tracking-records/search', {
                 params,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             return response.data;
         } catch (error) {
@@ -66,7 +49,7 @@ export class TrackingService {
     static async getPendingIncoming() {
         try {
             const response = await axios.get('/api/v1/track-incoming/pending', {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             return response.data;
         } catch (error) {
@@ -79,7 +62,7 @@ export class TrackingService {
     static async getOverdueIncoming() {
         try {
             const response = await axios.get('/api/v1/track-incoming/overdue', {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             return response.data;
         } catch (error) {
@@ -92,7 +75,7 @@ export class TrackingService {
     static async getDueSoonIncoming() {
         try {
             const response = await axios.get('/api/v1/track-incoming/due-soon', {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             return response.data;
         } catch (error) {
@@ -105,7 +88,7 @@ export class TrackingService {
     static async getReadyForPickup() {
         try {
             const response = await axios.get('/api/v1/track-outgoing/pending', {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             return response.data;
         } catch (error) {
@@ -118,7 +101,7 @@ export class TrackingService {
     static async getIncomingRequest(id: number): Promise<TrackIncoming> {
         try {
             const response = await axios.get(`/api/v1/track-incoming/${id}`, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             return response.data.data;
         } catch (error) {
@@ -131,7 +114,7 @@ export class TrackingService {
     static async getOutgoingCompletion(id: number): Promise<TrackOutgoing> {
         try {
             const response = await axios.get(`/api/v1/track-outgoing/${id}`, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             return response.data.data;
         } catch (error) {
@@ -143,11 +126,15 @@ export class TrackingService {
     // Update incoming request status
     static async updateIncomingStatus(id: number, status: string) {
         try {
-            const response = await axios.patch(`/api/v1/track-incoming/${id}`, {
-                status
-            }, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+            const response = await axios.patch(
+                `/api/v1/track-incoming/${id}`,
+                {
+                    status,
+                },
+                {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                },
+            );
             return response.data;
         } catch (error) {
             console.error('Error updating incoming status:', error);
@@ -156,22 +143,29 @@ export class TrackingService {
     }
 
     // Create outgoing completion from incoming request
-    static async createOutgoingFromIncoming(incomingId: number, data: {
-        cal_date: string;
-        cal_due_date: string;
-        date_out: string;
-        employee_out: number;
-        certificate_number?: string;
-        notes?: string;
-    }) {
+    static async createOutgoingFromIncoming(
+        incomingId: number,
+        data: {
+            cal_date: string;
+            cal_due_date: string;
+            date_out: string;
+            employee_out: number;
+            certificate_number?: string;
+            notes?: string;
+        },
+    ) {
         try {
-            const response = await axios.post('/api/v1/track-outgoing', {
-                ...data,
-                recall_number: '', // Will be populated from incoming request
-                track_incoming_id: incomingId
-            }, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+            const response = await axios.post(
+                '/api/v1/track-outgoing',
+                {
+                    ...data,
+                    recall_number: '', // Will be populated from incoming request
+                    track_incoming_id: incomingId,
+                },
+                {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                },
+            );
             return response.data;
         } catch (error) {
             console.error('Error creating outgoing completion:', error);

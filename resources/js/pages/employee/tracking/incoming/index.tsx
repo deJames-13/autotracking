@@ -3,11 +3,11 @@ import { Input } from '@/components/ui/input';
 import { EmployeeStatusBadge } from '@/components/ui/status-badge';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type TrackIncoming, type PaginationData } from '@/types';
-import { Head, router, useForm, Link } from '@inertiajs/react';
-import { ArrowLeft, Search, Eye, Edit, Plus } from 'lucide-react';
-import { useEffect } from 'react';
+import { type BreadcrumbItem, type PaginationData, type TrackIncoming } from '@/types';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
+import { ArrowLeft, Eye, Plus, Search } from 'lucide-react';
+import { useEffect } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -30,7 +30,7 @@ interface EmployeeTrackingIncomingIndexProps {
 
 const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps> = ({
     filters = {},
-    requests = { data: [], meta: {}, links: {} } as unknown as PaginationData<TrackIncoming>
+    requests = { data: [], meta: {}, links: {} } as unknown as PaginationData<TrackIncoming>,
 }) => {
     const { canSubmitCalibrationRequest } = useRole();
 
@@ -82,7 +82,7 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
             <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
                     <Link href={route('employee.tracking.index')}>
-                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Tracking
                     </Link>
                 </Button>
@@ -101,7 +101,7 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                 {/* Filters */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                         <Input
                             placeholder="Search by recall number, description, or serial number..."
                             value={data.search}
@@ -112,7 +112,7 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                     <select
                         value={data.status}
                         onChange={(e) => setData('status', e.target.value)}
-                        className="px-3 py-2 border border-border rounded-md bg-background"
+                        className="border-border bg-background rounded-md border px-3 py-2"
                     >
                         <option value="">All Statuses</option>
                         <option value="for_confirmation">Awaiting Confirmation</option>
@@ -123,87 +123,77 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
 
                 {/* Requests Table */}
                 {requests && requests.data && requests.data.length > 0 ? (
-                    <div className="border rounded-md overflow-scroll">
-                        <table className="min-w-full divide-y divide-border">
+                    <div className="overflow-scroll rounded-md border">
+                        <table className="divide-border min-w-full divide-y">
                             <thead className="bg-muted">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
                                         Recall #
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
                                         Equipment
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
                                         Serial Number
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
                                         Technician
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
                                         Date Submitted
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
                                         Due Date
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">Status</th>
+                                    <th className="text-muted-foreground px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
                                         Actions
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-card divide-y divide-border">
-                                {requests.data.map(request => (
-                                    <tr key={request.id} className="hover:bg-muted/50" onDoubleClick={() => router.visit(route('employee.tracking.incoming.show', request.id))}>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            {request.recall_number || (
-                                                <span className="text-muted-foreground text-xs">
-                                                    To be assigned
-                                                </span>
-                                            )}
+                            <tbody className="bg-card divide-border divide-y">
+                                {requests.data.map((request) => (
+                                    <tr
+                                        key={request.id}
+                                        className="hover:bg-muted/50"
+                                        onDoubleClick={() => router.visit(route('employee.tracking.incoming.show', request.id))}
+                                    >
+                                        <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
+                                            {request.recall_number || <span className="text-muted-foreground text-xs">To be assigned</span>}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                        <td className="px-6 py-4 text-sm whitespace-nowrap">
                                             <div>
                                                 <div className="font-medium">{request.description}</div>
                                                 {request.manufacturer && request.model && (
-                                                    <div className="text-xs text-muted-foreground">
+                                                    <div className="text-muted-foreground text-xs">
                                                         {request.manufacturer} {request.model}
                                                     </div>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                        <td className="text-muted-foreground px-6 py-4 text-sm whitespace-nowrap">
                                             {request.serial_number || 'N/A'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            {request.technician ? (
-                                                `${request.technician.first_name} ${request.technician.last_name}`
-                                            ) : 'Unassigned'}
+                                        <td className="px-6 py-4 text-sm whitespace-nowrap">
+                                            {request.technician ? `${request.technician.first_name} ${request.technician.last_name}` : 'Unassigned'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                        <td className="text-muted-foreground px-6 py-4 text-sm whitespace-nowrap">
                                             {format(new Date(request.date_in), 'MMM dd, yyyy')}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <span className={
-                                                new Date(request.due_date) < new Date()
-                                                    ? 'text-destructive font-medium'
-                                                    : 'text-muted-foreground'
-                                            }>
+                                        <td className="px-6 py-4 text-sm whitespace-nowrap">
+                                            <span
+                                                className={
+                                                    new Date(request.due_date) < new Date() ? 'text-destructive font-medium' : 'text-muted-foreground'
+                                                }
+                                            >
                                                 {format(new Date(request.due_date), 'MMM dd, yyyy')}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            {getStatusBadge(request.status)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                asChild
-                                            >
+                                        <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(request.status)}</td>
+                                        <td className="space-x-2 px-6 py-4 text-sm whitespace-nowrap">
+                                            <Button variant="outline" size="sm" asChild>
                                                 <Link href={route('employee.tracking.incoming.show', request.id)}>
-                                                    <Eye className="h-3 w-3 mr-1" />
+                                                    <Eye className="mr-1 h-3 w-3" />
                                                     View
                                                 </Link>
                                             </Button>
@@ -228,13 +218,13 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
 
                         {/* Pagination */}
                         {requests && requests.last_page && requests.last_page > 1 && (
-                            <div className="px-6 py-3 bg-muted text-center text-sm text-muted-foreground">
+                            <div className="bg-muted text-muted-foreground px-6 py-3 text-center text-sm">
                                 Showing {requests.from} to {requests.to} of {requests.total} results
                             </div>
                         )}
                     </div>
                 ) : (
-                    <div className="text-center py-12">
+                    <div className="py-12 text-center">
                         <p className="text-muted-foreground">You haven't submitted any calibration requests yet.</p>
                         <Button className="mt-4" onClick={() => router.visit(route('employee.tracking.request.index'))}>
                             <Plus className="mr-2 h-4 w-4" />

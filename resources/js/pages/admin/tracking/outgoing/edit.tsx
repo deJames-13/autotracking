@@ -5,12 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type TrackOutgoing, type User } from '@/types';
+import { type BreadcrumbItem, type TrackOutgoing } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Save, Calendar, User as UserIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { FormEventHandler, useEffect } from 'react';
 import axios from 'axios';
+import { format } from 'date-fns';
+import { ArrowLeft, Calendar, Save, User as UserIcon } from 'lucide-react';
+import { FormEventHandler, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 
 interface TrackingOutgoingEditProps {
@@ -42,7 +42,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
     const { data, setData, processing, errors, reset } = useForm({
         cal_date: format(new Date(trackOutgoing.cal_date), 'yyyy-MM-dd'),
         cal_due_date: format(new Date(trackOutgoing.cal_due_date), 'yyyy-MM-dd'),
-        date_out: format(new Date(trackOutgoing.date_out), 'yyyy-MM-dd\'T\'HH:mm'),
+        date_out: format(new Date(trackOutgoing.date_out), "yyyy-MM-dd'T'HH:mm"),
         cycle_time: trackOutgoing.cycle_time?.toString() || '',
         ct_reqd: trackOutgoing.ct_reqd,
         commit_etc: trackOutgoing.commit_etc,
@@ -80,19 +80,17 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                 <div className="space-y-6 p-2">
                     <Button variant="outline" size="sm" asChild>
                         <Link href={`/admin/tracking/outgoing/${trackOutgoing.id}`}>
-                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Completion Details
                         </Link>
                     </Button>
-                    <div className="text-center py-8">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Cannot Edit Completed Record</h2>
-                        <p className="text-gray-600 mb-6">
+                    <div className="py-8 text-center">
+                        <h2 className="mb-4 text-2xl font-bold text-gray-900">Cannot Edit Completed Record</h2>
+                        <p className="mb-6 text-gray-600">
                             This equipment has already been picked up and cannot be edited. Only administrators can edit completed records.
                         </p>
                         <Button asChild>
-                            <Link href={`/admin/tracking/outgoing/${trackOutgoing.id}`}>
-                                View Details
-                            </Link>
+                            <Link href={`/admin/tracking/outgoing/${trackOutgoing.id}`}>View Details</Link>
                         </Button>
                     </div>
                 </div>
@@ -104,19 +102,23 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
         e.preventDefault();
 
         try {
-            const response = await axios.put(`/api/v1/track-outgoing/${trackOutgoing.id}`, {
-                ...data,
-                recall_number: trackOutgoing.track_incoming?.recall_number,
-                incoming_id: trackOutgoing.incoming_id,
-                employee_id_out: trackOutgoing.employee_out_user?.employee_id,
-                cycle_time: parseInt(data.cycle_time),
-                ct_reqd: data.ct_reqd ? parseInt(data.ct_reqd) : null,
-                commit_etc: data.commit_etc ? parseInt(data.commit_etc) : null,
-                actual_etc: data.actual_etc ? parseInt(data.actual_etc) : null,
-                overdue: data.overdue === 'yes' ? 1 : 0
-            }, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+            const response = await axios.put(
+                `/api/v1/track-outgoing/${trackOutgoing.id}`,
+                {
+                    ...data,
+                    recall_number: trackOutgoing.track_incoming?.recall_number,
+                    incoming_id: trackOutgoing.incoming_id,
+                    employee_id_out: trackOutgoing.employee_out_user?.employee_id,
+                    cycle_time: parseInt(data.cycle_time),
+                    ct_reqd: data.ct_reqd ? parseInt(data.ct_reqd) : null,
+                    commit_etc: data.commit_etc ? parseInt(data.commit_etc) : null,
+                    actual_etc: data.actual_etc ? parseInt(data.actual_etc) : null,
+                    overdue: data.overdue === 'yes' ? 1 : 0,
+                },
+                {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                },
+            );
 
             if (response.data) {
                 toast.success('Outgoing completion updated successfully!');
@@ -129,7 +131,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
             if (error.response?.status === 422 && error.response?.data?.errors) {
                 // Handle validation errors
                 const validationErrors = error.response.data.errors;
-                Object.keys(validationErrors).forEach(field => {
+                Object.keys(validationErrors).forEach((field) => {
                     toast.error(`${field}: ${validationErrors[field][0]}`);
                 });
             } else {
@@ -138,7 +140,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
         }
     };
 
-    console.log(trackOutgoing)
+    console.log(trackOutgoing);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -147,7 +149,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
             <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
                     <Link href={`/admin/tracking/outgoing/${trackOutgoing.id}`}>
-                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Completion Details
                     </Link>
                 </Button>
@@ -184,9 +186,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                         className={errors.cal_date ? 'border-destructive' : ''}
                                         required
                                     />
-                                    {errors.cal_date && (
-                                        <p className="text-sm text-destructive">{errors.cal_date}</p>
-                                    )}
+                                    {errors.cal_date && <p className="text-destructive text-sm">{errors.cal_date}</p>}
                                 </div>
 
                                 <div>
@@ -201,9 +201,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                         className={errors.cal_due_date ? 'border-destructive' : ''}
                                         required
                                     />
-                                    {errors.cal_due_date && (
-                                        <p className="text-sm text-destructive">{errors.cal_due_date}</p>
-                                    )}
+                                    {errors.cal_due_date && <p className="text-destructive text-sm">{errors.cal_due_date}</p>}
                                 </div>
 
                                 <div>
@@ -218,9 +216,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                         className={errors.date_out ? 'border-destructive' : ''}
                                         required
                                     />
-                                    {errors.date_out && (
-                                        <p className="text-sm text-destructive">{errors.date_out}</p>
-                                    )}
+                                    {errors.date_out && <p className="text-destructive text-sm">{errors.date_out}</p>}
                                 </div>
 
                                 <div>
@@ -232,11 +228,9 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                         type="number"
                                         value={data.cycle_time}
                                         min={0}
-                                        onChange={e => setData('cycle_time', e.target.value)}
+                                        onChange={(e) => setData('cycle_time', e.target.value)}
                                     />
-                                    {errors.cycle_time && (
-                                        <p className="text-sm text-destructive">{errors.cycle_time}</p>
-                                    )}
+                                    {errors.cycle_time && <p className="text-destructive text-sm">{errors.cycle_time}</p>}
                                 </div>
                                 <div>
                                     <Label htmlFor="ct_reqd" className="text-sm font-medium">
@@ -247,11 +241,9 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                         type="number"
                                         value={data.ct_reqd || ''}
                                         min={0}
-                                        onChange={e => setData('ct_reqd', e.target.value)}
+                                        onChange={(e) => setData('ct_reqd', e.target.value)}
                                     />
-                                    {errors.ct_reqd && (
-                                        <p className="text-sm text-destructive">{errors.ct_reqd}</p>
-                                    )}
+                                    {errors.ct_reqd && <p className="text-destructive text-sm">{errors.ct_reqd}</p>}
                                 </div>
                                 <div>
                                     <Label htmlFor="commit_etc" className="text-sm font-medium">
@@ -262,11 +254,9 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                         type="number"
                                         value={data.commit_etc || ''}
                                         min={0}
-                                        onChange={e => setData('commit_etc', e.target.value)}
+                                        onChange={(e) => setData('commit_etc', e.target.value)}
                                     />
-                                    {errors.commit_etc && (
-                                        <p className="text-sm text-destructive">{errors.commit_etc}</p>
-                                    )}
+                                    {errors.commit_etc && <p className="text-destructive text-sm">{errors.commit_etc}</p>}
                                 </div>
                                 <div>
                                     <Label htmlFor="actual_etc" className="text-sm font-medium">
@@ -277,19 +267,15 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                         type="number"
                                         value={data.actual_etc || ''}
                                         min={0}
-                                        onChange={e => setData('actual_etc', e.target.value)}
+                                        onChange={(e) => setData('actual_etc', e.target.value)}
                                     />
-                                    {errors.actual_etc && (
-                                        <p className="text-sm text-destructive">{errors.actual_etc}</p>
-                                    )}
+                                    {errors.actual_etc && <p className="text-destructive text-sm">{errors.actual_etc}</p>}
                                 </div>
                                 <div>
                                     <Label htmlFor="overdue" className="text-sm font-medium">
                                         Overdue
                                         {!data.overdue_manual_override && (
-                                            <span className="text-xs text-muted-foreground ml-2">
-                                                (Auto: {calculateAutomatedOverdue()})
-                                            </span>
+                                            <span className="text-muted-foreground ml-2 text-xs">(Auto: {calculateAutomatedOverdue()})</span>
                                         )}
                                     </Label>
                                     <Select
@@ -308,11 +294,11 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                         </SelectContent>
                                     </Select>
                                     {data.overdue_manual_override && (
-                                        <p className="text-xs text-orange-600 mt-1">
+                                        <p className="mt-1 text-xs text-orange-600">
                                             Manual override active.
                                             <button
                                                 type="button"
-                                                className="text-blue-600 hover:underline ml-1"
+                                                className="ml-1 text-blue-600 hover:underline"
                                                 onClick={() => {
                                                     setData('overdue_manual_override', false);
                                                     setData('overdue', calculateAutomatedOverdue());
@@ -322,9 +308,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                             </button>
                                         </p>
                                     )}
-                                    {errors.overdue && (
-                                        <p className="text-sm text-destructive">{errors.overdue}</p>
-                                    )}
+                                    {errors.overdue && <p className="text-destructive text-sm">{errors.overdue}</p>}
                                 </div>
 
                                 <div>
@@ -361,13 +345,11 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                 {trackOutgoing.technician && (
                                     <div>
                                         <Label className="text-sm font-medium">Technician</Label>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-muted-foreground text-sm">
                                             {trackOutgoing.technician.first_name} {trackOutgoing.technician.last_name}
                                         </p>
                                         {trackOutgoing.technician.email && (
-                                            <p className="text-xs text-muted-foreground">
-                                                {trackOutgoing.technician.email}
-                                            </p>
+                                            <p className="text-muted-foreground text-xs">{trackOutgoing.technician.email}</p>
                                         )}
                                     </div>
                                 )}
@@ -375,18 +357,14 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                 {trackOutgoing.released_by && (
                                     <div>
                                         <Label className="text-sm font-medium">Released By (Operator)</Label>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-muted-foreground text-sm">
                                             {trackOutgoing.released_by.first_name} {trackOutgoing.released_by.last_name}
                                         </p>
                                         {trackOutgoing.released_by.email && (
-                                            <p className="text-xs text-muted-foreground">
-                                                {trackOutgoing.released_by.email}
-                                            </p>
+                                            <p className="text-muted-foreground text-xs">{trackOutgoing.released_by.email}</p>
                                         )}
                                         {trackOutgoing.released_by.employee_id && (
-                                            <p className="text-xs text-muted-foreground">
-                                                Employee ID: {trackOutgoing.released_by.employee_id}
-                                            </p>
+                                            <p className="text-muted-foreground text-xs">Employee ID: {trackOutgoing.released_by.employee_id}</p>
                                         )}
                                     </div>
                                 )}
@@ -394,21 +372,17 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                 {trackOutgoing.employee_out && (
                                     <div>
                                         <Label className="text-sm font-medium">Employee Out (Package Recipient)</Label>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-muted-foreground text-sm">
                                             {trackOutgoing.employee_out.first_name} {trackOutgoing.employee_out.last_name}
                                         </p>
                                         {trackOutgoing.employee_out.email && (
-                                            <p className="text-xs text-muted-foreground">
-                                                {trackOutgoing.employee_out.email}
-                                            </p>
+                                            <p className="text-muted-foreground text-xs">{trackOutgoing.employee_out.email}</p>
                                         )}
                                         {trackOutgoing.employee_out.employee_id && (
-                                            <p className="text-xs text-muted-foreground">
-                                                Employee ID: {trackOutgoing.employee_out.employee_id}
-                                            </p>
+                                            <p className="text-muted-foreground text-xs">Employee ID: {trackOutgoing.employee_out.employee_id}</p>
                                         )}
                                         {trackOutgoing.employee_out.department && (
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="text-muted-foreground text-xs">
                                                 Department: {trackOutgoing.employee_out.department.department_name}
                                             </p>
                                         )}
@@ -417,7 +391,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
 
                                 <div>
                                     <Label className="text-sm font-medium">Recall Number</Label>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                         {trackOutgoing.track_incoming?.recall_number || trackOutgoing.incoming_id}
                                     </p>
                                 </div>
@@ -434,35 +408,27 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                             <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                                 <div>
                                     <Label className="text-sm font-medium">Description</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {trackOutgoing.track_incoming.description}
-                                    </p>
+                                    <p className="text-muted-foreground text-sm">{trackOutgoing.track_incoming.description}</p>
                                 </div>
 
                                 {trackOutgoing.track_incoming.serial_number && (
                                     <div>
                                         <Label className="text-sm font-medium">Serial Number</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            {trackOutgoing.track_incoming.serial_number}
-                                        </p>
+                                        <p className="text-muted-foreground text-sm">{trackOutgoing.track_incoming.serial_number}</p>
                                     </div>
                                 )}
 
                                 {trackOutgoing.track_incoming.manufacturer && (
                                     <div>
                                         <Label className="text-sm font-medium">Manufacturer</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            {trackOutgoing.track_incoming.manufacturer}
-                                        </p>
+                                        <p className="text-muted-foreground text-sm">{trackOutgoing.track_incoming.manufacturer}</p>
                                     </div>
                                 )}
 
                                 {trackOutgoing.track_incoming.model && (
                                     <div>
                                         <Label className="text-sm font-medium">Model</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            {trackOutgoing.track_incoming.model}
-                                        </p>
+                                        <p className="text-muted-foreground text-sm">{trackOutgoing.track_incoming.model}</p>
                                     </div>
                                 )}
                             </CardContent>
@@ -472,13 +438,11 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                     {/* Form Actions */}
                     <div className="flex items-center gap-4">
                         <Button type="submit" disabled={processing}>
-                            <Save className="h-4 w-4 mr-2" />
+                            <Save className="mr-2 h-4 w-4" />
                             {processing ? 'Saving...' : 'Save Changes'}
                         </Button>
                         <Button variant="outline" type="button" asChild>
-                            <Link href={`/admin/tracking/outgoing/${trackOutgoing.id}`}>
-                                Cancel
-                            </Link>
+                            <Link href={`/admin/tracking/outgoing/${trackOutgoing.id}`}>Cancel</Link>
                         </Button>
                     </div>
                 </form>

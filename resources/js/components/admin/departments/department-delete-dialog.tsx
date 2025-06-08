@@ -16,7 +16,7 @@ export function DepartmentDeleteDialog({ department, open, onOpenChange, onSucce
         if (!department) return;
 
         console.log('DepartmentDeleteDialog: Archiving department', department.department_id);
-        
+
         router.delete(route('admin.departments.destroy', department.department_id), {
             preserveState: true,
             preserveScroll: true,
@@ -40,7 +40,7 @@ export function DepartmentDeleteDialog({ department, open, onOpenChange, onSucce
 
                 // Generic fallback error
                 toast.error('Failed to archive department. Please try again.');
-            }
+            },
         });
     };
 
@@ -60,11 +60,9 @@ export function DepartmentDeleteDialog({ department, open, onOpenChange, onSucce
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                    <div className="p-4 border rounded-lg bg-muted/50">
-                        <div className="font-medium">
-                            {department.department_name}
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
+                    <div className="bg-muted/50 rounded-lg border p-4">
+                        <div className="font-medium">{department.department_name}</div>
+                        <div className="text-muted-foreground mt-1 text-sm">
                             <div>ID: {department.department_id}</div>
                             <div>Users: {department.users?.length || 0}</div>
                             <div>Locations: {department.locations?.length || 0}</div>

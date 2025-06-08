@@ -9,11 +9,7 @@ interface DepartmentCreateDialogProps {
     onSuccess: (department: Department) => void;
 }
 
-export function DepartmentCreateDialog({
-    open,
-    onOpenChange,
-    onSuccess
-}: DepartmentCreateDialogProps) {
+export function DepartmentCreateDialog({ open, onOpenChange, onSuccess }: DepartmentCreateDialogProps) {
     const handleSuccess = (department?: Department) => {
         console.log('DepartmentCreateDialog: Create successful');
         if (department) {
@@ -28,18 +24,13 @@ export function DepartmentCreateDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md max-h-[85vh]">
+            <DialogContent className="max-h-[85vh] max-w-md">
                 <DialogHeader>
                     <DialogTitle>Create New Department</DialogTitle>
-                    <DialogDescription>
-                        Add a new department to the system.
-                    </DialogDescription>
+                    <DialogDescription>Add a new department to the system.</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] pr-4">
-                    <DepartmentForm
-                        onSuccess={handleSuccess}
-                        onCancel={handleCancel}
-                    />
+                    <DepartmentForm onSuccess={handleSuccess} onCancel={handleCancel} />
                 </ScrollArea>
             </DialogContent>
         </Dialog>

@@ -1,38 +1,33 @@
-import { usePage } from '@inertiajs/react';
-import { Head, router } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import TechnicianTab from '@/components/admin/tracking/request/technician-tab';
 import DetailTab from '@/components/admin/tracking/request/detail-tab';
 import EmployeeSummaryTab from '@/components/admin/tracking/request/employee-summary-tab';
-import { Button } from '@/components/ui/button';
-import { StepIndicator, type Step } from '@/components/ui/step-indicator';
-import { UserCircle2, Wrench, CalendarClock, AlertCircle } from 'lucide-react';
+import TechnicianTab from '@/components/admin/tracking/request/technician-tab';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAppDispatch, useAppSelector } from '@/store/hooks'
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { StepIndicator, type Step } from '@/components/ui/step-indicator';
 import { useRole } from '@/hooks/use-role';
+import { persistor, store } from '@/store';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
-    setRequestType,
+    addCompletedStep,
+    markFormClean,
+    resetForm,
+    setCurrentStep,
+    setReceivedBy,
+    setScannedEmployee,
     setTechnician,
     updateEquipment,
-    updateCalibration,
-    updateConfirmationPin,
-    setCurrentStep,
-    addCompletedStep,
-    resetForm,
-    markFormClean,
-    setScannedEmployee,
-    setReceivedBy,
-    autoFillEmployeeData
-} from '@/store/slices/trackingRequestSlice'
-import { Provider } from 'react-redux'
-import { PersistGate } from 'redux-persist/integration/react'
-import { format } from 'date-fns';
-import { store, persistor } from '@/store'
-import { toast } from 'react-hot-toast';
-import axios from 'axios';
+} from '@/store/slices/trackingRequestSlice';
 import { User } from '@/types';
 import { employeeStepValidationSchemas } from '@/validation/employee-tracking-schema';
+import { Head, router } from '@inertiajs/react';
+import axios from 'axios';
+import { format } from 'date-fns';
+import { AlertCircle, CalendarClock, UserCircle2, Wrench } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
 import { ZodError } from 'zod';
 
 interface EmployeeTrackingRequestIndexProps {
@@ -50,7 +45,7 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
     edit,
     editData,
     currentUserWithRelations,
-    auth
+    auth,
 }) => {
     const dispatch = useAppDispatch();
     const [isEditMode] = useState(!!edit);
@@ -67,8 +62,8 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
         completedSteps,
         isFormDirty,
         scannedEmployee,
-        receivedBy
-    } = useAppSelector(state => state.trackingRequest)
+        receivedBy,
+    } = useAppSelector((state) => state.trackingRequest);
 
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
     const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
@@ -80,7 +75,7 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
         { id: 'summary', name: 'Review & Submit', icon: <CalendarClock className="h-5 w-5" /> },
     ];
 
-    console.log(currentUserWithRelations)
+    console.log(currentUserWithRelations);
 
     // Check if user can submit calibration requests
     useEffect(() => {
@@ -94,36 +89,37 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
         if (currentUserWithRelations && !scannedEmployee) {
             let firstLocation;
             if (currentUserWithRelations?.department?.locations?.length > 0) {
-                firstLocation = currentUserWithRelations?.department?.locations[0]
+                firstLocation = currentUserWithRelations?.department?.locations[0];
             }
             // Set scannedEmployee with complete user data including relationships
-            dispatch(setScannedEmployee({
-                employee_id: currentUserWithRelations.employee_id,
-                user_id: currentUserWithRelations.employee_id, // Use employee_id as user_id for compatibility
-                first_name: currentUserWithRelations.first_name,
-                last_name: currentUserWithRelations.last_name,
-                full_name: currentUserWithRelations.full_name || `${currentUserWithRelations.first_name} ${currentUserWithRelations.last_name}`,
-                email: currentUserWithRelations.email,
-                department_id: currentUserWithRelations.department_id,
-                plant_id: currentUserWithRelations.plant_id,
-                department: currentUserWithRelations.department,
-                plant: currentUserWithRelations.plant,
-                role: currentUserWithRelations.role
-            }));
+            dispatch(
+                setScannedEmployee({
+                    employee_id: currentUserWithRelations.employee_id,
+                    user_id: currentUserWithRelations.employee_id, // Use employee_id as user_id for compatibility
+                    first_name: currentUserWithRelations.first_name,
+                    last_name: currentUserWithRelations.last_name,
+                    full_name: currentUserWithRelations.full_name || `${currentUserWithRelations.first_name} ${currentUserWithRelations.last_name}`,
+                    email: currentUserWithRelations.email,
+                    department_id: currentUserWithRelations.department_id,
+                    plant_id: currentUserWithRelations.plant_id,
+                    department: currentUserWithRelations.department,
+                    plant: currentUserWithRelations.plant,
+                    role: currentUserWithRelations.role,
+                }),
+            );
             if (firstLocation) {
-                dispatch(updateEquipment({
-                    department: currentUserWithRelations.department?.department_id,
-                    plant: currentUserWithRelations.plant?.plant_id,
-                    location: firstLocation.location_id,
-                    location_name: firstLocation.location_name,
-                    processReqRangeStart: '',
-                    processReqRangeEnd: '',
-                    dueDate: format(new Date(), 'yyyy-MM-dd'),
-                }))
-
+                dispatch(
+                    updateEquipment({
+                        department: currentUserWithRelations.department?.department_id,
+                        plant: currentUserWithRelations.plant?.plant_id,
+                        location: firstLocation.location_id,
+                        location_name: firstLocation.location_name,
+                        processReqRangeStart: '',
+                        processReqRangeEnd: '',
+                        dueDate: format(new Date(), 'yyyy-MM-dd'),
+                    }),
+                );
             }
-
-
         }
     }, [currentUserWithRelations, dispatch, scannedEmployee]);
 
@@ -144,59 +140,68 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
 
             // Set technician data
             if (editData.technician) {
-                dispatch(setTechnician({
-                    employee_id: editData.technician.employee_id,
-                    first_name: editData.technician.first_name,
-                    last_name: editData.technician.last_name,
-                    full_name: `${editData.technician.first_name} ${editData.technician.last_name}`,
-                    email: editData.technician.email || '',
-                }));
+                dispatch(
+                    setTechnician({
+                        employee_id: editData.technician.employee_id,
+                        first_name: editData.technician.first_name,
+                        last_name: editData.technician.last_name,
+                        full_name: `${editData.technician.first_name} ${editData.technician.last_name}`,
+                        email: editData.technician.email || '',
+                    }),
+                );
             }
 
             // Set equipment data - more comprehensive approach
-            dispatch(updateEquipment({
-                plant: editData.plant_id || editData.equipment?.plant_id || '',
-                department: editData.department_id || editData.equipment?.department_id || '',
-                location: editData.location?.location_id || '',
-                location_name: editData.location?.location_name || '',
-                description: editData.description || '',
-                serialNumber: editData.serial_number || editData.equipment?.serial_number || '',
-                recallNumber: editData.recall_number || '',
-                model: editData.model || editData.equipment?.model || '',
-                manufacturer: editData.manufacturer || editData.equipment?.manufacturer || '',
-                processReqRangeStart: editData.process_req_range_start || editData.equipment?.process_req_range_start || '',
-                processReqRangeEnd: editData.process_req_range_end || editData.equipment?.process_req_range_end || '',
-                dueDate: editData.due_date ?
-                    format(new Date(editData.due_date), 'yyyy-MM-dd') :
-                    (editData.equipment?.next_calibration_due ?
-                        format(new Date(editData.equipment.next_calibration_due), 'yyyy-MM-dd') : '')
-            }));
+            dispatch(
+                updateEquipment({
+                    plant: editData.plant_id || editData.equipment?.plant_id || '',
+                    department: editData.department_id || editData.equipment?.department_id || '',
+                    location: editData.location?.location_id || '',
+                    location_name: editData.location?.location_name || '',
+                    description: editData.description || '',
+                    serialNumber: editData.serial_number || editData.equipment?.serial_number || '',
+                    recallNumber: editData.recall_number || '',
+                    model: editData.model || editData.equipment?.model || '',
+                    manufacturer: editData.manufacturer || editData.equipment?.manufacturer || '',
+                    processReqRangeStart: editData.process_req_range_start || editData.equipment?.process_req_range_start || '',
+                    processReqRangeEnd: editData.process_req_range_end || editData.equipment?.process_req_range_end || '',
+                    dueDate: editData.due_date
+                        ? format(new Date(editData.due_date), 'yyyy-MM-dd')
+                        : editData.equipment?.next_calibration_due
+                          ? format(new Date(editData.equipment.next_calibration_due), 'yyyy-MM-dd')
+                          : '',
+                }),
+            );
 
             // Set employee data
             if (editData.employee_in) {
-                dispatch(setScannedEmployee({
-                    employee_id: editData.employee_in.employee_id,
-                    first_name: editData.employee_in.first_name,
-                    last_name: editData.employee_in.last_name,
-                    full_name: `${editData.employee_in.first_name} ${editData.employee_in.last_name}`,
-                    email: editData.employee_in.email || '',
-                    department_id: editData.employee_in.department_id,
-                    plant_id: editData.employee_in.plant_id,
-                    department: editData.employee_in.department,
-                    plant: editData.employee_in.plant,
-                    role: editData.employee_in.role
-                }));
+                dispatch(
+                    setScannedEmployee({
+                        employee_id: editData.employee_in.employee_id,
+                        first_name: editData.employee_in.first_name,
+                        last_name: editData.employee_in.last_name,
+                        full_name: `${editData.employee_in.first_name} ${editData.employee_in.last_name}`,
+                        email: editData.employee_in.email || '',
+                        department_id: editData.employee_in.department_id,
+                        plant_id: editData.employee_in.plant_id,
+                        department: editData.employee_in.department,
+                        plant: editData.employee_in.plant,
+                        role: editData.employee_in.role,
+                    }),
+                );
             }
 
             // Set received by data if present
             if (editData.received_by) {
-                dispatch(setReceivedBy({
-                    employee_id: editData.received_by.employee_id,
-                    first_name: editData.received_by.first_name,
-                    last_name: editData.received_by.last_name,
-                    full_name: `${editData.received_by.first_name} ${editData.received_by.last_name}`,
-                    email: editData.received_by.email || '',
-                }));
+                dispatch(
+                    setReceivedBy({
+                        employee_id: editData.received_by.employee_id,
+                        first_name: editData.received_by.first_name,
+                        last_name: editData.received_by.last_name,
+                        full_name: `${editData.received_by.first_name} ${editData.received_by.last_name}`,
+                        email: editData.received_by.email || '',
+                    }),
+                );
             }
 
             // Mark form as clean since we're loading existing data
@@ -225,9 +230,15 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
                     return true;
 
                 case 'details':
-                    console.log(equipment)
-                    if (!equipment.plant || !equipment.department || !equipment.location ||
-                        !equipment.description || !equipment.serialNumber || !equipment.dueDate) {
+                    console.log(equipment);
+                    if (
+                        !equipment.plant ||
+                        !equipment.department ||
+                        !equipment.location ||
+                        !equipment.description ||
+                        !equipment.serialNumber ||
+                        !equipment.dueDate
+                    ) {
                         setValidationMessage('Please fill in all required equipment details.');
                         return false;
                     }
@@ -276,20 +287,20 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
         clearValidationMessage();
 
         // Mark current step as completed in Redux
-        dispatch(addCompletedStep(currentStep))
+        dispatch(addCompletedStep(currentStep));
 
         // Move to next step
-        const currentIndex = steps.findIndex(step => step.id === currentStep);
+        const currentIndex = steps.findIndex((step) => step.id === currentStep);
         if (currentIndex < steps.length - 1) {
-            dispatch(setCurrentStep(steps[currentIndex + 1].id))
+            dispatch(setCurrentStep(steps[currentIndex + 1].id));
         }
     };
 
     // Handle back
     const handleBack = () => {
-        const currentIndex = steps.findIndex(step => step.id === currentStep);
+        const currentIndex = steps.findIndex((step) => step.id === currentStep);
         if (currentIndex > 0) {
-            dispatch(setCurrentStep(steps[currentIndex - 1].id))
+            dispatch(setCurrentStep(steps[currentIndex - 1].id));
         }
     };
 
@@ -308,9 +319,9 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
                     equipment: currentState.equipment,
                     calibration: currentState.calibration,
                     scannedEmployee: currentState.scannedEmployee,
-                    receivedBy: currentState.receivedBy
+                    receivedBy: currentState.receivedBy,
                 },
-                edit_id: edit
+                edit_id: edit,
             });
 
             // Check if the response indicates success
@@ -354,59 +365,68 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
 
             // Set technician data
             if (editData.technician) {
-                dispatch(setTechnician({
-                    employee_id: editData.technician.employee_id,
-                    first_name: editData.technician.first_name,
-                    last_name: editData.technician.last_name,
-                    full_name: `${editData.technician.first_name} ${editData.technician.last_name}`,
-                    email: editData.technician.email || '',
-                }));
+                dispatch(
+                    setTechnician({
+                        employee_id: editData.technician.employee_id,
+                        first_name: editData.technician.first_name,
+                        last_name: editData.technician.last_name,
+                        full_name: `${editData.technician.first_name} ${editData.technician.last_name}`,
+                        email: editData.technician.email || '',
+                    }),
+                );
             }
 
             // Set equipment data - more comprehensive approach
-            dispatch(updateEquipment({
-                plant: editData.plant_id || editData.equipment?.plant_id || '',
-                department: editData.department_id || editData.equipment?.department_id || '',
-                location: editData.location?.location_id || '',
-                location_name: editData.location?.location_name || '',
-                description: editData.description || '',
-                serialNumber: editData.serial_number || editData.equipment?.serial_number || '',
-                recallNumber: editData.recall_number || '',
-                model: editData.model || editData.equipment?.model || '',
-                manufacturer: editData.manufacturer || editData.equipment?.manufacturer || '',
-                processReqRangeStart: editData.process_req_range_start || editData.equipment?.process_req_range_start || '',
-                processReqRangeEnd: editData.process_req_range_end || editData.equipment?.process_req_range_end || '',
-                dueDate: editData.due_date ?
-                    format(new Date(editData.due_date), 'yyyy-MM-dd') :
-                    (editData.equipment?.next_calibration_due ?
-                        format(new Date(editData.equipment.next_calibration_due), 'yyyy-MM-dd') : '')
-            }));
+            dispatch(
+                updateEquipment({
+                    plant: editData.plant_id || editData.equipment?.plant_id || '',
+                    department: editData.department_id || editData.equipment?.department_id || '',
+                    location: editData.location?.location_id || '',
+                    location_name: editData.location?.location_name || '',
+                    description: editData.description || '',
+                    serialNumber: editData.serial_number || editData.equipment?.serial_number || '',
+                    recallNumber: editData.recall_number || '',
+                    model: editData.model || editData.equipment?.model || '',
+                    manufacturer: editData.manufacturer || editData.equipment?.manufacturer || '',
+                    processReqRangeStart: editData.process_req_range_start || editData.equipment?.process_req_range_start || '',
+                    processReqRangeEnd: editData.process_req_range_end || editData.equipment?.process_req_range_end || '',
+                    dueDate: editData.due_date
+                        ? format(new Date(editData.due_date), 'yyyy-MM-dd')
+                        : editData.equipment?.next_calibration_due
+                          ? format(new Date(editData.equipment.next_calibration_due), 'yyyy-MM-dd')
+                          : '',
+                }),
+            );
 
             // Set employee data
             if (editData.employee_in) {
-                dispatch(setScannedEmployee({
-                    employee_id: editData.employee_in.employee_id,
-                    first_name: editData.employee_in.first_name,
-                    last_name: editData.employee_in.last_name,
-                    full_name: `${editData.employee_in.first_name} ${editData.employee_in.last_name}`,
-                    email: editData.employee_in.email || '',
-                    department_id: editData.employee_in.department_id,
-                    plant_id: editData.employee_in.plant_id,
-                    department: editData.employee_in.department,
-                    plant: editData.employee_in.plant,
-                    role: editData.employee_in.role
-                }));
+                dispatch(
+                    setScannedEmployee({
+                        employee_id: editData.employee_in.employee_id,
+                        first_name: editData.employee_in.first_name,
+                        last_name: editData.employee_in.last_name,
+                        full_name: `${editData.employee_in.first_name} ${editData.employee_in.last_name}`,
+                        email: editData.employee_in.email || '',
+                        department_id: editData.employee_in.department_id,
+                        plant_id: editData.employee_in.plant_id,
+                        department: editData.employee_in.department,
+                        plant: editData.employee_in.plant,
+                        role: editData.employee_in.role,
+                    }),
+                );
             }
 
             // Set received by data if present
             if (editData.received_by) {
-                dispatch(setReceivedBy({
-                    employee_id: editData.received_by.employee_id,
-                    first_name: editData.received_by.first_name,
-                    last_name: editData.received_by.last_name,
-                    full_name: `${editData.received_by.first_name} ${editData.received_by.last_name}`,
-                    email: editData.received_by.email || '',
-                }));
+                dispatch(
+                    setReceivedBy({
+                        employee_id: editData.received_by.employee_id,
+                        first_name: editData.received_by.first_name,
+                        last_name: editData.received_by.last_name,
+                        full_name: `${editData.received_by.first_name} ${editData.received_by.last_name}`,
+                        email: editData.received_by.email || '',
+                    }),
+                );
             }
 
             // Mark form as clean since we're loading existing data
@@ -424,13 +444,7 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
 
         switch (currentStep) {
             case 'technician':
-                return (
-                    <TechnicianTab
-                        data={technician}
-                        onChange={(data) => dispatch(setTechnician(data))}
-                        errors={mergedErrors}
-                    />
-                );
+                return <TechnicianTab data={technician} onChange={(data) => dispatch(setTechnician(data))} errors={mergedErrors} />;
 
             case 'details':
                 return (
@@ -454,7 +468,7 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
                             equipment,
                             calibration,
                             scannedEmployee,
-                            receivedBy
+                            receivedBy,
                         }}
                         errors={mergedErrors}
                     />
@@ -465,7 +479,7 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
         }
     };
 
-    const currentStepIndex = steps.findIndex(step => step.id === currentStep);
+    const currentStepIndex = steps.findIndex((step) => step.id === currentStep);
     const isLastStep = currentStepIndex === steps.length - 1;
 
     // Return null if user doesn't have permission
@@ -479,62 +493,41 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
 
             <div className="container mx-auto py-6">
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">
-                        {edit ? 'Edit Tracking Request' : 'New Tracking Request'}
-                    </h1>
-                    <p className="text-gray-600 mt-2">
-                        {edit
-                            ? 'Modify your equipment calibration request details.'
-                            : 'Submit a new equipment calibration request.'
-                        }
+                    <h1 className="text-3xl font-bold text-gray-900">{edit ? 'Edit Tracking Request' : 'New Tracking Request'}</h1>
+                    <p className="mt-2 text-gray-600">
+                        {edit ? 'Modify your equipment calibration request details.' : 'Submit a new equipment calibration request.'}
                     </p>
                 </div>
 
                 {/* Step Indicator */}
                 <div className="mb-8">
-                    <StepIndicator
-                        steps={steps}
-                        currentStep={currentStep}
-                        completedSteps={completedSteps}
-                    />
+                    <StepIndicator steps={steps} currentStep={currentStep} completedSteps={completedSteps} />
                 </div>
 
                 {/* Validation Message */}
                 {validationMessage && (
                     <Alert className="mb-6 border-red-200 bg-red-50">
                         <AlertCircle className="h-4 w-4 text-red-600" />
-                        <AlertDescription className="text-red-800">
-                            {validationMessage}
-                        </AlertDescription>
+                        <AlertDescription className="text-red-800">{validationMessage}</AlertDescription>
                     </Alert>
                 )}
 
                 {/* Main Content */}
                 <Card>
-                    <CardContent className="p-6">
-                        {renderStepContent()}
-                    </CardContent>
+                    <CardContent className="p-6">{renderStepContent()}</CardContent>
                 </Card>
 
                 {/* Navigation Buttons */}
-                <div className="flex justify-between mt-6">
-                    <Button
-                        variant="outline"
-                        onClick={handleBack}
-                        disabled={currentStepIndex === 0}
-                    >
+                <div className="mt-6 flex justify-between">
+                    <Button variant="outline" onClick={handleBack} disabled={currentStepIndex === 0}>
                         Back
                     </Button>
 
                     <div className="space-x-3">
                         {!isLastStep ? (
-                            <Button onClick={handleNext}>
-                                Next
-                            </Button>
+                            <Button onClick={handleNext}>Next</Button>
                         ) : (
-                            <Button onClick={handleSubmit}>
-                                {edit ? 'Update Request' : 'Submit Request'}
-                            </Button>
+                            <Button onClick={handleSubmit}>{edit ? 'Update Request' : 'Submit Request'}</Button>
                         )}
                     </div>
                 </div>

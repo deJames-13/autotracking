@@ -13,7 +13,7 @@ export function DepartmentViewDialog({ department, open, onOpenChange }: Departm
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-lg max-h-[85vh]">
+            <DialogContent className="max-h-[85vh] max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Department Details</DialogTitle>
                 </DialogHeader>
@@ -21,32 +21,28 @@ export function DepartmentViewDialog({ department, open, onOpenChange }: Departm
                     <div className="space-y-6">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Department ID</label>
+                                <label className="text-muted-foreground text-sm font-medium">Department ID</label>
                                 <p className="text-sm">{department.department_id}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Department Name</label>
+                                <label className="text-muted-foreground text-sm font-medium">Department Name</label>
                                 <p className="text-sm">{department.department_name}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Total Users</label>
+                                <label className="text-muted-foreground text-sm font-medium">Total Users</label>
                                 <p className="text-sm">{department.users?.length || 0} users</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Total Locations</label>
+                                <label className="text-muted-foreground text-sm font-medium">Total Locations</label>
                                 <p className="text-sm">{department.locations?.length || 0} locations</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Created</label>
-                                <p className="text-sm">
-                                    {new Date(department.created_at).toLocaleString()}
-                                </p>
+                                <label className="text-muted-foreground text-sm font-medium">Created</label>
+                                <p className="text-sm">{new Date(department.created_at).toLocaleString()}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
-                                <p className="text-sm">
-                                    {new Date(department.updated_at).toLocaleString()}
-                                </p>
+                                <label className="text-muted-foreground text-sm font-medium">Last Updated</label>
+                                <p className="text-sm">{new Date(department.updated_at).toLocaleString()}</p>
                             </div>
                         </div>
                     </div>

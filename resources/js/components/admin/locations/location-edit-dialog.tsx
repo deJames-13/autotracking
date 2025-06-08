@@ -11,13 +11,7 @@ interface LocationEditDialogProps {
     onSuccess: () => void;
 }
 
-export function LocationEditDialog({
-    location,
-    departments,
-    open,
-    onOpenChange,
-    onSuccess
-}: LocationEditDialogProps) {
+export function LocationEditDialog({ location, departments, open, onOpenChange, onSuccess }: LocationEditDialogProps) {
     const handleSuccess = () => {
         console.log('LocationEditDialog: Edit successful, calling onSuccess');
         onOpenChange(false);
@@ -32,20 +26,13 @@ export function LocationEditDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md max-h-[85vh]">
+            <DialogContent className="max-h-[85vh] max-w-md">
                 <DialogHeader>
                     <DialogTitle>Edit Location</DialogTitle>
-                    <DialogDescription>
-                        Update location information.
-                    </DialogDescription>
+                    <DialogDescription>Update location information.</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] pr-4">
-                    <LocationForm
-                        location={location}
-                        departments={departments}
-                        onSuccess={handleSuccess}
-                        onCancel={handleCancel}
-                    />
+                    <LocationForm location={location} departments={departments} onSuccess={handleSuccess} onCancel={handleCancel} />
                 </ScrollArea>
             </DialogContent>
         </Dialog>

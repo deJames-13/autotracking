@@ -1,19 +1,11 @@
+import { cn } from '@/lib/utils'; // Assuming you have a cn utility for class name merging
 import { HTMLAttributes, SVGAttributes } from 'react';
 import logo from '../assets/logo.png';
-import { cn } from '@/lib/utils'; // Assuming you have a cn utility for class name merging
-
 
 export function AmkorLogoImage({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
     return (
-        <div
-            className={cn("flex items-center justify-center", className)}
-            {...props}
-        >
-            <img
-                src={logo}
-                alt="Amkor Logo"
-                className="h-auto w-auto object-contain max-h-10"
-            />
+        <div className={cn('flex items-center justify-center', className)} {...props}>
+            <img src={logo} alt="Amkor Logo" className="h-auto max-h-10 w-auto object-contain" />
         </div>
     );
 }

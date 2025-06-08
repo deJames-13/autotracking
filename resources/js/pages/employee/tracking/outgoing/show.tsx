@@ -1,25 +1,16 @@
-import { Button } from '@/components/ui/button';
+import { PickupConfirmationModal } from '@/components/employee/tracking/pickup-confirmation-modal';
 import { Badge } from '@/components/ui/badge';
-import { EmployeeStatusBadge } from '@/components/ui/status-badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { EmployeeStatusBadge } from '@/components/ui/status-badge';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackOutgoing } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    Package,
-    Calendar,
-    User,
-    FileText,
-    CheckCircle,
-    AlertTriangle,
-    Eye
-} from 'lucide-react';
 import { format } from 'date-fns';
+import { AlertTriangle, ArrowLeft, Calendar, CheckCircle, Eye, Package, User } from 'lucide-react';
 import { useState } from 'react';
-import { PickupConfirmationModal } from '@/components/employee/tracking/pickup-confirmation-modal';
 
 interface EmployeeTrackingOutgoingShowProps {
     trackOutgoing: TrackOutgoing;
@@ -27,7 +18,7 @@ interface EmployeeTrackingOutgoingShowProps {
 
 const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> = ({ trackOutgoing }) => {
     if (!trackOutgoing) {
-        return router.visit(route('employee.tracking.outgoing.index'))
+        return router.visit(route('employee.tracking.outgoing.index'));
     }
 
     const { canSubmitCalibrationRequest } = useRole();
@@ -78,7 +69,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
             <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
                     <Link href={route('employee.tracking.outgoing.index')}>
-                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Ready for Pickup
                     </Link>
                 </Button>
@@ -86,9 +77,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold tracking-tight">
-                                Pickup: {trackOutgoing.track_incoming?.recall_number}
-                            </h1>
+                            <h1 className="text-3xl font-bold tracking-tight">Pickup: {trackOutgoing.track_incoming?.recall_number}</h1>
                             <p className="text-muted-foreground">Calibration completion details</p>
                         </div>
                     </div>
@@ -96,7 +85,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                         {getStatusBadge()}
                         {isRecalibrationDue() && (
                             <Badge variant="destructive">
-                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                <AlertTriangle className="mr-1 h-3 w-3" />
                                 Recalibration Due
                             </Badge>
                         )}
@@ -126,7 +115,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                         <CardContent className="space-y-4">
                             <div>
                                 <Label className="text-sm font-medium">Description</Label>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-muted-foreground text-sm">
                                     {trackOutgoing.track_incoming?.description || trackOutgoing.equipment?.description || 'N/A'}
                                 </p>
                             </div>
@@ -134,27 +123,21 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                             {trackOutgoing.track_incoming?.serial_number && (
                                 <div>
                                     <Label className="text-sm font-medium">Serial Number</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {trackOutgoing.track_incoming.serial_number}
-                                    </p>
+                                    <p className="text-muted-foreground text-sm">{trackOutgoing.track_incoming.serial_number}</p>
                                 </div>
                             )}
 
                             {trackOutgoing.track_incoming?.manufacturer && (
                                 <div>
                                     <Label className="text-sm font-medium">Manufacturer</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {trackOutgoing.track_incoming.manufacturer}
-                                    </p>
+                                    <p className="text-muted-foreground text-sm">{trackOutgoing.track_incoming.manufacturer}</p>
                                 </div>
                             )}
 
                             {trackOutgoing.track_incoming?.model && (
                                 <div>
                                     <Label className="text-sm font-medium">Model</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {trackOutgoing.track_incoming.model}
-                                    </p>
+                                    <p className="text-muted-foreground text-sm">{trackOutgoing.track_incoming.model}</p>
                                 </div>
                             )}
                         </CardContent>
@@ -172,19 +155,14 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                             {trackOutgoing.cal_date && (
                                 <div>
                                     <Label className="text-sm font-medium">Calibration Date</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {format(new Date(trackOutgoing.cal_date), 'MMMM dd, yyyy')}
-                                    </p>
+                                    <p className="text-muted-foreground text-sm">{format(new Date(trackOutgoing.cal_date), 'MMMM dd, yyyy')}</p>
                                 </div>
                             )}
 
                             {trackOutgoing.cal_due_date && (
                                 <div>
                                     <Label className="text-sm font-medium">Next Due Date</Label>
-                                    <p className={`text-sm ${isRecalibrationDue()
-                                            ? 'text-destructive font-medium'
-                                            : 'text-muted-foreground'
-                                        }`}>
+                                    <p className={`text-sm ${isRecalibrationDue() ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                                         {format(new Date(trackOutgoing.cal_due_date), 'MMMM dd, yyyy')}
                                         {isRecalibrationDue() && ' (Overdue)'}
                                     </p>
@@ -203,9 +181,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                             {trackOutgoing.cycle_time != undefined && (
                                 <div>
                                     <Label className="text-sm font-medium">Cycle Time</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {trackOutgoing.cycle_time} days
-                                    </p>
+                                    <p className="text-muted-foreground text-sm">{trackOutgoing.cycle_time} days</p>
                                 </div>
                             )}
                         </CardContent>
@@ -223,13 +199,11 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                             {trackOutgoing.technician && (
                                 <div>
                                     <Label className="text-sm font-medium">Technician</Label>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                         {trackOutgoing.technician.first_name} {trackOutgoing.technician.last_name}
                                     </p>
                                     {trackOutgoing.technician.email && (
-                                        <p className="text-xs text-muted-foreground">
-                                            {trackOutgoing.technician.email}
-                                        </p>
+                                        <p className="text-muted-foreground text-xs">{trackOutgoing.technician.email}</p>
                                     )}
                                 </div>
                             )}
@@ -237,18 +211,14 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                             {trackOutgoing.released_by && (
                                 <div>
                                     <Label className="text-sm font-medium">Released By (Operator)</Label>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                         {trackOutgoing.released_by.first_name} {trackOutgoing.released_by.last_name}
                                     </p>
                                     {trackOutgoing.released_by.email && (
-                                        <p className="text-xs text-muted-foreground">
-                                            {trackOutgoing.released_by.email}
-                                        </p>
+                                        <p className="text-muted-foreground text-xs">{trackOutgoing.released_by.email}</p>
                                     )}
                                     {trackOutgoing.released_by.employee_id && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Employee ID: {trackOutgoing.released_by.employee_id}
-                                        </p>
+                                        <p className="text-muted-foreground text-xs">Employee ID: {trackOutgoing.released_by.employee_id}</p>
                                     )}
                                 </div>
                             )}
@@ -256,21 +226,17 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                             {trackOutgoing.employee_out && (
                                 <div>
                                     <Label className="text-sm font-medium">Employee Out (Package Recipient)</Label>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                         {trackOutgoing.employee_out.first_name} {trackOutgoing.employee_out.last_name}
                                     </p>
                                     {trackOutgoing.employee_out.email && (
-                                        <p className="text-xs text-muted-foreground">
-                                            {trackOutgoing.employee_out.email}
-                                        </p>
+                                        <p className="text-muted-foreground text-xs">{trackOutgoing.employee_out.email}</p>
                                     )}
                                     {trackOutgoing.employee_out.employee_id && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Employee ID: {trackOutgoing.employee_out.employee_id}
-                                        </p>
+                                        <p className="text-muted-foreground text-xs">Employee ID: {trackOutgoing.employee_out.employee_id}</p>
                                     )}
                                     {trackOutgoing.employee_out.department && (
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-muted-foreground text-xs">
                                             Department: {trackOutgoing.employee_out.department.department_name}
                                         </p>
                                     )}
@@ -280,7 +246,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                             {trackOutgoing.track_incoming?.employee_in && (
                                 <div>
                                     <Label className="text-sm font-medium">Originally Submitted By</Label>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                         {trackOutgoing.track_incoming.employee_in.first_name} {trackOutgoing.track_incoming.employee_in.last_name}
                                     </p>
                                 </div>
@@ -305,16 +271,14 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                             {trackOutgoing.date_out && (
                                 <div>
                                     <Label className="text-sm font-medium">Date Available</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {format(new Date(trackOutgoing.date_out), 'MMMM dd, yyyy HH:mm')}
-                                    </p>
+                                    <p className="text-muted-foreground text-sm">{format(new Date(trackOutgoing.date_out), 'MMMM dd, yyyy HH:mm')}</p>
                                 </div>
                             )}
 
                             {trackOutgoing.status === 'completed' && trackOutgoing.pickup_date && (
                                 <div>
                                     <Label className="text-sm font-medium">Pickup Date</Label>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                         {format(new Date(trackOutgoing.pickup_date), 'MMMM dd, yyyy HH:mm')}
                                     </p>
                                 </div>
@@ -328,26 +292,20 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                     <Card>
                         <CardHeader>
                             <CardTitle>Related Request</CardTitle>
-                            <CardDescription>
-                                View the original incoming calibration request
-                            </CardDescription>
+                            <CardDescription>View the original incoming calibration request</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="font-medium">
-                                        Incoming Request: {trackOutgoing.track_incoming.recall_number}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        Status: {trackOutgoing.track_incoming.status}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="font-medium">Incoming Request: {trackOutgoing.track_incoming.recall_number}</p>
+                                    <p className="text-muted-foreground text-sm">Status: {trackOutgoing.track_incoming.status}</p>
+                                    <p className="text-muted-foreground text-sm">
                                         Submitted: {format(new Date(trackOutgoing.track_incoming.date_in), 'MMM dd, yyyy')}
                                     </p>
                                 </div>
                                 <Button variant="outline" asChild>
                                     <Link href={route('employee.tracking.incoming.show', trackOutgoing.track_incoming.id)}>
-                                        <Eye className="h-4 w-4 mr-2" />
+                                        <Eye className="mr-2 h-4 w-4" />
                                         View Request Details
                                     </Link>
                                 </Button>
@@ -373,7 +331,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                         <CardHeader>
                             <CardTitle className="text-blue-800">Pickup Completed</CardTitle>
                             <CardDescription className="text-blue-700">
-                                You have successfully picked up this equipment. The next calibration is due on {' '}
+                                You have successfully picked up this equipment. The next calibration is due on{' '}
                                 {trackOutgoing.cal_due_date && format(new Date(trackOutgoing.cal_due_date), 'MMMM dd, yyyy')}.
                             </CardDescription>
                         </CardHeader>
@@ -383,7 +341,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                 {isRecalibrationDue() && (
                     <Card className="border-red-200 bg-red-50">
                         <CardHeader>
-                            <CardTitle className="text-red-800 flex items-center gap-2">
+                            <CardTitle className="flex items-center gap-2 text-red-800">
                                 <AlertTriangle className="h-4 w-4" />
                                 Recalibration Due
                             </CardTitle>
@@ -393,9 +351,7 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                         </CardHeader>
                         <CardContent>
                             <Button asChild>
-                                <Link href={route('employee.tracking.request.index')}>
-                                    Submit Recalibration Request
-                                </Link>
+                                <Link href={route('employee.tracking.request.index')}>Submit Recalibration Request</Link>
                             </Button>
                         </CardContent>
                     </Card>

@@ -280,4 +280,3 @@ export interface TrackingFilters {
     date_from?: string;
     date_to?: string;
 }
-

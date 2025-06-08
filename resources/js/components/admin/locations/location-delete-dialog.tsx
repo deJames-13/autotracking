@@ -36,7 +36,7 @@ export function LocationDeleteDialog({ location, open, onOpenChange, onSuccess }
                 } else {
                     toast.error('Failed to archive location. Please try again.');
                 }
-            }
+            },
         });
     };
 
@@ -51,16 +51,12 @@ export function LocationDeleteDialog({ location, open, onOpenChange, onSuccess }
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle>Archive Location</DialogTitle>
-                    <DialogDescription>
-                        Are you sure you want to archive this location? You can restore it later if needed.
-                    </DialogDescription>
+                    <DialogDescription>Are you sure you want to archive this location? You can restore it later if needed.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                    <div className="p-4 border rounded-lg bg-muted/50">
-                        <div className="font-medium">
-                            {location.location_name}
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
+                    <div className="bg-muted/50 rounded-lg border p-4">
+                        <div className="font-medium">{location.location_name}</div>
+                        <div className="text-muted-foreground mt-1 text-sm">
                             <div>ID: {location.location_id}</div>
                             <div>Department: {location.department?.department_name || 'No department'}</div>
                             <div>Track Incoming: {location.track_incoming?.length || 0}</div>

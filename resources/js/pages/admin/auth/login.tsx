@@ -1,4 +1,4 @@
-import { Head, useForm, Link } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
@@ -36,10 +36,7 @@ export default function AdminLogin({ status, canResetPassword }: AdminLoginProps
     };
 
     return (
-        <AuthSplitLayout 
-            title="Admin Access" 
-            description="Sign in to access the administrative dashboard"
-        >
+        <AuthSplitLayout title="Admin Access" description="Sign in to access the administrative dashboard">
             <Head title="Admin Login" />
 
             <form className="flex flex-col gap-6" onSubmit={submit}>

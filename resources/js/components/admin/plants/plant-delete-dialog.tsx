@@ -16,7 +16,7 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
         if (!plant) return;
 
         console.log('PlantDeleteDialog: Archiving plant', plant.plant_id);
-        
+
         router.delete(route('admin.plants.destroy', plant.plant_id), {
             preserveState: true,
             preserveScroll: true,
@@ -40,7 +40,7 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
 
                 // Generic fallback error
                 toast.error('Failed to archive plant. Please try again.');
-            }
+            },
         });
     };
 
@@ -60,11 +60,9 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                    <div className="p-4 border rounded-lg bg-muted/50">
-                        <div className="font-medium">
-                            {plant.plant_name}
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
+                    <div className="bg-muted/50 rounded-lg border p-4">
+                        <div className="font-medium">{plant.plant_name}</div>
+                        <div className="text-muted-foreground mt-1 text-sm">
                             <div>ID: {plant.plant_id}</div>
                             {plant.address && <div>Address: {plant.address}</div>}
                             {plant.telephone && <div>Telephone: {plant.telephone}</div>}

@@ -1,13 +1,13 @@
+import { TrackIncomingTable } from '@/components/admin/tracking/track-incoming-table';
 import { Button } from '@/components/ui/button';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type TrackIncoming, type PaginationData, type User, type Location } from '@/types';
+import { type BreadcrumbItem, type Location, type PaginationData, type TrackIncoming, type User } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
-import { TrackIncomingTable } from '@/components/admin/tracking/track-incoming-table';
-import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import { Plus } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -30,10 +30,7 @@ interface TrackingIncomingIndexProps {
     };
 }
 
-const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
-    requests,
-    filterOptions
-}) => {
+const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({ requests, filterOptions }) => {
     const { canManageRequestIncoming } = useRole();
     const [loading, setLoading] = useState(false);
     const [trackIncoming, setTrackIncoming] = useState(requests);
@@ -63,21 +60,24 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
     };
 
     // DataTable event handlers
-    const handleSearch = useCallback(async (search: string) => {
-        setLoading(true);
-        const params = { ...currentFilters, search };
-        setCurrentFilters(params);
+    const handleSearch = useCallback(
+        async (search: string) => {
+            setLoading(true);
+            const params = { ...currentFilters, search };
+            setCurrentFilters(params);
 
-        try {
-            const response = await axios.get(route('admin.tracking.incoming.table-data'), { params });
-            setTrackIncoming(response.data);
-        } catch (error) {
-            toast.error('Failed to search data');
-            console.error('Search error:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [currentFilters]);
+            try {
+                const response = await axios.get(route('admin.tracking.incoming.table-data'), { params });
+                setTrackIncoming(response.data);
+            } catch (error) {
+                toast.error('Failed to search data');
+                console.error('Search error:', error);
+            } finally {
+                setLoading(false);
+            }
+        },
+        [currentFilters],
+    );
 
     const handleFilter = useCallback(async (filters: Record<string, any>) => {
         setLoading(true);
@@ -94,36 +94,42 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({
         }
     }, []);
 
-    const handlePageChange = useCallback(async (page: number) => {
-        setLoading(true);
-        const params = { ...currentFilters, page };
+    const handlePageChange = useCallback(
+        async (page: number) => {
+            setLoading(true);
+            const params = { ...currentFilters, page };
 
-        try {
-            const response = await axios.get(route('admin.tracking.incoming.table-data'), { params });
-            setTrackIncoming(response.data);
-        } catch (error) {
-            toast.error('Failed to change page');
-            console.error('Page change error:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [currentFilters]);
+            try {
+                const response = await axios.get(route('admin.tracking.incoming.table-data'), { params });
+                setTrackIncoming(response.data);
+            } catch (error) {
+                toast.error('Failed to change page');
+                console.error('Page change error:', error);
+            } finally {
+                setLoading(false);
+            }
+        },
+        [currentFilters],
+    );
 
-    const handlePerPageChange = useCallback(async (perPage: number) => {
-        setLoading(true);
-        const params = { ...currentFilters, per_page: perPage, page: 1 };
-        setCurrentFilters(params);
+    const handlePerPageChange = useCallback(
+        async (perPage: number) => {
+            setLoading(true);
+            const params = { ...currentFilters, per_page: perPage, page: 1 };
+            setCurrentFilters(params);
 
-        try {
-            const response = await axios.get(route('admin.tracking.incoming.table-data'), { params });
-            setTrackIncoming(response.data);
-        } catch (error) {
-            toast.error('Failed to change page size');
-            console.error('Per page change error:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [currentFilters]);
+            try {
+                const response = await axios.get(route('admin.tracking.incoming.table-data'), { params });
+                setTrackIncoming(response.data);
+            } catch (error) {
+                toast.error('Failed to change page size');
+                console.error('Per page change error:', error);
+            } finally {
+                setLoading(false);
+            }
+        },
+        [currentFilters],
+    );
 
     const handleRefresh = useCallback(async () => {
         setLoading(true);

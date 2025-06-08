@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { DataTable } from '@/components/ui/data-table';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DataTable } from '@/components/ui/data-table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Eye, FileDown, AlertCircle, CheckCircle2, Calendar, MapPin, User } from 'lucide-react';
-import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { AlertCircle, Calendar, CheckCircle2, Eye, FileDown, MapPin, User } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface Equipment {
     equipment_id: string;
@@ -79,7 +79,7 @@ const RequestInfoModal: React.FC<{ record: TrackingRecord }> = ({ record }) => {
             {/* Equipment Information */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
                         <AlertCircle className="h-5 w-5" />
                         Equipment Information
                     </CardTitle>
@@ -87,26 +87,26 @@ const RequestInfoModal: React.FC<{ record: TrackingRecord }> = ({ record }) => {
                 <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-sm font-medium text-muted-foreground">Recall Number</label>
+                            <label className="text-muted-foreground text-sm font-medium">Recall Number</label>
                             <p className="font-mono">{record.recall_number}</p>
                         </div>
                         <div>
-                            <label className="text-sm font-medium text-muted-foreground">Serial Number</label>
+                            <label className="text-muted-foreground text-sm font-medium">Serial Number</label>
                             <p className="font-mono">{record.equipment?.serial_number}</p>
                         </div>
                         <div className="col-span-2">
-                            <label className="text-sm font-medium text-muted-foreground">Description</label>
+                            <label className="text-muted-foreground text-sm font-medium">Description</label>
                             <p>{record.equipment?.description}</p>
                         </div>
                         {record.equipment?.model && (
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Model</label>
+                                <label className="text-muted-foreground text-sm font-medium">Model</label>
                                 <p>{record.equipment.model}</p>
                             </div>
                         )}
                         {record.equipment?.manufacturer && (
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Manufacturer</label>
+                                <label className="text-muted-foreground text-sm font-medium">Manufacturer</label>
                                 <p>{record.equipment.manufacturer}</p>
                             </div>
                         )}
@@ -117,7 +117,7 @@ const RequestInfoModal: React.FC<{ record: TrackingRecord }> = ({ record }) => {
             {/* Request Details */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
                         <Calendar className="h-5 w-5" />
                         Request Details
                     </CardTitle>
@@ -125,28 +125,30 @@ const RequestInfoModal: React.FC<{ record: TrackingRecord }> = ({ record }) => {
                 <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-sm font-medium text-muted-foreground">Status</label>
+                            <label className="text-muted-foreground text-sm font-medium">Status</label>
                             <div>
-                            <Badge variant={record.status === 'completed' ? 'default' : 'secondary'}>
-                                {record.status.replace('_', ' ').toUpperCase()}
-                            </Badge>
+                                <Badge variant={record.status === 'completed' ? 'default' : 'secondary'}>
+                                    {record.status.replace('_', ' ').toUpperCase()}
+                                </Badge>
                             </div>
                         </div>
                         {record.date_in && (
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Date In</label>
+                                <label className="text-muted-foreground text-sm font-medium">Date In</label>
                                 <p>{format(new Date(record.date_in), 'MMM dd, yyyy HH:mm')}</p>
                             </div>
                         )}
                         {record.technician && (
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Assigned Technician</label>
-                                <p>{record.technician.first_name} {record.technician.last_name}</p>
+                                <label className="text-muted-foreground text-sm font-medium">Assigned Technician</label>
+                                <p>
+                                    {record.technician.first_name} {record.technician.last_name}
+                                </p>
                             </div>
                         )}
                         {record.location && (
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Location</label>
+                                <label className="text-muted-foreground text-sm font-medium">Location</label>
                                 <p className="flex items-center gap-1">
                                     <MapPin className="h-4 w-4" />
                                     {record.location.location_name}
@@ -155,7 +157,7 @@ const RequestInfoModal: React.FC<{ record: TrackingRecord }> = ({ record }) => {
                         )}
                         {record.employee_in && (
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Received By</label>
+                                <label className="text-muted-foreground text-sm font-medium">Received By</label>
                                 <p className="flex items-center gap-1">
                                     <User className="h-4 w-4" />
                                     {record.employee_in.first_name} {record.employee_in.last_name}
@@ -175,7 +177,7 @@ const CompletionModal: React.FC<{ record: TrackingRecord }> = ({ record }) => {
             {/* Completion Status */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
                         <CheckCircle2 className="h-5 w-5" />
                         Completion Information
                     </CardTitle>
@@ -184,31 +186,31 @@ const CompletionModal: React.FC<{ record: TrackingRecord }> = ({ record }) => {
                     <div className="grid grid-cols-2 gap-4">
                         {record.date_out && (
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Date Out</label>
+                                <label className="text-muted-foreground text-sm font-medium">Date Out</label>
                                 <p>{format(new Date(record.date_out), 'MMM dd, yyyy HH:mm')}</p>
                             </div>
                         )}
                         {record.cal_date && (
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Calibration Date</label>
+                                <label className="text-muted-foreground text-sm font-medium">Calibration Date</label>
                                 <p>{format(new Date(record.cal_date), 'MMM dd, yyyy')}</p>
                             </div>
                         )}
                         {record.cal_due_date && (
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Next Calibration Due</label>
+                                <label className="text-muted-foreground text-sm font-medium">Next Calibration Due</label>
                                 <p>{format(new Date(record.cal_due_date), 'MMM dd, yyyy')}</p>
                             </div>
                         )}
                         {record.cycle_time && (
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Cycle Time (hours)</label>
+                                <label className="text-muted-foreground text-sm font-medium">Cycle Time (hours)</label>
                                 <p>{record.cycle_time}</p>
                             </div>
                         )}
                         {record.employee_out && (
                             <div>
-                                <label className="text-sm font-medium text-muted-foreground">Released By</label>
+                                <label className="text-muted-foreground text-sm font-medium">Released By</label>
                                 <p className="flex items-center gap-1">
                                     <User className="h-4 w-4" />
                                     {record.employee_out.first_name} {record.employee_out.last_name}
@@ -227,15 +229,15 @@ const CompletionModal: React.FC<{ record: TrackingRecord }> = ({ record }) => {
                 <CardContent>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-sm font-medium text-muted-foreground">Recall Number</label>
+                            <label className="text-muted-foreground text-sm font-medium">Recall Number</label>
                             <p className="font-mono">{record.recall_number}</p>
                         </div>
                         <div>
-                            <label className="text-sm font-medium text-muted-foreground">Serial Number</label>
+                            <label className="text-muted-foreground text-sm font-medium">Serial Number</label>
                             <p className="font-mono">{record.equipment?.serial_number}</p>
                         </div>
                         <div className="col-span-2">
-                            <label className="text-sm font-medium text-muted-foreground">Description</label>
+                            <label className="text-muted-foreground text-sm font-medium">Description</label>
                             <p>{record.equipment?.description}</p>
                         </div>
                     </div>
@@ -252,13 +254,13 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
         current_page: 1,
         last_page: 1,
         per_page: 15,
-        total: 0
+        total: 0,
     });
     const [filters, setFilters] = useState<Record<string, any>>({});
     const [exportAllData, setExportAllData] = useState(false);
     const [filterOptions, setFilterOptions] = useState<FilterOptions>({
         locations: [],
-        statuses: []
+        statuses: [],
     });
 
     // Fetch filter options
@@ -305,7 +307,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
                         current_page: Number(meta.current_page || result.current_page) || 1,
                         last_page: Number(meta.last_page || result.last_page) || 1,
                         per_page: Number(meta.per_page || result.per_page) || 15,
-                        total: Number(meta.total || result.total) || 0
+                        total: Number(meta.total || result.total) || 0,
                     });
                 } else {
                     console.error('Invalid API response structure:', result);
@@ -314,7 +316,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
                         current_page: 1,
                         last_page: 1,
                         per_page: 15,
-                        total: 0
+                        total: 0,
                     });
                 }
             } else {
@@ -324,7 +326,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
                     current_page: 1,
                     last_page: 1,
                     per_page: 15,
-                    total: 0
+                    total: 0,
                 });
             }
         } catch (error) {
@@ -334,7 +336,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
                 current_page: 1,
                 last_page: 1,
                 per_page: 15,
-                total: 0
+                total: 0,
             });
         } finally {
             setLoading(false);
@@ -347,130 +349,121 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
     }, []);
 
     // Define columns for the DataTable
-    const columns = useMemo(() => [
-        {
-            key: 'recall_number',
-            label: 'Recall #',
-            sortable: true,
-            render: (value: string) => (
-                <span className="font-mono text-sm">{value}</span>
-            ),
-        },
-        {
-            key: 'equipment_description',
-            label: 'Equipment Description',
-            sortable: true,
-            render: (value: string, row: any) => (
-                <div className="max-w-[200px]">
-                    <p className="truncate font-medium">{row.equipment_description || value}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                        {row.equipment_model && `Model: ${row.equipment_model}`}
-                    </p>
-                </div>
-            ),
-        },
-        {
-            key: 'status',
-            label: 'Status',
-            sortable: true,
-            filterable: true,
-            render: (value: string) => {
-                // Define status configurations based on database schema
-                const statusConfig = {
-                    // Incoming statuses
-                    'for_confirmation': { variant: 'secondary' as const, label: 'For Confirmation' },
-                    'pending_calibration': { variant: 'default' as const, label: 'Pending Calibration' },
-                    // Shared status
-                    'completed': { variant: 'default' as const, label: 'Completed' },
-                    // Outgoing statuses
-                    'for_pickup': { variant: 'outline' as const, label: 'For Pickup' }
-                };
-
-                const config = statusConfig[value as keyof typeof statusConfig] || {
-                    variant: 'secondary' as const,
-                    label: value.replace('_', ' ').toUpperCase()
-                };
-
-                return (
-                    <Badge variant={config.variant}>
-                        {config.label}
-                    </Badge>
-                );
+    const columns = useMemo(
+        () => [
+            {
+                key: 'recall_number',
+                label: 'Recall #',
+                sortable: true,
+                render: (value: string) => <span className="font-mono text-sm">{value}</span>,
             },
-        },
-        {
-            key: 'date_in',
-            label: 'Date In',
-            sortable: true,
-            render: (value: string) => (
-                value ? (
-                    <div className="flex items-center gap-1 text-sm">
-                        <Calendar className="h-4 w-4" />
-                        {format(new Date(value), 'MMM dd, yyyy')}
+            {
+                key: 'equipment_description',
+                label: 'Equipment Description',
+                sortable: true,
+                render: (value: string, row: any) => (
+                    <div className="max-w-[200px]">
+                        <p className="truncate font-medium">{row.equipment_description || value}</p>
+                        <p className="text-muted-foreground truncate text-xs">{row.equipment_model && `Model: ${row.equipment_model}`}</p>
                     </div>
-                ) : (
-                    <span className="text-muted-foreground">-</span>
-                )
-            ),
-        },
-        {
-            key: 'technician',
-            label: 'Technician',
-            sortable: true,
-            filterable: true,
-            render: (value: any, row: any) => (
-                row.technician ? (
-                    <div className="flex items-center gap-1">
-                        <User className="h-4 w-4" />
-                        <span className="text-sm">
-                            {row.technician.name}
-                        </span>
-                    </div>
-                ) : (
-                    <span className="text-muted-foreground">-</span>
-                )
-            ),
-        },
-        {
-            key: 'actions',
-            label: 'Actions',
-            render: (value: any, row: any) => (
-                <div className="flex items-center gap-2">
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                <Eye className="h-4 w-4 mr-1" />
-                                View Request
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                                <DialogTitle>Request Information - {row.recall_number}</DialogTitle>
-                            </DialogHeader>
-                            <RequestInfoModal record={row.tracking_record || row} />
-                        </DialogContent>
-                    </Dialog>
+                ),
+            },
+            {
+                key: 'status',
+                label: 'Status',
+                sortable: true,
+                filterable: true,
+                render: (value: string) => {
+                    // Define status configurations based on database schema
+                    const statusConfig = {
+                        // Incoming statuses
+                        for_confirmation: { variant: 'secondary' as const, label: 'For Confirmation' },
+                        pending_calibration: { variant: 'default' as const, label: 'Pending Calibration' },
+                        // Shared status
+                        completed: { variant: 'default' as const, label: 'Completed' },
+                        // Outgoing statuses
+                        for_pickup: { variant: 'outline' as const, label: 'For Pickup' },
+                    };
 
-                    {row.outgoing && (
+                    const config = statusConfig[value as keyof typeof statusConfig] || {
+                        variant: 'secondary' as const,
+                        label: value.replace('_', ' ').toUpperCase(),
+                    };
+
+                    return <Badge variant={config.variant}>{config.label}</Badge>;
+                },
+            },
+            {
+                key: 'date_in',
+                label: 'Date In',
+                sortable: true,
+                render: (value: string) =>
+                    value ? (
+                        <div className="flex items-center gap-1 text-sm">
+                            <Calendar className="h-4 w-4" />
+                            {format(new Date(value), 'MMM dd, yyyy')}
+                        </div>
+                    ) : (
+                        <span className="text-muted-foreground">-</span>
+                    ),
+            },
+            {
+                key: 'technician',
+                label: 'Technician',
+                sortable: true,
+                filterable: true,
+                render: (value: any, row: any) =>
+                    row.technician ? (
+                        <div className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            <span className="text-sm">{row.technician.name}</span>
+                        </div>
+                    ) : (
+                        <span className="text-muted-foreground">-</span>
+                    ),
+            },
+            {
+                key: 'actions',
+                label: 'Actions',
+                render: (value: any, row: any) => (
+                    <div className="flex items-center gap-2">
                         <Dialog>
                             <DialogTrigger asChild>
                                 <Button variant="outline" size="sm">
-                                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                                    View Completion
+                                    <Eye className="mr-1 h-4 w-4" />
+                                    View Request
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                            <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
                                 <DialogHeader>
-                                    <DialogTitle>Completion Information - {row.recall_number}</DialogTitle>
+                                    <DialogTitle>Request Information - {row.recall_number}</DialogTitle>
                                 </DialogHeader>
-                                <CompletionModal record={row.tracking_record || row} />
+                                <RequestInfoModal record={row.tracking_record || row} />
                             </DialogContent>
                         </Dialog>
-                    )}
-                </div>
-            ),
-        },
-    ], []);
+
+                        {row.outgoing && (
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <CheckCircle2 className="mr-1 h-4 w-4" />
+                                        View Completion
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
+                                    <DialogHeader>
+                                        <DialogTitle>Completion Information - {row.recall_number}</DialogTitle>
+                                    </DialogHeader>
+                                    <CompletionModal record={row.tracking_record || row} />
+                                </DialogContent>
+                            </Dialog>
+                        )}
+                    </div>
+                ),
+            },
+        ],
+        [],
+    );
 
     // Define filters for the DataTable
     const tableFilters = useMemo(() => {
@@ -478,7 +471,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
         const statusOptions = [
             // { value: 'all', label: 'All Statuses' },
             // Map backend status options to include type labels
-            ...filterOptions.statuses.map(status => {
+            ...filterOptions.statuses.map((status) => {
                 // Determine if it's incoming-only or outgoing-only
                 const incomingOnlyStatuses = ['for_confirmation', 'pending_calibration'];
                 const outgoingStatuses = ['for_pickup', 'completed'];
@@ -492,9 +485,9 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
 
                 return {
                     value: status.value,
-                    label: status.label + typeLabel
+                    label: status.label + typeLabel,
                 };
-            })
+            }),
         ];
 
         return [
@@ -510,139 +503,150 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
                 label: 'Location',
                 type: 'select' as const,
                 placeholder: 'Filter by location...',
-                options: [
-                    { value: 'all', label: 'All Locations' },
-                    ...filterOptions.locations,
-                ],
+                options: [{ value: 'all', label: 'All Locations' }, ...filterOptions.locations],
             },
         ];
     }, [filterOptions]);
 
     // Define export options (removed Print All options)
-    const exportOptions = useMemo(() => [
-        {
-            label: 'Export Excel',
-            format: 'xlsx' as const,
-        },
-        {
-            label: 'Export CSV',
-            format: 'csv' as const,
-        },
-        {
-            label: 'Export PDF',
-            format: 'pdf' as const,
-        },
-    ], []);
+    const exportOptions = useMemo(
+        () => [
+            {
+                label: 'Export Excel',
+                format: 'xlsx' as const,
+            },
+            {
+                label: 'Export CSV',
+                format: 'csv' as const,
+            },
+            {
+                label: 'Export PDF',
+                format: 'pdf' as const,
+            },
+        ],
+        [],
+    );
 
     // Handlers for DataTable events using useCallback to prevent infinite loops
-    const handleSearch = useCallback((search: string) => {
-        fetchData({ ...filters, search, page: 1 });
-    }, [filters]);
+    const handleSearch = useCallback(
+        (search: string) => {
+            fetchData({ ...filters, search, page: 1 });
+        },
+        [filters],
+    );
 
     const handleFilter = useCallback((newFilters: Record<string, any>) => {
         setFilters(newFilters);
         fetchData({ filters: newFilters, page: 1 });
     }, []);
 
-    const handleSort = useCallback((column: string, direction: 'asc' | 'desc') => {
-        fetchData({ ...filters, sort_by: column, sort_direction: direction, page: 1 });
-    }, [filters]);
+    const handleSort = useCallback(
+        (column: string, direction: 'asc' | 'desc') => {
+            fetchData({ ...filters, sort_by: column, sort_direction: direction, page: 1 });
+        },
+        [filters],
+    );
 
-    const handlePageChange = useCallback((page: number) => {
-        fetchData({ ...filters, page });
-    }, [filters]);
+    const handlePageChange = useCallback(
+        (page: number) => {
+            fetchData({ ...filters, page });
+        },
+        [filters],
+    );
 
-    const handlePerPageChange = useCallback((perPage: number) => {
-        fetchData({ ...filters, per_page: perPage, page: 1 });
-    }, [filters]);
+    const handlePerPageChange = useCallback(
+        (perPage: number) => {
+            fetchData({ ...filters, per_page: perPage, page: 1 });
+        },
+        [filters],
+    );
 
-    const handleExport = useCallback(async (exportFormat: string, exportFilters: Record<string, any>) => {
-        try {
-            // Build query parameters from filters
-            const queryParams = new URLSearchParams();
+    const handleExport = useCallback(
+        async (exportFormat: string, exportFilters: Record<string, any>) => {
+            try {
+                // Build query parameters from filters
+                const queryParams = new URLSearchParams();
 
-            // Check if "Export All Data" is enabled
-            const isPrintAll = exportAllData;
+                // Check if "Export All Data" is enabled
+                const isPrintAll = exportAllData;
 
-            // Add filters as query parameters (except print_all which goes in the URL path)
-            Object.keys(exportFilters).forEach(key => {
-                if (key !== 'print_all' && exportFilters[key] !== null && exportFilters[key] !== undefined && exportFilters[key] !== '') {
-                    queryParams.append(key, String(exportFilters[key]));
+                // Add filters as query parameters (except print_all which goes in the URL path)
+                Object.keys(exportFilters).forEach((key) => {
+                    if (key !== 'print_all' && exportFilters[key] !== null && exportFilters[key] !== undefined && exportFilters[key] !== '') {
+                        queryParams.append(key, String(exportFilters[key]));
+                    }
+                });
+
+                // Add print_all parameter if needed
+                if (isPrintAll) {
+                    queryParams.append('print_all', 'true');
                 }
-            });
 
-            // Add print_all parameter if needed
-            if (isPrintAll) {
-                queryParams.append('print_all', 'true');
+                // Build the URL with format in path and filters as query params
+                const url = `/api/reports/table/export/${exportFormat}?${queryParams.toString()}`;
+
+                // For PDF format, open in new window for preview
+                if (exportFormat === 'pdf') {
+                    window.open(url, '_blank');
+                    return;
+                }
+
+                // For other formats (Excel, CSV), download the file
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        Accept: 'application/octet-stream',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                    credentials: 'same-origin',
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = downloadUrl;
+                    // Use different filename for print all exports
+                    const filePrefix = isPrintAll ? 'tracking-reports-all' : 'tracking-reports';
+                    a.download = `${filePrefix}-${format(new Date(), 'MMM_dd_yyyy_HH_mm')}.${exportFormat}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(downloadUrl);
+                    document.body.removeChild(a);
+                } else {
+                    console.error('Export failed:', response.status, response.statusText);
+                }
+            } catch (error) {
+                console.error('Export failed:', error);
             }
-
-            // Build the URL with format in path and filters as query params
-            const url = `/api/reports/table/export/${exportFormat}?${queryParams.toString()}`;
-
-            // For PDF format, open in new window for preview
-            if (exportFormat === 'pdf') {
-                window.open(url, '_blank');
-                return;
-            }
-
-            // For other formats (Excel, CSV), download the file
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/octet-stream',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                },
-                credentials: 'same-origin'
-            });
-
-            if (response.ok) {
-                const blob = await response.blob();
-                const downloadUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = downloadUrl;
-                // Use different filename for print all exports
-                const filePrefix = isPrintAll ? 'tracking-reports-all' : 'tracking-reports';
-                a.download = `${filePrefix}-${format(new Date(), 'MMM_dd_yyyy_HH_mm')}.${exportFormat}`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(downloadUrl);
-                document.body.removeChild(a);
-            } else {
-                console.error('Export failed:', response.status, response.statusText);
-            }
-        } catch (error) {
-            console.error('Export failed:', error);
-        }
-    }, [exportAllData]);
+        },
+        [exportAllData],
+    );
 
     return (
         <div className={cn('space-y-4', className)}>
-            <Card className='h-full'>
+            <Card className="h-full">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <FileDown className="h-5 w-5" />
                         Equipment Tracking Reports
                     </CardTitle>
                 </CardHeader>
-                <CardContent className='h-full'>
+                <CardContent className="h-full">
                     {/* Custom Export All Data Toggle */}
-                    <div className="mb-4 p-4 border rounded-lg bg-muted/20">
+                    <div className="bg-muted/20 mb-4 rounded-lg border p-4">
                         <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="export-all-data"
-                                checked={exportAllData}
-                                onCheckedChange={(checked) => setExportAllData(!!checked)}
-                            />
+                            <Checkbox id="export-all-data" checked={exportAllData} onCheckedChange={(checked) => setExportAllData(!!checked)} />
                             <Label
                                 htmlFor="export-all-data"
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                             >
                                 Export All Data (ignore current filters)
                             </Label>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-muted-foreground mt-1 text-xs">
                             When enabled, exports will include all records regardless of current filters and search terms.
                         </p>
                     </div>

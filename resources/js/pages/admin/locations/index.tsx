@@ -99,12 +99,10 @@ export default function LocationsIndex({ locations: initialLocations, department
                                 Add Location
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col">
+                        <DialogContent className="flex max-h-[85vh] max-w-md flex-col overflow-hidden">
                             <DialogHeader className="flex-shrink-0">
                                 <DialogTitle>Add New Location</DialogTitle>
-                                <DialogDescription>
-                                    Create a new location. All fields marked with * are required.
-                                </DialogDescription>
+                                <DialogDescription>Create a new location. All fields marked with * are required.</DialogDescription>
                             </DialogHeader>
                             <div className="flex-1 overflow-y-auto px-1">
                                 <LocationForm
@@ -123,7 +121,7 @@ export default function LocationsIndex({ locations: initialLocations, department
                 {/* Filters */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                         <Input
                             placeholder="Search locations by name..."
                             value={data.search}
@@ -133,7 +131,10 @@ export default function LocationsIndex({ locations: initialLocations, department
                     </div>
 
                     <div className="flex gap-2">
-                        <Select value={data.department_id.toString()} onValueChange={(value) => setData('department_id', value === 'all' ? '' : value)}>
+                        <Select
+                            value={data.department_id.toString()}
+                            onValueChange={(value) => setData('department_id', value === 'all' ? '' : value)}
+                        >
                             <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Filter by department" />
                             </SelectTrigger>
@@ -150,14 +151,10 @@ export default function LocationsIndex({ locations: initialLocations, department
                 </div>
 
                 {/* Locations Table */}
-                <LocationTable
-                    locations={locations}
-                    departments={departments}
-                    onRefresh={refreshLocations}
-                />
+                <LocationTable locations={locations} departments={departments} onRefresh={refreshLocations} />
 
                 {/* Pagination Info */}
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center justify-between text-sm">
                     <div>
                         Showing {locations.from || 0} to {locations.to || 0} of {locations.total} locations
                     </div>

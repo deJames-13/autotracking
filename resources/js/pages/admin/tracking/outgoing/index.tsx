@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import axios from 'axios';
-import AppLayout from '@/layouts/app-layout';
 import { TrackOutgoingTable } from '@/components/admin/tracking/track-outgoing-table';
-import { type TrackOutgoing, type PaginationData, type User } from '@/types';
+import AppLayout from '@/layouts/app-layout';
+import { type PaginationData, type TrackOutgoing } from '@/types';
+import { Head } from '@inertiajs/react';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface TrackOutgoingIndexProps {
     // Props can be extended as needed
@@ -19,7 +17,7 @@ interface FilterOptions {
     released_by: Array<{ value: string; label: string }>;
 }
 
-export default function TrackOutgoingIndex({ }: TrackOutgoingIndexProps) {
+export default function TrackOutgoingIndex(props: TrackOutgoingIndexProps) {
     const [trackOutgoing, setTrackOutgoing] = useState<PaginationData<TrackOutgoing> | null>(null);
     const [loading, setLoading] = useState(true);
     const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
@@ -27,12 +25,7 @@ export default function TrackOutgoingIndex({ }: TrackOutgoingIndexProps) {
     const [currentSearch, setCurrentSearch] = useState('');
 
     // Fetch table data
-    const fetchTableData = async (
-        page = 1,
-        perPage = 10,
-        search = '',
-        filters = {}
-    ) => {
+    const fetchTableData = async (page = 1, perPage = 10, search = '', filters = {}) => {
         try {
             setLoading(true);
             const response = await axios.get(route('admin.tracking.outgoing.table-data'), {
@@ -93,12 +86,7 @@ export default function TrackOutgoingIndex({ }: TrackOutgoingIndexProps) {
 
     // Handle refresh
     const handleRefresh = () => {
-        fetchTableData(
-            trackOutgoing?.current_page || 1,
-            trackOutgoing?.per_page || 10,
-            currentSearch,
-            currentFilters
-        );
+        fetchTableData(trackOutgoing?.current_page || 1, trackOutgoing?.per_page || 10, currentSearch, currentFilters);
     };
 
     return (
@@ -109,9 +97,7 @@ export default function TrackOutgoingIndex({ }: TrackOutgoingIndexProps) {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Track Outgoing Equipment</h1>
-                        <p className="text-muted-foreground">
-                            Manage and track outgoing equipment calibration completions
-                        </p>
+                        <p className="text-muted-foreground">Manage and track outgoing equipment calibration completions</p>
                     </div>
 
                     {/* <Button

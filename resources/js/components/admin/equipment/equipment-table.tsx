@@ -1,15 +1,14 @@
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
-import { type Equipment, type User, type PaginationData, type Plant, type Department } from '@/types';
-import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { type Department, type Equipment, type PaginationData, type Plant, type User } from '@/types';
 import { router } from '@inertiajs/react';
-import { EquipmentViewDialog } from './equipment-view-dialog';
-import { EquipmentEditDialog } from './equipment-edit-dialog';
+import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import { EquipmentDeleteDialog } from './equipment-delete-dialog';
+import { EquipmentEditDialog } from './equipment-edit-dialog';
+import { EquipmentViewDialog } from './equipment-view-dialog';
 
 interface EquipmentTableProps {
     equipment: PaginationData<Equipment>;
@@ -34,7 +33,7 @@ export function EquipmentTable({
     onSearch,
     onFilter,
     onPageChange,
-    onPerPageChange
+    onPerPageChange,
 }: EquipmentTableProps) {
     const [viewingEquipment, setViewingEquipment] = useState<Equipment | null>(null);
     const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
@@ -70,75 +69,51 @@ export function EquipmentTable({
         {
             key: 'equipment_id',
             label: 'ID',
-            render: (value, row) => (
-                <div className="font-medium">
-                    {row.equipment_id}
-                </div>
-            ),
+            render: (value, row) => <div className="font-medium">{row.equipment_id}</div>,
             sortable: true,
-            width: 'w-[100px]'
+            width: 'w-[100px]',
         },
         {
             key: 'recall_number',
             label: 'Recall Number',
-            render: (value, row) => (
-                <div className="font-medium">
-                    {row.recall_number}
-                </div>
-            ),
+            render: (value, row) => <div className="font-medium">{row.recall_number}</div>,
             sortable: true,
-            width: 'w-[150px]'
+            width: 'w-[150px]',
         },
         {
             key: 'serial_number',
             label: 'Serial Number',
-            render: (value, row) => (
-                <div className="text-sm">
-                    {row.serial_number || 'N/A'}
-                </div>
-            ),
+            render: (value, row) => <div className="text-sm">{row.serial_number || 'N/A'}</div>,
             sortable: true,
-            width: 'w-[150px]'
+            width: 'w-[150px]',
         },
         {
             key: 'description',
             label: 'Description',
             render: (value, row) => (
                 <div className="space-y-0.5">
-                    <div className="text-sm max-w-[200px] truncate" title={row.description}>
+                    <div className="max-w-[200px] truncate text-sm" title={row.description}>
                         {row.description}
                     </div>
-                    {row.manufacturer && (
-                        <div className="text-xs text-muted-foreground">
-                            {row.manufacturer}
-                        </div>
-                    )}
+                    {row.manufacturer && <div className="text-muted-foreground text-xs">{row.manufacturer}</div>}
                 </div>
             ),
             sortable: true,
-            width: 'w-[250px]'
+            width: 'w-[250px]',
         },
         {
             key: 'plant_name',
             label: 'Plant',
-            render: (value, row) => (
-                <div className="text-sm">
-                    {row.plant?.plant_name || 'Not assigned'}
-                </div>
-            ),
+            render: (value, row) => <div className="text-sm">{row.plant?.plant_name || 'Not assigned'}</div>,
             sortable: true,
-            width: 'w-[150px]'
+            width: 'w-[150px]',
         },
         {
             key: 'department_name',
             label: 'Department',
-            render: (value, row) => (
-                <div className="text-sm">
-                    {row.department?.department_name || 'Not assigned'}
-                </div>
-            ),
+            render: (value, row) => <div className="text-sm">{row.department?.department_name || 'Not assigned'}</div>,
             sortable: true,
-            width: 'w-[150px]'
+            width: 'w-[150px]',
         },
         {
             key: 'user_name',
@@ -147,14 +122,10 @@ export function EquipmentTable({
                 <div className="text-sm">
                     {row.user ? (
                         <div>
-                            <div className="font-medium">
-                                {row.user.full_name || `${row.user.first_name} ${row.user.last_name}`}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="font-medium">{row.user.full_name || `${row.user.first_name} ${row.user.last_name}`}</div>
+                            <div className="text-muted-foreground text-xs">
                                 ID: {row.user.employee_id}
-                                {row.user.role && (
-                                    <span> • {row.user.role.role_name.replace('_', ' ')}</span>
-                                )}
+                                {row.user.role && <span> • {row.user.role.role_name.replace('_', ' ')}</span>}
                             </div>
                         </div>
                     ) : (
@@ -163,29 +134,21 @@ export function EquipmentTable({
                 </div>
             ),
             sortable: true,
-            width: 'w-[200px]'
+            width: 'w-[200px]',
         },
         {
             key: 'status',
             label: 'Status',
-            render: (value, row) => (
-                <Badge variant={getStatusBadgeVariant(row.status)}>
-                    {row.status?.replace('_', ' ').toUpperCase()}
-                </Badge>
-            ),
+            render: (value, row) => <Badge variant={getStatusBadgeVariant(row.status)}>{row.status?.replace('_', ' ').toUpperCase()}</Badge>,
             sortable: true,
-            width: 'w-[120px]'
+            width: 'w-[120px]',
         },
         {
             key: 'created_at',
             label: 'Created',
-            render: (value, row) => (
-                <div className="text-sm text-muted-foreground">
-                    {new Date(row.created_at).toLocaleDateString()}
-                </div>
-            ),
+            render: (value, row) => <div className="text-muted-foreground text-sm">{new Date(row.created_at).toLocaleDateString()}</div>,
             sortable: true,
-            width: 'w-[100px]'
+            width: 'w-[100px]',
         },
         {
             key: 'actions',
@@ -207,18 +170,15 @@ export function EquipmentTable({
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                            onClick={() => setDeletingEquipment(row)}
-                            className="text-destructive"
-                        >
+                        <DropdownMenuItem onClick={() => setDeletingEquipment(row)} className="text-destructive">
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             ),
-            width: 'w-[70px]'
-        }
+            width: 'w-[70px]',
+        },
     ];
 
     // Define DataTable filters
@@ -230,11 +190,11 @@ export function EquipmentTable({
             options: [
                 { value: 'all', label: 'All Users' },
                 { value: 'unassigned', label: 'Unassigned' },
-                ...users.map(user => ({
+                ...users.map((user) => ({
                     value: user.employee_id.toString(),
-                    label: user.full_name || `${user.first_name} ${user.last_name}`
-                }))
-            ]
+                    label: user.full_name || `${user.first_name} ${user.last_name}`,
+                })),
+            ],
         },
         {
             key: 'plant_id',
@@ -242,11 +202,11 @@ export function EquipmentTable({
             type: 'select',
             options: [
                 { value: 'all', label: 'All Plants' },
-                ...plants.map(plant => ({
+                ...plants.map((plant) => ({
                     value: plant.plant_id.toString(),
-                    label: plant.plant_name
-                }))
-            ]
+                    label: plant.plant_name,
+                })),
+            ],
         },
         {
             key: 'department_id',
@@ -254,11 +214,11 @@ export function EquipmentTable({
             type: 'select',
             options: [
                 { value: 'all', label: 'All Departments' },
-                ...departments.map(dept => ({
+                ...departments.map((dept) => ({
                     value: dept.department_id.toString(),
-                    label: dept.department_name
-                }))
-            ]
+                    label: dept.department_name,
+                })),
+            ],
         },
         {
             key: 'status',
@@ -269,35 +229,47 @@ export function EquipmentTable({
                 { value: 'active', label: 'Active' },
                 { value: 'in_calibration', label: 'In Calibration' },
                 { value: 'pending_calibration', label: 'Pending Calibration' },
-                { value: 'inactive', label: 'Inactive' }
-            ]
-        }
+                { value: 'inactive', label: 'Inactive' },
+            ],
+        },
     ];
 
     // Handle DataTable events
-    const handleSearch = useCallback((search: string) => {
-        if (onSearch) {
-            onSearch(search);
-        }
-    }, [onSearch]);
+    const handleSearch = useCallback(
+        (search: string) => {
+            if (onSearch) {
+                onSearch(search);
+            }
+        },
+        [onSearch],
+    );
 
-    const handleFilter = useCallback((filters: Record<string, any>) => {
-        if (onFilter) {
-            onFilter(filters);
-        }
-    }, [onFilter]);
+    const handleFilter = useCallback(
+        (filters: Record<string, any>) => {
+            if (onFilter) {
+                onFilter(filters);
+            }
+        },
+        [onFilter],
+    );
 
-    const handlePageChange = useCallback((page: number) => {
-        if (onPageChange) {
-            onPageChange(page);
-        }
-    }, [onPageChange]);
+    const handlePageChange = useCallback(
+        (page: number) => {
+            if (onPageChange) {
+                onPageChange(page);
+            }
+        },
+        [onPageChange],
+    );
 
-    const handlePerPageChange = useCallback((perPage: number) => {
-        if (onPerPageChange) {
-            onPerPageChange(perPage);
-        }
-    }, [onPerPageChange]);
+    const handlePerPageChange = useCallback(
+        (perPage: number) => {
+            if (onPerPageChange) {
+                onPerPageChange(perPage);
+            }
+        },
+        [onPerPageChange],
+    );
 
     return (
         <>
@@ -310,7 +282,7 @@ export function EquipmentTable({
                     current_page: equipment.current_page,
                     last_page: equipment.last_page,
                     per_page: equipment.per_page,
-                    total: equipment.total
+                    total: equipment.total,
                 }}
                 onSearch={handleSearch}
                 onFilter={handleFilter}
@@ -323,11 +295,7 @@ export function EquipmentTable({
             />
 
             {/* Equipment Dialogs */}
-            <EquipmentViewDialog
-                equipment={viewingEquipment}
-                open={!!viewingEquipment}
-                onOpenChange={(open) => !open && setViewingEquipment(null)}
-            />
+            <EquipmentViewDialog equipment={viewingEquipment} open={!!viewingEquipment} onOpenChange={(open) => !open && setViewingEquipment(null)} />
 
             <EquipmentEditDialog
                 equipment={editingEquipment}

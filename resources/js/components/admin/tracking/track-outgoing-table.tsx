@@ -1,12 +1,12 @@
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
-import { type TrackOutgoing, type PaginationData, type User } from '@/types';
-import { router } from '@inertiajs/react';
-import { Eye, MoreHorizontal, Pencil, FileText } from 'lucide-react';
-import { useCallback } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useRole } from '@/hooks/use-role';
+import { type PaginationData, type TrackOutgoing } from '@/types';
+import { router } from '@inertiajs/react';
+import { Eye, MoreHorizontal, Pencil } from 'lucide-react';
+import { useCallback } from 'react';
 
 interface TrackOutgoingTableProps {
     trackOutgoing: PaginationData<TrackOutgoing>;
@@ -32,41 +32,33 @@ export function TrackOutgoingTable({
     onSearch,
     onFilter,
     onPageChange,
-    onPerPageChange
+    onPerPageChange,
 }: TrackOutgoingTableProps) {
     const { isAdmin } = useRole();
 
     const getStatusBadge = (status: string) => {
         const statusConfig = {
-            'pending': { variant: 'secondary' as const, label: 'Pending' },
-            'in_progress': { variant: 'default' as const, label: 'In Progress' },
-            'calibrated': { variant: 'success' as const, label: 'Calibrated' },
-            'ready_for_pickup': { variant: 'outline' as const, label: 'Ready for Pickup' },
-            'completed': { variant: 'success' as const, label: 'Completed' },
-            'overdue': { variant: 'destructive' as const, label: 'Overdue' },
-            'picked_up': { variant: 'success' as const, label: 'Picked Up' },
+            pending: { variant: 'secondary' as const, label: 'Pending' },
+            in_progress: { variant: 'default' as const, label: 'In Progress' },
+            calibrated: { variant: 'success' as const, label: 'Calibrated' },
+            ready_for_pickup: { variant: 'outline' as const, label: 'Ready for Pickup' },
+            completed: { variant: 'success' as const, label: 'Completed' },
+            overdue: { variant: 'destructive' as const, label: 'Overdue' },
+            picked_up: { variant: 'success' as const, label: 'Picked Up' },
         };
 
         const config = statusConfig[status as keyof typeof statusConfig] || { variant: 'secondary' as const, label: status };
 
-        return (
-            <Badge variant={config.variant}>
-                {config.label}
-            </Badge>
-        );
+        return <Badge variant={config.variant}>{config.label}</Badge>;
     };
 
     const columns: DataTableColumn<TrackOutgoing>[] = [
         {
             key: 'recall_number',
             label: 'Recall Number',
-            render: (value, row) => (
-                <div className="font-medium text-sm">
-                    {row.track_incoming?.recall_number || 'N/A'}
-                </div>
-            ),
+            render: (value, row) => <div className="text-sm font-medium">{row.track_incoming?.recall_number || 'N/A'}</div>,
             sortable: true,
-            width: 'w-[140px]'
+            width: 'w-[140px]',
         },
         {
             key: 'equipment',
@@ -75,24 +67,16 @@ export function TrackOutgoingTable({
                 const equipment = row?.equipment;
                 return (
                     <div className="space-y-1">
-                        <div className="font-medium text-sm">
-                            {equipment?.description || row.track_incoming?.model || 'N/A'}
-                        </div>
+                        <div className="text-sm font-medium">{equipment?.description || row.track_incoming?.model || 'N/A'}</div>
                         {row.track_incoming?.serial_number && (
-                            <div className="text-xs text-muted-foreground">
-                                S/N: {row.track_incoming.serial_number}
-                            </div>
+                            <div className="text-muted-foreground text-xs">S/N: {row.track_incoming.serial_number}</div>
                         )}
-                        {row.track_incoming?.manufacturer && (
-                            <div className="text-xs text-muted-foreground">
-                                {row.track_incoming.manufacturer}
-                            </div>
-                        )}
+                        {row.track_incoming?.manufacturer && <div className="text-muted-foreground text-xs">{row.track_incoming.manufacturer}</div>}
                     </div>
                 );
             },
             sortable: true,
-            width: 'w-[200px]'
+            width: 'w-[200px]',
         },
         {
             key: 'technician',
@@ -101,34 +85,34 @@ export function TrackOutgoingTable({
                 const technician = row?.technician;
                 return (
                     <div className="text-sm">
-                        {technician ? `${technician.first_name} ${technician.last_name}` : (
+                        {technician ? (
+                            `${technician.first_name} ${technician.last_name}`
+                        ) : (
                             <span className="text-muted-foreground italic">Unassigned</span>
                         )}
                     </div>
                 );
             },
             sortable: true,
-            width: 'w-[150px]'
+            width: 'w-[150px]',
         },
         {
             key: 'status',
             label: 'Status',
             render: (value, row) => getStatusBadge(row.status),
             sortable: true,
-            width: 'w-[120px]'
+            width: 'w-[120px]',
         },
         {
             key: 'cal_date',
             label: 'Cal Date',
             render: (value, row) => (
                 <div className="text-sm">
-                    {row.cal_date ? new Date(row.cal_date).toLocaleDateString() : (
-                        <span className="text-muted-foreground">Not set</span>
-                    )}
+                    {row.cal_date ? new Date(row.cal_date).toLocaleDateString() : <span className="text-muted-foreground">Not set</span>}
                 </div>
             ),
             sortable: true,
-            width: 'w-[100px]'
+            width: 'w-[100px]',
         },
         {
             key: 'cal_due_date',
@@ -143,68 +127,64 @@ export function TrackOutgoingTable({
                 const isOverdue = dueDate < today;
 
                 return (
-                    <div className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : ''}`}>
+                    <div className={`text-sm ${isOverdue ? 'font-medium text-red-600' : ''}`}>
                         {dueDate.toLocaleDateString()}
-                        {isOverdue && (
-                            <div className="text-xs text-red-500">Overdue</div>
-                        )}
+                        {isOverdue && <div className="text-xs text-red-500">Overdue</div>}
                     </div>
                 );
             },
             sortable: true,
-            width: 'w-[110px]'
+            width: 'w-[110px]',
         },
         {
             key: 'date_out',
             label: 'Date Out',
             render: (value, row) => (
                 <div className="text-sm">
-                    {row.date_out ? new Date(row.date_out).toLocaleDateString() : (
-                        <span className="text-muted-foreground">Not set</span>
-                    )}
+                    {row.date_out ? new Date(row.date_out).toLocaleDateString() : <span className="text-muted-foreground">Not set</span>}
                 </div>
             ),
             sortable: true,
-            width: 'w-[100px]'
+            width: 'w-[100px]',
         },
         {
             key: 'employee_out',
             label: 'Employee Out',
             render: (value, row) => (
                 <div className="text-sm">
-                    {row.employee_out ? `${row.employee_out.first_name} ${row.employee_out.last_name}` : (
+                    {row.employee_out ? (
+                        `${row.employee_out.first_name} ${row.employee_out.last_name}`
+                    ) : (
                         <span className="text-muted-foreground italic">N/A</span>
                     )}
                 </div>
             ),
             sortable: true,
-            width: 'w-[130px]'
+            width: 'w-[130px]',
         },
         {
             key: 'released_by',
             label: 'Released By',
             render: (value, row) => (
                 <div className="text-sm">
-                    {row.released_by ? `${row.released_by.first_name} ${row.released_by.last_name}` : (
+                    {row.released_by ? (
+                        `${row.released_by.first_name} ${row.released_by.last_name}`
+                    ) : (
                         <span className="text-muted-foreground italic">N/A</span>
                     )}
                 </div>
             ),
             sortable: true,
-            width: 'w-[130px]'
+            width: 'w-[130px]',
         },
         {
             key: 'cycle_time',
             label: 'Cycle Time',
             render: (value, row) => (
-                <div className="text-sm">
-                    {row.cycle_time != undefined ? row.cycle_time : (
-                        <span className="text-muted-foreground">N/A</span>
-                    )}
-                </div>
+                <div className="text-sm">{row.cycle_time != undefined ? row.cycle_time : <span className="text-muted-foreground">N/A</span>}</div>
             ),
             sortable: true,
-            width: 'w-[100px]'
+            width: 'w-[100px]',
         },
         {
             key: 'actions',
@@ -237,8 +217,8 @@ export function TrackOutgoingTable({
                     </DropdownMenuContent>
                 </DropdownMenu>
             ),
-            width: 'w-[70px]'
-        }
+            width: 'w-[70px]',
+        },
     ];
 
     // Define filters based on available filter options
@@ -247,74 +227,74 @@ export function TrackOutgoingTable({
             key: 'status',
             label: 'Status',
             type: 'select',
-            options: [
-                { value: 'all', label: 'All Statuses' },
-                ...(filterOptions?.statuses || [])
-            ]
+            options: [{ value: 'all', label: 'All Statuses' }, ...(filterOptions?.statuses || [])],
         },
         {
             key: 'technician_id',
             label: 'Technician',
             type: 'select',
-            options: [
-                { value: 'all', label: 'All Technicians' },
-                ...(filterOptions?.technicians || [])
-            ]
+            options: [{ value: 'all', label: 'All Technicians' }, ...(filterOptions?.technicians || [])],
         },
         {
             key: 'employee_id_out',
             label: 'Employee Out',
             type: 'select',
-            options: [
-                { value: 'all', label: 'All Employees' },
-                ...(filterOptions?.employees_out || [])
-            ]
+            options: [{ value: 'all', label: 'All Employees' }, ...(filterOptions?.employees_out || [])],
         },
         {
             key: 'released_by_id',
             label: 'Released By',
             type: 'select',
-            options: [
-                { value: 'all', label: 'All Users' },
-                ...(filterOptions?.released_by || [])
-            ]
+            options: [{ value: 'all', label: 'All Users' }, ...(filterOptions?.released_by || [])],
         },
         {
             key: 'cal_date_range',
             label: 'Cal Date Range',
-            type: 'date-range'
+            type: 'date-range',
         },
         {
             key: 'cal_due_date_range',
             label: 'Cal Due Date Range',
-            type: 'date-range'
-        }
+            type: 'date-range',
+        },
     ];
 
     // Handle DataTable events
-    const handleSearch = useCallback((search: string) => {
-        if (onSearch) {
-            onSearch(search);
-        }
-    }, [onSearch]);
+    const handleSearch = useCallback(
+        (search: string) => {
+            if (onSearch) {
+                onSearch(search);
+            }
+        },
+        [onSearch],
+    );
 
-    const handleFilter = useCallback((filters: Record<string, any>) => {
-        if (onFilter) {
-            onFilter(filters);
-        }
-    }, [onFilter]);
+    const handleFilter = useCallback(
+        (filters: Record<string, any>) => {
+            if (onFilter) {
+                onFilter(filters);
+            }
+        },
+        [onFilter],
+    );
 
-    const handlePageChange = useCallback((page: number) => {
-        if (onPageChange) {
-            onPageChange(page);
-        }
-    }, [onPageChange]);
+    const handlePageChange = useCallback(
+        (page: number) => {
+            if (onPageChange) {
+                onPageChange(page);
+            }
+        },
+        [onPageChange],
+    );
 
-    const handlePerPageChange = useCallback((perPage: number) => {
-        if (onPerPageChange) {
-            onPerPageChange(perPage);
-        }
-    }, [onPerPageChange]);
+    const handlePerPageChange = useCallback(
+        (perPage: number) => {
+            if (onPerPageChange) {
+                onPerPageChange(perPage);
+            }
+        },
+        [onPerPageChange],
+    );
 
     return (
         <DataTable
@@ -326,7 +306,7 @@ export function TrackOutgoingTable({
                 current_page: trackOutgoing.current_page,
                 last_page: trackOutgoing.last_page,
                 per_page: trackOutgoing.per_page,
-                total: trackOutgoing.total
+                total: trackOutgoing.total,
             }}
             onSearch={handleSearch}
             onFilter={handleFilter}

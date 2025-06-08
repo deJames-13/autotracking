@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Search } from 'lucide-react';
-import { format, addYears } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { useForm, router } from '@inertiajs/react';
-import { toast } from 'react-hot-toast';
 import { TrackIncoming } from '@/types';
+import { router, useForm } from '@inertiajs/react';
 import axios from 'axios';
+import { addYears, format } from 'date-fns';
+import { Search } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface OutgoingCalibrationModalProps {
     incomingRecord: TrackIncoming | null;
@@ -36,12 +33,7 @@ interface OutgoingFormData {
     confirmation_pin: string;
 }
 
-export function OutgoingCalibrationModal({
-    incomingRecord,
-    open,
-    onOpenChange,
-    onSuccess
-}: OutgoingCalibrationModalProps) {
+export function OutgoingCalibrationModal({ incomingRecord, open, onOpenChange, onSuccess }: OutgoingCalibrationModalProps) {
     const [employeeName, setEmployeeName] = useState('');
     const [employeeOut, setEmployeeOut] = useState<any>(null);
     const [loadingEmployee, setLoadingEmployee] = useState(false);
@@ -69,7 +61,7 @@ export function OutgoingCalibrationModal({
         commit_etc: null,
         actual_etc: null,
         overdue: 'no',
-        confirmation_pin: ''
+        confirmation_pin: '',
     });
 
     // Initialize form data when incoming record changes
@@ -103,7 +95,7 @@ export function OutgoingCalibrationModal({
                 commit_etc: null,
                 actual_etc: null,
                 overdue: 'no',
-                confirmation_pin: ''
+                confirmation_pin: '',
             });
         }
     }, [incomingRecord, open]);
@@ -195,7 +187,7 @@ export function OutgoingCalibrationModal({
             const message = 'Department information is missing for validation. Please ensure both employees have department assignments.';
             setDepartmentValidation({
                 isValid: false,
-                message
+                message,
             });
             return;
         }
@@ -205,9 +197,9 @@ export function OutgoingCalibrationModal({
             const message = `Department mismatch: Employee is from ${employeeOutDeptName} but equipment was received by ${employeeInDeptName ?? 'Other'} department. Only employees from the same department can complete calibrations.`;
             setDepartmentValidation({
                 isValid: false,
-                message
+                message,
             });
-            toast.error("Department mismatch");
+            toast.error('Department mismatch');
             return;
         }
 
@@ -215,7 +207,7 @@ export function OutgoingCalibrationModal({
         const message = `✓ Department validation passed: Both employees are from ${employeeOutDeptName} department.`;
         setDepartmentValidation({
             isValid: true,
-            message
+            message,
         });
     };
 
@@ -229,7 +221,7 @@ export function OutgoingCalibrationModal({
         try {
             const response = await axios.get(route('api.users.search'), {
                 params: { employee_id: employeeId },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
 
             if (response.data && response.data.length > 0) {
@@ -343,7 +335,7 @@ export function OutgoingCalibrationModal({
                 commit_etc: data.commit_etc,
                 actual_etc: data.actual_etc,
                 overdue: data.overdue,
-                confirmation_pin: data.confirmation_pin
+                confirmation_pin: data.confirmation_pin,
             });
 
             // Check if the response indicates success
@@ -369,7 +361,6 @@ export function OutgoingCalibrationModal({
             } else {
                 toast.error('Failed to record calibration completion');
             }
-
         } catch (error) {
             if (axios.isAxiosError(error) && error.response) {
                 const errorData = error.response.data;
@@ -411,7 +402,7 @@ export function OutgoingCalibrationModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Complete Calibration</DialogTitle>
                     <DialogDescription>
@@ -421,8 +412,8 @@ export function OutgoingCalibrationModal({
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Equipment Summary */}
-                    <div className="p-4 border rounded-lg bg-muted/50">
-                        <h3 className="font-medium mb-2">Equipment Information</h3>
+                    <div className="bg-muted/50 rounded-lg border p-4">
+                        <h3 className="mb-2 font-medium">Equipment Information</h3>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <div className="col-span-2">
                                 <Label htmlFor="recall_number">Recall Number *</Label>
@@ -435,9 +426,7 @@ export function OutgoingCalibrationModal({
                                     className="mt-1"
                                     required
                                 />
-                                {errors.recall_number && (
-                                    <p className="text-sm text-destructive mt-1">{errors.recall_number}</p>
-                                )}
+                                {errors.recall_number && <p className="text-destructive mt-1 text-sm">{errors.recall_number}</p>}
                             </div>
                             <div>
                                 <span className="font-medium">Description:</span>
@@ -484,33 +473,27 @@ export function OutgoingCalibrationModal({
                                 Search
                             </Button>
                         </div>
-                        {loadingEmployee && (
-                            <p className="text-sm text-muted-foreground">Searching for employee...</p>
-                        )}
-                        {employeeName && (
-                            <p className="text-sm text-green-600">✓ Employee found: {employeeName}</p>
-                        )}
-                        {employeeError && (
-                            <p className="text-sm text-destructive">{employeeError}</p>
-                        )}
-                        {errors.employee_id_out && (
-                            <p className="text-sm text-destructive">{errors.employee_id_out}</p>
-                        )}
+                        {loadingEmployee && <p className="text-muted-foreground text-sm">Searching for employee...</p>}
+                        {employeeName && <p className="text-sm text-green-600">✓ Employee found: {employeeName}</p>}
+                        {employeeError && <p className="text-destructive text-sm">{employeeError}</p>}
+                        {errors.employee_id_out && <p className="text-destructive text-sm">{errors.employee_id_out}</p>}
                     </div>
 
                     {/* Department Validation */}
                     {departmentValidation.message && (
-                        <div className={`p-3 rounded-lg ${departmentValidation.isValid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-                            }`}>
-                            <p className={`text-sm ${departmentValidation.isValid ? 'text-green-700' : 'text-red-700'
-                                }`}>
+                        <div
+                            className={`rounded-lg p-3 ${
+                                departmentValidation.isValid ? 'border border-green-200 bg-green-50' : 'border border-red-200 bg-red-50'
+                            }`}
+                        >
+                            <p className={`text-sm ${departmentValidation.isValid ? 'text-green-700' : 'text-red-700'}`}>
                                 {departmentValidation.message}
                             </p>
                         </div>
                     )}
 
                     {/* Form Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Calibration Date */}
                         <div className="space-y-2">
                             <Label htmlFor="cal_date">Calibration Date *</Label>
@@ -518,7 +501,7 @@ export function OutgoingCalibrationModal({
                                 id="cal_date"
                                 type="date"
                                 value={calDate ? format(calDate, 'yyyy-MM-dd') : ''}
-                                onChange={e => {
+                                onChange={(e) => {
                                     if (e.target.value) handleCalDateChange(new Date(e.target.value));
                                 }}
                             />
@@ -530,7 +513,7 @@ export function OutgoingCalibrationModal({
                                 id="cal_due_date"
                                 type="date"
                                 value={calDueDate ? format(calDueDate, 'yyyy-MM-dd') : ''}
-                                onChange={e => {
+                                onChange={(e) => {
                                     if (e.target.value) handleCalDueDateChange(new Date(e.target.value));
                                 }}
                             />
@@ -542,7 +525,7 @@ export function OutgoingCalibrationModal({
                                 id="date_out"
                                 type="date"
                                 value={dateOut ? format(dateOut, 'yyyy-MM-dd') : ''}
-                                onChange={e => {
+                                onChange={(e) => {
                                     if (e.target.value) handleDateOutChange(new Date(e.target.value));
                                 }}
                             />
@@ -555,7 +538,7 @@ export function OutgoingCalibrationModal({
                                 type="number"
                                 value={data.ct_reqd ?? ''}
                                 min={0}
-                                onChange={e => setData('ct_reqd', e.target.value ? parseInt(e.target.value) : null)}
+                                onChange={(e) => setData('ct_reqd', e.target.value ? parseInt(e.target.value) : null)}
                             />
                         </div>
                         {/* Commit ETC (manual input, days) */}
@@ -566,7 +549,7 @@ export function OutgoingCalibrationModal({
                                 type="number"
                                 value={data.commit_etc ?? ''}
                                 min={0}
-                                onChange={e => setData('commit_etc', e.target.value ? parseInt(e.target.value) : null)}
+                                onChange={(e) => setData('commit_etc', e.target.value ? parseInt(e.target.value) : null)}
                             />
                         </div>
                         {/* Actual ETC (manual input, days) */}
@@ -577,7 +560,7 @@ export function OutgoingCalibrationModal({
                                 type="number"
                                 value={data.actual_etc ?? ''}
                                 min={0}
-                                onChange={e => setData('actual_etc', e.target.value ? parseInt(e.target.value) : null)}
+                                onChange={(e) => setData('actual_etc', e.target.value ? parseInt(e.target.value) : null)}
                             />
                         </div>
                         {/* Actual No. of Cycle Time (editable) */}
@@ -588,17 +571,13 @@ export function OutgoingCalibrationModal({
                                 type="number"
                                 value={data.cycle_time}
                                 min={0}
-                                onChange={e => setData('cycle_time', e.target.value ? parseInt(e.target.value) : 0)}
+                                onChange={(e) => setData('cycle_time', e.target.value ? parseInt(e.target.value) : 0)}
                             />
                         </div>
                         {/* Queuing Days (auto) */}
                         <div className="space-y-2">
                             <Label>Queuing Days</Label>
-                            <Input
-                                value={calculateQueuingDays()}
-                                readOnly
-                                className="bg-muted"
-                            />
+                            <Input value={calculateQueuingDays()} readOnly className="bg-muted" />
                         </div>
                         {/* Overdue (auto/manual) */}
                         <div className="space-y-2">
@@ -616,7 +595,7 @@ export function OutgoingCalibrationModal({
                     </div>
 
                     {/* Form Actions */}
-                    <div className="flex justify-end gap-3 pt-4 border-t">
+                    <div className="flex justify-end gap-3 border-t pt-4">
                         <Button type="button" variant="outline" onClick={handleCancel}>
                             Cancel
                         </Button>

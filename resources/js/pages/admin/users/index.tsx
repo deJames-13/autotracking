@@ -6,9 +6,9 @@ import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Department, type Plant, type Role, type User } from '@/types';
 import { Head, router } from '@inertiajs/react';
+import axios from 'axios';
 import { Plus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -32,7 +32,7 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
         current_page: 1,
         last_page: 1,
         per_page: 10,
-        total: 0
+        total: 0,
     });
     const [filters, setFilters] = useState<Record<string, any>>({});
 
@@ -54,7 +54,7 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
 
             // Add filters if provided
             if (params.filters) {
-                Object.keys(params.filters).forEach(key => {
+                Object.keys(params.filters).forEach((key) => {
                     const value = params.filters[key];
                     if (value && value !== 'all') {
                         queryParams.append(key, value);
@@ -77,8 +77,8 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
 
             const response = await axios.get(`/admin/users/table-data?${queryParams.toString()}`, {
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
             });
 
             const data = response.data;
@@ -87,7 +87,7 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
                 current_page: data.meta.current_page || 1,
                 last_page: data.meta.last_page || 1,
                 per_page: data.meta.per_page || 10,
-                total: data.meta.total || 0
+                total: data.meta.total || 0,
             });
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -105,9 +105,12 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
     }, []);
 
     // Handle DataTable search
-    const handleSearch = useCallback((search: string) => {
-        fetchUsers({ ...filters, search, page: 1 });
-    }, [filters]);
+    const handleSearch = useCallback(
+        (search: string) => {
+            fetchUsers({ ...filters, search, page: 1 });
+        },
+        [filters],
+    );
 
     // Handle DataTable filters
     const handleFilter = useCallback((newFilters: Record<string, any>) => {
@@ -116,21 +119,27 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
     }, []);
 
     // Handle DataTable pagination
-    const handlePageChange = useCallback((page: number) => {
-        fetchUsers({ ...filters, page });
-    }, [filters]);
+    const handlePageChange = useCallback(
+        (page: number) => {
+            fetchUsers({ ...filters, page });
+        },
+        [filters],
+    );
 
-    const handlePerPageChange = useCallback((perPage: number) => {
-        fetchUsers({ ...filters, per_page: perPage, page: 1 });
-    }, [filters]);
+    const handlePerPageChange = useCallback(
+        (perPage: number) => {
+            fetchUsers({ ...filters, per_page: perPage, page: 1 });
+        },
+        [filters],
+    );
 
     // Refresh users after actions
     const refreshUsers = useCallback(() => {
         fetchUsers({ ...filters });
-    }, [filters])
+    }, [filters]);
 
     if (!canManageUsers()) {
-        return null; 
+        return null;
     }
 
     return (
@@ -151,12 +160,10 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
                                 Add User
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="w-full max-w-[90vw] lg:max-w-[80vw] xl:max-w-[72rem] max-h-[85vh] overflow-hidden flex flex-col">
+                        <DialogContent className="flex max-h-[85vh] w-full max-w-[90vw] flex-col overflow-hidden lg:max-w-[80vw] xl:max-w-[72rem]">
                             <DialogHeader className="flex-shrink-0">
                                 <DialogTitle>Add New User</DialogTitle>
-                                <DialogDescription>
-                                    Create a new user account. All fields marked with * are required.
-                                </DialogDescription>
+                                <DialogDescription>Create a new user account. All fields marked with * are required.</DialogDescription>
                             </DialogHeader>
                             <div className="flex-1 overflow-y-auto px-1 py-4">
                                 <UserForm
@@ -181,7 +188,7 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
                         current_page: pagination.current_page,
                         last_page: pagination.last_page,
                         per_page: pagination.per_page,
-                        total: pagination.total
+                        total: pagination.total,
                     }}
                     loading={loading}
                     roles={roles}

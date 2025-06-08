@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { router } from '@inertiajs/react';
-import { toast } from 'react-hot-toast';
-import axios from 'axios';
-import AppLayout from '@/layouts/app-layout';
 import { TrackIncomingTable } from '@/components/admin/tracking/track-incoming-table';
-import { type TrackIncoming, type PaginationData, type User, type Location } from '@/types';
+import { Button } from '@/components/ui/button';
+import AppLayout from '@/layouts/app-layout';
+import { type Location, type PaginationData, type TrackIncoming, type User } from '@/types';
+import { Head, router } from '@inertiajs/react';
+import axios from 'axios';
+import { Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface TrackIncomingIndexProps {
     // Props can be extended as needed
@@ -20,7 +19,7 @@ interface FilterOptions {
     employees: User[];
 }
 
-export default function TrackIncomingIndex({ }: TrackIncomingIndexProps) {
+export default function TrackIncomingIndex(props: TrackIncomingIndexProps) {
     const [trackIncoming, setTrackIncoming] = useState<PaginationData<TrackIncoming> | null>(null);
     const [loading, setLoading] = useState(true);
     const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
@@ -28,12 +27,7 @@ export default function TrackIncomingIndex({ }: TrackIncomingIndexProps) {
     const [currentSearch, setCurrentSearch] = useState('');
 
     // Fetch table data
-    const fetchTableData = async (
-        page = 1,
-        perPage = 10,
-        search = '',
-        filters = {}
-    ) => {
+    const fetchTableData = async (page = 1, perPage = 10, search = '', filters = {}) => {
         try {
             setLoading(true);
             const response = await axios.get(route('admin.tracking.incoming.table-data'), {
@@ -94,12 +88,7 @@ export default function TrackIncomingIndex({ }: TrackIncomingIndexProps) {
 
     // Handle refresh
     const handleRefresh = () => {
-        fetchTableData(
-            trackIncoming?.current_page || 1,
-            trackIncoming?.per_page || 10,
-            currentSearch,
-            currentFilters
-        );
+        fetchTableData(trackIncoming?.current_page || 1, trackIncoming?.per_page || 10, currentSearch, currentFilters);
     };
 
     return (
@@ -110,15 +99,10 @@ export default function TrackIncomingIndex({ }: TrackIncomingIndexProps) {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Track Incoming Equipment</h1>
-                        <p className="text-muted-foreground">
-                            Manage and track incoming equipment calibration requests
-                        </p>
+                        <p className="text-muted-foreground">Manage and track incoming equipment calibration requests</p>
                     </div>
 
-                    <Button
-                        onClick={() => router.visit(route('admin.tracking.request.index'))}
-                        size="sm"
-                    >
+                    <Button onClick={() => router.visit(route('admin.tracking.request.index'))} size="sm">
                         <Plus className="mr-2 h-4 w-4" />
                         New Request
                     </Button>

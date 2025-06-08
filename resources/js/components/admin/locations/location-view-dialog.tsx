@@ -13,7 +13,7 @@ export function LocationViewDialog({ location, open, onOpenChange }: LocationVie
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-lg max-h-[85vh]">
+            <DialogContent className="max-h-[85vh] max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Location Details</DialogTitle>
                 </DialogHeader>
@@ -21,28 +21,24 @@ export function LocationViewDialog({ location, open, onOpenChange }: LocationVie
                     <div className="space-y-6">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Location ID</label>
+                                <label className="text-muted-foreground text-sm font-medium">Location ID</label>
                                 <p className="text-sm">{location.location_id}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Location Name</label>
+                                <label className="text-muted-foreground text-sm font-medium">Location Name</label>
                                 <p className="text-sm">{location.location_name}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Department</label>
+                                <label className="text-muted-foreground text-sm font-medium">Department</label>
                                 <p className="text-sm">{location.department?.department_name || 'No department'}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Created</label>
-                                <p className="text-sm">
-                                    {new Date(location.created_at).toLocaleString()}
-                                </p>
+                                <label className="text-muted-foreground text-sm font-medium">Created</label>
+                                <p className="text-sm">{new Date(location.created_at).toLocaleString()}</p>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
-                                <p className="text-sm">
-                                    {new Date(location.updated_at).toLocaleString()}
-                                </p>
+                                <label className="text-muted-foreground text-sm font-medium">Last Updated</label>
+                                <p className="text-sm">{new Date(location.updated_at).toLocaleString()}</p>
                             </div>
                         </div>
                     </div>

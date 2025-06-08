@@ -7,7 +7,7 @@ import { type Department, type Location } from '@/types';
 import { locationSchema, LocationSchema } from '@/validation/location-schema';
 import { useForm } from '@inertiajs/react';
 import axios from 'axios';
-import { FormEventHandler, useState, useCallback, useMemo, useEffect } from 'react';
+import { FormEventHandler, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 interface LocationFormProps {
@@ -23,10 +23,13 @@ export function LocationForm({ location, departments, onSuccess, onCancel }: Loc
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
     // Memoize the form data to prevent unnecessary rerenders
-    const initialData = useMemo(() => ({
-        location_name: location?.location_name || '',
-        department_id: location?.department_id?.toString() || '',
-    }), [location]);
+    const initialData = useMemo(
+        () => ({
+            location_name: location?.location_name || '',
+            department_id: location?.department_id?.toString() || '',
+        }),
+        [location],
+    );
 
     const { data, setData, post, put, processing, errors, reset } = useForm<LocationSchema>(initialData);
 
@@ -38,16 +41,16 @@ export function LocationForm({ location, departments, onSuccess, onCancel }: Loc
         if (location.department) {
             return {
                 value: location.department_id.toString(),
-                label: location.department.department_name
+                label: location.department.department_name,
             };
         }
 
         // Try to find the department in the provided departments list
-        const dept = departments.find(d => d.department_id === location.department_id);
+        const dept = departments.find((d) => d.department_id === location.department_id);
         if (dept) {
             return {
                 value: dept.department_id.toString(),
-                label: dept.department_name
+                label: dept.department_name,
             };
         }
 
@@ -59,7 +62,7 @@ export function LocationForm({ location, departments, onSuccess, onCancel }: Loc
         // The component will already filter out short searches
         try {
             const response = await axios.get(route('admin.departments.search-departments'), {
-                params: { search: inputValue }
+                params: { search: inputValue },
             });
             return response.data;
         } catch (error) {
@@ -71,7 +74,7 @@ export function LocationForm({ location, departments, onSuccess, onCancel }: Loc
     const createDepartmentOption = useCallback(async (inputValue: string): Promise<SelectOption> => {
         try {
             const response = await axios.post(route('admin.departments.create-department'), {
-                name: inputValue
+                name: inputValue,
             });
             toast.success(`Department "${inputValue}" created successfully`);
             return response.data;
@@ -159,10 +162,7 @@ export function LocationForm({ location, departments, onSuccess, onCancel }: Loc
             // If we have a department object with the name, add it to the label cache
             if (typeof window !== 'undefined' && (window as any).optionCache) {
                 const optionCache = (window as any).optionCache;
-                optionCache.set(
-                    String(location.department_id),
-                    location.department.department_name
-                );
+                optionCache.set(String(location.department_id), location.department.department_name);
             }
         }
     }, [location]);

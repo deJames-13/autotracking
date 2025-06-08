@@ -1,15 +1,15 @@
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
-import { type Department, type Plant, type Role, type User, type PaginationData } from '@/types';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { type Department, type PaginationData, type Plant, type Role, type User } from '@/types';
 import { router } from '@inertiajs/react';
-import { Eye, MoreHorizontal, Pencil, Trash2, Download } from 'lucide-react';
-import { useState, useCallback } from 'react';
-import { UserForm } from './user-form';
+import { Download, Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import Barcode from 'react-barcode';
 import { toast } from 'react-hot-toast';
+import { UserForm } from './user-form';
 
 interface UserTableProps {
     users: PaginationData<User>;
@@ -19,7 +19,7 @@ interface UserTableProps {
     plants: Plant[];
     onRefresh?: () => void;
     onSearch?: (search: string) => void;
-    onFilter?: (filters: Record<string, any>) => void;
+    onFilter?: (filters: Record<string, unknown>) => void;
     onPageChange?: (page: number) => void;
     onPerPageChange?: (perPage: number) => void;
 }
@@ -34,7 +34,7 @@ export function UserTable({
     onSearch,
     onFilter,
     onPageChange,
-    onPerPageChange
+    onPerPageChange,
 }: UserTableProps) {
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [viewingUser, setViewingUser] = useState<User | null>(null);
@@ -48,7 +48,7 @@ export function UserTable({
 
     const handleDelete = (user: User) => {
         console.log('UserTable: Archiving user', user.employee_id);
-        
+
         router.delete(route('admin.users.destroy', user.employee_id), {
             preserveState: true,
             preserveScroll: true,
@@ -72,7 +72,7 @@ export function UserTable({
 
                 // Generic fallback error
                 toast.error('Failed to archive user. Please try again.');
-            }
+            },
         });
     };
 
@@ -90,7 +90,7 @@ export function UserTable({
     };
 
     const formatRoleName = (roleName: string) => {
-        return roleName.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return roleName.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
     };
 
     // Handle barcode download
@@ -175,80 +175,57 @@ export function UserTable({
             label: 'Name',
             render: (value, row) => (
                 <div className="space-y-0.5">
-                    <div className="font-medium">
-                        {row.full_name || `${row.first_name} ${row.last_name}`}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                        ID: {row.employee_id}
-                    </div>
+                    <div className="font-medium">{row.full_name || `${row.first_name} ${row.last_name}`}</div>
+                    <div className="text-muted-foreground text-xs">ID: {row.employee_id}</div>
                 </div>
             ),
             sortable: true,
-            width: 'w-[200px]'
+            width: 'w-[200px]',
         },
         {
             key: 'email',
             label: 'Email',
-            render: (value, row) => (
-                <div className="text-sm">
-                    {row.email || (
-                        <span className="text-muted-foreground italic">No email</span>
-                    )}
-                </div>
-            ),
+            render: (value, row) => <div className="text-sm">{row.email || <span className="text-muted-foreground italic">No email</span>}</div>,
             sortable: true,
-            width: 'w-[200px]'
+            width: 'w-[200px]',
         },
         {
             key: 'role',
             label: 'Role',
             render: (value, row) => (
-                <Badge
-                    variant="secondary"
-                    className={getRoleBadgeColor(row.role?.role_name || '')}
-                >
+                <Badge variant="secondary" className={getRoleBadgeColor(row.role?.role_name || '')}>
                     {formatRoleName(row.role?.role_name || 'Unknown')}
                 </Badge>
             ),
             sortable: true,
-            width: 'w-[120px]'
+            width: 'w-[120px]',
         },
         {
             key: 'department',
             label: 'Department',
             render: (value, row) => (
                 <div className="text-sm">
-                    {row.department?.department_name || (
-                        <span className="text-muted-foreground italic">No department</span>
-                    )}
+                    {row.department?.department_name || <span className="text-muted-foreground italic">No department</span>}
                 </div>
             ),
             sortable: true,
-            width: 'w-[150px]'
+            width: 'w-[150px]',
         },
         {
             key: 'plant',
             label: 'Plant',
             render: (value, row) => (
-                <div className="text-sm">
-                    {row.plant?.plant_name || (
-                        <span className="text-muted-foreground italic">No plant</span>
-                    )}
-                </div>
+                <div className="text-sm">{row.plant?.plant_name || <span className="text-muted-foreground italic">No plant</span>}</div>
             ),
             sortable: true,
-            width: 'w-[120px]'
+            width: 'w-[120px]',
         },
         {
             key: 'created_at',
             label: 'Created',
-            render: (value, row) => (
-                <div className="text-sm text-muted-foreground">
-                    {new Date(row.created_at).toLocaleDateString()}
-                </div>
-            ),
+            render: (value, row) => <div className="text-muted-foreground text-sm">{new Date(row.created_at).toLocaleDateString()}</div>,
             sortable: true,
-            width: 'w-[100px]'
+            width: 'w-[100px]',
         },
         {
             key: 'actions',
@@ -270,18 +247,15 @@ export function UserTable({
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                            onClick={() => setDeletingUser(row)}
-                            className="text-destructive"
-                        >
+                        <DropdownMenuItem onClick={() => setDeletingUser(row)} className="text-destructive">
                             <Trash2 className="mr-2 h-4 w-4" />
                             Archive
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             ),
-            width: 'w-[70px]'
-        }
+            width: 'w-[70px]',
+        },
     ];
 
     // Define DataTable filters
@@ -292,11 +266,11 @@ export function UserTable({
             type: 'select',
             options: [
                 { value: 'all', label: 'All Roles' },
-                ...roles.map(role => ({
+                ...roles.map((role) => ({
                     value: role.role_name,
-                    label: formatRoleName(role.role_name)
-                }))
-            ]
+                    label: formatRoleName(role.role_name),
+                })),
+            ],
         },
         {
             key: 'department_id',
@@ -304,11 +278,11 @@ export function UserTable({
             type: 'select',
             options: [
                 { value: 'all', label: 'All Departments' },
-                ...departments.map(dept => ({
+                ...departments.map((dept) => ({
                     value: dept.department_id.toString(),
-                    label: dept.department_name
-                }))
-            ]
+                    label: dept.department_name,
+                })),
+            ],
         },
         {
             key: 'plant_id',
@@ -316,38 +290,50 @@ export function UserTable({
             type: 'select',
             options: [
                 { value: 'all', label: 'All Plants' },
-                ...plants.map(plant => ({
+                ...plants.map((plant) => ({
                     value: plant.plant_id.toString(),
-                    label: plant.plant_name
-                }))
-            ]
-        }
+                    label: plant.plant_name,
+                })),
+            ],
+        },
     ];
 
     // Handle DataTable events
-    const handleSearch = useCallback((search: string) => {
-        if (onSearch) {
-            onSearch(search);
-        }
-    }, [onSearch]);
+    const handleSearch = useCallback(
+        (search: string) => {
+            if (onSearch) {
+                onSearch(search);
+            }
+        },
+        [onSearch],
+    );
 
-    const handleFilter = useCallback((filters: Record<string, any>) => {
-        if (onFilter) {
-            onFilter(filters);
-        }
-    }, [onFilter]);
+    const handleFilter = useCallback(
+        (filters: Record<string, unknown>) => {
+            if (onFilter) {
+                onFilter(filters);
+            }
+        },
+        [onFilter],
+    );
 
-    const handlePageChange = useCallback((page: number) => {
-        if (onPageChange) {
-            onPageChange(page);
-        }
-    }, [onPageChange]);
+    const handlePageChange = useCallback(
+        (page: number) => {
+            if (onPageChange) {
+                onPageChange(page);
+            }
+        },
+        [onPageChange],
+    );
 
-    const handlePerPageChange = useCallback((perPage: number) => {
-        if (onPerPageChange) {
-            onPerPageChange(perPage);
-        }
-    }, [onPerPageChange]);
+    const handlePerPageChange = useCallback(
+        (perPage: number) => {
+            if (onPerPageChange) {
+                onPerPageChange(perPage);
+            }
+        },
+        [onPerPageChange],
+    );
 
     return (
         <>
@@ -360,7 +346,7 @@ export function UserTable({
                     current_page: users.current_page,
                     last_page: users.last_page,
                     per_page: users.per_page,
-                    total: users.total
+                    total: users.total,
                 }}
                 onSearch={handleSearch}
                 onFilter={handleFilter}
@@ -374,12 +360,10 @@ export function UserTable({
 
             {/* Edit User Dialog */}
             <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-                <DialogContent className="w-full max-w-[90vw] lg:max-w-[80vw] xl:max-w-[72rem] max-h-[85vh] overflow-scroll flex flex-col">
+                <DialogContent className="flex max-h-[85vh] w-full max-w-[90vw] flex-col overflow-scroll lg:max-w-[80vw] xl:max-w-[72rem]">
                     <DialogHeader>
                         <DialogTitle>Edit User</DialogTitle>
-                        <DialogDescription>
-                            Update user information. Leave password blank to keep the current password.
-                        </DialogDescription>
+                        <DialogDescription>Update user information. Leave password blank to keep the current password.</DialogDescription>
                     </DialogHeader>
                     {editingUser && (
                         <UserForm
@@ -404,7 +388,7 @@ export function UserTable({
                         <div className="space-y-6">
                             {/* Employee ID Barcode */}
                             {viewingUser.employee_id && (
-                                <div className="flex flex-col items-center mb-4">
+                                <div className="mb-4 flex flex-col items-center">
                                     <div className="user-barcode-container">
                                         <Barcode
                                             value={String(viewingUser.employee_id)}
@@ -415,15 +399,10 @@ export function UserTable({
                                             margin={8}
                                         />
                                     </div>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <span className="text-xs text-muted-foreground">Employee ID Barcode</span>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleDownloadBarcode}
-                                            className="h-6 px-2"
-                                        >
-                                            <Download className="h-3 w-3 mr-1" />
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <span className="text-muted-foreground text-xs">Employee ID Barcode</span>
+                                        <Button variant="outline" size="sm" onClick={handleDownloadBarcode} className="h-6 px-2">
+                                            <Download className="mr-1 h-3 w-3" />
                                             Download
                                         </Button>
                                     </div>
@@ -431,51 +410,47 @@ export function UserTable({
                             )}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Employee ID</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Employee ID</label>
                                     <p className="text-sm">{viewingUser.employee_id}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Full Name</label>
                                     <p className="text-sm">
-                                        {viewingUser.full_name || `${viewingUser.first_name} ${viewingUser.middle_name || ''} ${viewingUser.last_name}`.trim()}
+                                        {viewingUser.full_name ||
+                                            `${viewingUser.first_name} ${viewingUser.middle_name || ''} ${viewingUser.last_name}`.trim()}
                                     </p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Email</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Email</label>
                                     <p className="text-sm">{viewingUser.email || 'No email'}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Role</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Role</label>
                                     <p className="text-sm">
-                                        <Badge
-                                            variant="secondary"
-                                            className={getRoleBadgeColor(viewingUser.role?.role_name || '')}
-                                        >
+                                        <Badge variant="secondary" className={getRoleBadgeColor(viewingUser.role?.role_name || '')}>
                                             {formatRoleName(viewingUser.role?.role_name || 'Unknown')}
                                         </Badge>
                                     </p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Department</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Department</label>
                                     <p className="text-sm">{viewingUser.department?.department_name || 'No department'}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Plant</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Plant</label>
                                     <p className="text-sm">{viewingUser.plant?.plant_name || 'No plant'}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Email Verified</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Email Verified</label>
                                     <p className="text-sm">
-                                        <Badge variant={viewingUser.email_verified_at ? "default" : "secondary"}>
+                                        <Badge variant={viewingUser.email_verified_at ? 'default' : 'secondary'}>
                                             {viewingUser.email_verified_at ? 'Verified' : 'Not verified'}
                                         </Badge>
                                     </p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Created</label>
-                                    <p className="text-sm">
-                                        {new Date(viewingUser.created_at).toLocaleString()}
-                                    </p>
+                                    <label className="text-muted-foreground text-sm font-medium">Created</label>
+                                    <p className="text-sm">{new Date(viewingUser.created_at).toLocaleString()}</p>
                                 </div>
                             </div>
                         </div>
@@ -494,20 +469,12 @@ export function UserTable({
                     </DialogHeader>
                     {deletingUser && (
                         <div className="space-y-4">
-                            <div className="p-4 border rounded-lg bg-muted/50">
-                                <div className="font-medium">
-                                    {deletingUser.full_name || `${deletingUser.first_name} ${deletingUser.last_name}`}
-                                </div>
-                                <div className="text-sm text-muted-foreground mt-1">
-                                    {deletingUser.email && (
-                                        <div>{deletingUser.email}</div>
-                                    )}
-                                    <div>
-                                        Role: {formatRoleName(deletingUser.role?.role_name || '')}
-                                    </div>
-                                    <div>
-                                        ID: {deletingUser.employee_id}
-                                    </div>
+                            <div className="bg-muted/50 rounded-lg border p-4">
+                                <div className="font-medium">{deletingUser.full_name || `${deletingUser.first_name} ${deletingUser.last_name}`}</div>
+                                <div className="text-muted-foreground mt-1 text-sm">
+                                    {deletingUser.email && <div>{deletingUser.email}</div>}
+                                    <div>Role: {formatRoleName(deletingUser.role?.role_name || '')}</div>
+                                    <div>ID: {deletingUser.employee_id}</div>
                                 </div>
                             </div>
                             <div className="flex justify-end gap-3">

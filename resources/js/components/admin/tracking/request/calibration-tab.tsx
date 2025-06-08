@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CalibrationSchema, TechnicianSchema } from '@/validation/tracking-request-schema';
+import React, { useEffect } from 'react';
 
 interface EquipmentSummary {
     plant: string;
@@ -47,7 +47,7 @@ const CalibrationTab: React.FC<CalibrationTabProps> = ({ data, technician, onCha
                 calibrationDate: data.calibrationDate,
                 expectedDueDate: data.expectedDueDate,
                 dateOut: data.dateOut,
-                ...updates
+                ...updates,
             });
         }
     }, []);
@@ -71,7 +71,7 @@ const CalibrationTab: React.FC<CalibrationTabProps> = ({ data, technician, onCha
                 onChange({
                     calibrationDate: value,
                     expectedDueDate: formatDateForInput(newDueDate),
-                    dateOut: data.dateOut
+                    dateOut: data.dateOut,
                 });
                 return;
             }
@@ -81,7 +81,7 @@ const CalibrationTab: React.FC<CalibrationTabProps> = ({ data, technician, onCha
             calibrationDate: data.calibrationDate,
             expectedDueDate: data.expectedDueDate,
             dateOut: data.dateOut,
-            [field]: value
+            [field]: value,
         });
     };
 
@@ -89,7 +89,7 @@ const CalibrationTab: React.FC<CalibrationTabProps> = ({ data, technician, onCha
     const isOneYearApart = (startDate: Date, endDate: Date): boolean => {
         const oneYearInMs = 365 * 24 * 60 * 60 * 1000;
         const difference = endDate.getTime() - startDate.getTime();
-        return Math.abs(difference - oneYearInMs) < (24 * 60 * 60 * 1000); // 1 day tolerance
+        return Math.abs(difference - oneYearInMs) < 24 * 60 * 60 * 1000; // 1 day tolerance
     };
 
     return (
@@ -157,12 +157,9 @@ const CalibrationTab: React.FC<CalibrationTabProps> = ({ data, technician, onCha
                     <CardDescription>Enter the calibration information for this equipment</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                         <div>
-                            <Label
-                                htmlFor="calibrationDate"
-                                className={errors.calibrationDate ? 'text-destructive' : ''}
-                            >
+                            <Label htmlFor="calibrationDate" className={errors.calibrationDate ? 'text-destructive' : ''}>
                                 Calibration Date
                             </Label>
                             <Input
@@ -172,16 +169,11 @@ const CalibrationTab: React.FC<CalibrationTabProps> = ({ data, technician, onCha
                                 onChange={(e) => handleChange('calibrationDate', e.target.value)}
                                 className={errors.calibrationDate ? 'border-destructive' : ''}
                             />
-                            {errors.calibrationDate && (
-                                <p className="text-sm text-destructive mt-1">{errors.calibrationDate}</p>
-                            )}
+                            {errors.calibrationDate && <p className="text-destructive mt-1 text-sm">{errors.calibrationDate}</p>}
                         </div>
 
                         <div>
-                            <Label
-                                htmlFor="expectedDueDate"
-                                className={errors.expectedDueDate ? 'text-destructive' : ''}
-                            >
+                            <Label htmlFor="expectedDueDate" className={errors.expectedDueDate ? 'text-destructive' : ''}>
                                 Expected Due Date
                             </Label>
                             <Input
@@ -191,16 +183,11 @@ const CalibrationTab: React.FC<CalibrationTabProps> = ({ data, technician, onCha
                                 onChange={(e) => handleChange('expectedDueDate', e.target.value)}
                                 className={errors.expectedDueDate ? 'border-destructive' : ''}
                             />
-                            {errors.expectedDueDate && (
-                                <p className="text-sm text-destructive mt-1">{errors.expectedDueDate}</p>
-                            )}
+                            {errors.expectedDueDate && <p className="text-destructive mt-1 text-sm">{errors.expectedDueDate}</p>}
                         </div>
 
                         <div>
-                            <Label
-                                htmlFor="dateOut"
-                                className={errors.dateOut ? 'text-destructive' : ''}
-                            >
+                            <Label htmlFor="dateOut" className={errors.dateOut ? 'text-destructive' : ''}>
                                 Date Out
                             </Label>
                             <Input
@@ -210,9 +197,7 @@ const CalibrationTab: React.FC<CalibrationTabProps> = ({ data, technician, onCha
                                 onChange={(e) => handleChange('dateOut', e.target.value)}
                                 className={errors.dateOut ? 'border-destructive' : ''}
                             />
-                            {errors.dateOut && (
-                                <p className="text-sm text-destructive mt-1">{errors.dateOut}</p>
-                            )}
+                            {errors.dateOut && <p className="text-destructive mt-1 text-sm">{errors.dateOut}</p>}
                         </div>
                     </div>
                 </CardContent>
