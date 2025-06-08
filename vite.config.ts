@@ -22,7 +22,4 @@ export default defineConfig({
             'ziggy-js': resolve(__dirname, 'vendor/tightenco/ziggy'),
         },
     },
-    server: {
-        https: true,
-    },
 });
