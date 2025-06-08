@@ -1,4 +1,11 @@
 
+-- Creds
+100001 - admin
+200001 - technician
+200002 - technician
+300001 - employee
+300002 - employee
+
 
 -- TESTING
 - [x] Cycle time    
