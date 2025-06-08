@@ -26,6 +26,20 @@ class TrackIncomingController extends Controller
     {
         $query = TrackIncoming::with(['equipment', 'technician', 'location', 'employeeIn', 'trackOutgoing']);
 
+        // Apply role-based filtering
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            // Technicians can only see records they are assigned to
+            $query->where(function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        } elseif ($user->role->role_name === 'employee') {
+            // Employees can only see their own submitted records
+            $query->where('employee_id_in', $user->employee_id);
+        }
+        // Admin users can see all records (no additional filtering)
+
         if ($request->has('search')) {
             $search = $request->get('search');
             $query->where('description', 'like', "%{$search}%")
@@ -112,12 +126,22 @@ class TrackIncomingController extends Controller
                     ]);
                 }
 
-                // Update the tracking record
-                $trackIncoming->update([
-                    'technician_id' => $data['technician']['employee_id'],
-                    'description' => $data['equipment']['description'],
-                    'location_id' => $data['equipment']['location'],
-                    'received_by_id' => $data['receivedBy']['employee_id'],
+            // Auto-assign technician and received_by if user is a technician
+            $user = Auth::user();
+            $technicianId = $data['technician']['employee_id'];
+            $receivedById = $data['receivedBy']['employee_id'];
+            
+            if ($user->role->role_name === 'technician') {
+                $technicianId = $user->employee_id;
+                $receivedById = $user->employee_id;
+            }
+
+            // Update the tracking record
+            $trackIncoming->update([
+                'technician_id' => $technicianId,
+                'description' => $data['equipment']['description'],
+                'location_id' => $data['equipment']['location'],
+                'received_by_id' => $receivedById,
                     'serial_number' => $data['equipment']['serialNumber'],
                     'model' => $data['equipment']['model'],
                     'manufacturer' => $data['equipment']['manufacturer'],
@@ -139,17 +163,43 @@ class TrackIncomingController extends Controller
             }
             
             // Create mode - existing logic
-            // Generate unique recall number if not provided
-            $recallNumber = $data['equipment']['recallNumber'] ?? TrackIncoming::generateUniqueRecallNumber();
+            $requestType = $data['requestType'] ?? 'new';
             
-            // Check if equipment with this recall number already exists
-            $equipment = Equipment::where('recall_number', $recallNumber)->first();
+            // Handle recall number based on request type
+            $recallNumber = null;
+            if ($requestType === 'routine') {
+                // For routine requests, recall number must be provided and validated
+                $recallNumber = $data['equipment']['recallNumber'];
+                if (!$recallNumber) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Recall number is required for routine calibration requests.'
+                    ], 400);
+                }
+            } else {
+                // For new requests, recall number is optional
+                // If not provided, it will be generated during calibration
+                $recallNumber = $data['equipment']['recallNumber'] ?? null;
+            }
+            
+            // Check if equipment with this recall number already exists (for routine)
+            $equipment = null;
+            if ($recallNumber) {
+                $equipment = Equipment::where('recall_number', $recallNumber)->first();
+                
+                if ($requestType === 'routine' && !$equipment) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Equipment with recall number ' . $recallNumber . ' not found.'
+                    ], 404);
+                }
+            }
             
             if (!$equipment) {
-                // Create new equipment record
+                // Create new equipment record (for new requests)
                 $equipment = Equipment::create([
                     'employee_id' => $data['technician']['employee_id'],
-                    'recall_number' => $recallNumber,
+                    'recall_number' => $recallNumber, // This can be null for new requests
                     'serial_number' => $data['equipment']['serialNumber'],
                     'description' => $data['equipment']['description'],
                     'model' => $data['equipment']['model'],
@@ -159,22 +209,36 @@ class TrackIncomingController extends Controller
                     'location_id' => $data['equipment']['location'],
                     'status' => 'active',
                     'next_calibration_due' => $data['equipment']['dueDate'],
+                    'process_req_range_start' => $data['equipment']['processReqRangeStart'] ?? null,
+                    'process_req_range_end' => $data['equipment']['processReqRangeEnd'] ?? null,
                 ]);
             } else {
                 // Update existing equipment with new calibration due date if needed
                 $equipment->update([
                     'next_calibration_due' => $data['equipment']['dueDate'],
+                    'process_req_range_start' => $data['equipment']['processReqRangeStart'] ?? $equipment->process_req_range_start,
+                    'process_req_range_end' => $data['equipment']['processReqRangeEnd'] ?? $equipment->process_req_range_end,
                 ]);
             }
             
+            // Auto-assign technician and received_by if user is a technician
+            $user = Auth::user();
+            $technicianId = $data['technician']['employee_id'];
+            $receivedById = $data['receivedBy']['employee_id'];
+            
+            if ($user->role->role_name === 'technician') {
+                $technicianId = $user->employee_id;
+                $receivedById = $user->employee_id;
+            }
+
             // Create track incoming record
             $trackIncoming = TrackIncoming::create([
-                'recall_number' => $recallNumber,
-                'technician_id' => $data['technician']['employee_id'],
+                'recall_number' => $recallNumber, // This can be null for new requests
+                'technician_id' => $technicianId,
                 'description' => $data['equipment']['description'],
                 'equipment_id' => $equipment->equipment_id,
                 'location_id' => $data['equipment']['location'],
-                'received_by_id' => $data['receivedBy']['employee_id'],
+                'received_by_id' => $receivedById,
                 'serial_number' => $data['equipment']['serialNumber'],
                 'model' => $data['equipment']['model'],
                 'manufacturer' => $data['equipment']['manufacturer'],
@@ -185,9 +249,13 @@ class TrackIncomingController extends Controller
                 'notes' => 'Created via tracking request system',
             ]);
             
+            $message = $recallNumber 
+                ? 'Tracking request created successfully with recall number: ' . $recallNumber
+                : 'Tracking request created successfully. Recall number will be assigned during calibration.';
+            
             return response()->json([
                 'success' => true,
-                'message' => 'Tracking request created successfully with recall number: ' . $recallNumber,
+                'message' => $message,
                 'data' => [
                     'track_incoming' => $trackIncoming,
                     'equipment' => $equipment,
@@ -258,10 +326,26 @@ class TrackIncomingController extends Controller
      */
     public function confirmRequestPin(Request $request): JsonResponse
     {
-        $request->validate([
-            'employee_id' => 'required|numeric',
-            'pin' => 'required|string|min:4',
-        ]);
+        // Get current authenticated user to check role
+        $currentUser = Auth::user();
+        $currentUser->load('role');
+        
+        // Check if current user is Admin or Technician - they can bypass PIN validation
+        $canBypassPin = in_array($currentUser->role?->role_name, ['admin', 'technician']);
+        
+        // Validate request based on role
+        if ($canBypassPin) {
+            // Admin/Technician only needs employee_id
+            $request->validate([
+                'employee_id' => 'required|numeric',
+            ]);
+        } else {
+            // Regular users need both employee_id and pin
+            $request->validate([
+                'employee_id' => 'required|numeric',
+                'pin' => 'required|string|min:4',
+            ]);
+        }
 
         try {
             // Find the employee by employee_id
@@ -274,26 +358,34 @@ class TrackIncomingController extends Controller
                 ], 404);
             }
 
-            // Check if employee has a PIN set - using password field as PIN
-            if (!$employee->password) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Employee PIN is not set. Please contact administrator.'
-                ], 400);
+            // Skip PIN validation for Admin/Technician roles
+            if (!$canBypassPin) {
+                // Check if employee has a PIN set - using password field as PIN
+                if (!$employee->password) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Employee PIN is not set. Please contact administrator.'
+                    ], 400);
+                }
+
+                // Verify the PIN - assuming PIN is stored in password field
+                if (!Hash::check($request->pin, $employee->password)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid PIN. Please try again.'
+                    ], 401);
+                }
             }
 
-            // Verify the PIN - assuming PIN is stored in password field
-            if (!Hash::check($request->pin, $employee->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid PIN. Please try again.'
-                ], 401);
-            }
+            // PIN is correct or bypassed for Admin/Technician
+            $message = $canBypassPin 
+                ? 'Employee validated successfully (PIN bypassed for ' . ucfirst($currentUser->role->role_name) . ').'
+                : 'PIN confirmed successfully.';
 
-            // PIN is correct
             return response()->json([
                 'success' => true,
-                'message' => 'PIN confirmed successfully.',
+                'message' => $message,
+                'bypassed_pin' => $canBypassPin,
                 'employee' => [
                     'employee_id' => $employee->employee_id,
                     'first_name' => $employee->first_name,
@@ -621,6 +713,28 @@ class TrackIncomingController extends Controller
     public function confirmEmployeeRequest(Request $request, TrackIncoming $trackIncoming): JsonResponse
     {
         try {
+            // Apply role-based access control
+            $user = Auth::user();
+            
+            // Only allow admins and technicians to confirm employee requests
+            if ($user->role->role_name === 'employee') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Only administrators and technicians can confirm employee requests.'
+                ], 403);
+            }
+            
+            // For technicians, ensure they can only confirm requests assigned to them
+            if ($user->role->role_name === 'technician') {
+                if ($trackIncoming->technician_id !== $user->employee_id && 
+                    $trackIncoming->received_by_id !== $user->employee_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized. You can only confirm requests assigned to you.'
+                    ], 403);
+                }
+            }
+
             // Only allow confirmation if status is for_confirmation
             if ($trackIncoming->status !== 'for_confirmation') {
                 return response()->json([

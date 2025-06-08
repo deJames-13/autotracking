@@ -2,15 +2,15 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { type Equipment, type User, type Plant, type Department, type Location } from '@/types';
-import { equipmentFormSchema, type EquipmentFormSchema } from '@/validation/equipment-schema';
+import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
+import { Textarea } from '@/components/ui/textarea';
+import { type Department, type Equipment, type Location, type Plant, type User } from '@/types';
+import { equipmentFormSchema } from '@/validation/equipment-schema';
 import { useForm } from '@inertiajs/react';
+import axios from 'axios';
 import { FormEventHandler, useCallback, useState } from 'react';
 import { z } from 'zod';
-import axios from 'axios';
 
 interface EquipmentFormData {
     employee_id: string;
@@ -25,6 +25,8 @@ interface EquipmentFormData {
     status: string;
     last_calibration_date: string;
     next_calibration_due: string;
+    process_req_range_start: string;
+    process_req_range_end: string;
     [key: string]: any;
 }
 
@@ -56,101 +58,118 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
         status: equipment?.status || 'active',
         last_calibration_date: equipment?.last_calibration_date || '',
         next_calibration_due: equipment?.next_calibration_due || '',
+        process_req_range_start: equipment?.process_req_range_start || '',
+        process_req_range_end: equipment?.process_req_range_end || '',
     });
 
     // Load user options for SmartSelect
-    const loadUserOptions = useCallback(async (inputValue: string): Promise<SelectOption[]> => {
-        try {
-            setLoadingUsers(true);
-            // Filter users based on input value
-            const filteredUsers = users.filter(user =>
-                (user.full_name || `${user.first_name} ${user.last_name}`).toLowerCase().includes(inputValue.toLowerCase()) ||
-                user.employee_id.toString().includes(inputValue)
-            ).map(user => ({
-                label: `${user.full_name || `${user.first_name} ${user.last_name}`} (${user.employee_id})`,
-                value: user.employee_id.toString()
-            }));
-            return filteredUsers;
-        } catch (error) {
-            console.error('Error loading users:', error);
-            return [];
-        } finally {
-            setLoadingUsers(false);
-        }
-    }, [users]);
+    const loadUserOptions = useCallback(
+        async (inputValue: string): Promise<SelectOption[]> => {
+            try {
+                setLoadingUsers(true);
+                // Filter users based on input value
+                const filteredUsers = users
+                    .filter(
+                        (user) =>
+                            (user.full_name || `${user.first_name} ${user.last_name}`).toLowerCase().includes(inputValue.toLowerCase()) ||
+                            user.employee_id.toString().includes(inputValue),
+                    )
+                    .map((user) => ({
+                        label: `${user.full_name || `${user.first_name} ${user.last_name}`} (${user.employee_id})`,
+                        value: user.employee_id.toString(),
+                    }));
+                return filteredUsers;
+            } catch (error) {
+                console.error('Error loading users:', error);
+                return [];
+            } finally {
+                setLoadingUsers(false);
+            }
+        },
+        [users],
+    );
 
     // Load plant options for SmartSelect
-    const loadPlantOptions = useCallback(async (inputValue: string): Promise<SelectOption[]> => {
-        try {
-            const response = await axios.get('/admin/plants/search', {
-                params: {
-                    search: inputValue,
-                    limit: 10
-                },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+    const loadPlantOptions = useCallback(
+        async (inputValue: string): Promise<SelectOption[]> => {
+            try {
+                const response = await axios.get('/admin/plants/search', {
+                    params: {
+                        search: inputValue,
+                        limit: 10,
+                    },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
 
-            return response.data.data.map((plant: Plant) => ({
-                label: plant.plant_name,
-                value: plant.plant_id.toString()
-            }));
-        } catch (error) {
-            console.error('Error loading plants:', error);
-            return plants.map(plant => ({
-                label: plant.plant_name,
-                value: plant.plant_id.toString()
-            }));
-        }
-    }, [plants]);
+                return response.data.data.map((plant: Plant) => ({
+                    label: plant.plant_name,
+                    value: plant.plant_id.toString(),
+                }));
+            } catch (error) {
+                console.error('Error loading plants:', error);
+                return plants.map((plant) => ({
+                    label: plant.plant_name,
+                    value: plant.plant_id.toString(),
+                }));
+            }
+        },
+        [plants],
+    );
 
     // Load department options for SmartSelect
-    const loadDepartmentOptions = useCallback(async (inputValue: string): Promise<SelectOption[]> => {
-        try {
-            const response = await axios.get('/admin/departments/search', {
-                params: {
-                    search: inputValue,
-                    limit: 10
-                },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+    const loadDepartmentOptions = useCallback(
+        async (inputValue: string): Promise<SelectOption[]> => {
+            try {
+                const response = await axios.get('/admin/departments/search', {
+                    params: {
+                        search: inputValue,
+                        limit: 10,
+                    },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
 
-            return response.data.data.map((department: Department) => ({
-                label: department.department_name,
-                value: department.department_id.toString()
-            }));
-        } catch (error) {
-            console.error('Error loading departments:', error);
-            return departments.map(dept => ({
-                label: dept.department_name,
-                value: dept.department_id.toString()
-            }));
-        }
-    }, [departments]);
+                return response.data.data.map((department: Department) => ({
+                    label: department.department_name,
+                    value: department.department_id.toString(),
+                }));
+            } catch (error) {
+                console.error('Error loading departments:', error);
+                return departments.map((dept) => ({
+                    label: dept.department_name,
+                    value: dept.department_id.toString(),
+                }));
+            }
+        },
+        [departments],
+    );
 
     // Load location options for SmartSelect
-    const loadLocationOptions = useCallback(async (inputValue: string): Promise<SelectOption[]> => {
-        try {
-            const response = await axios.get('/admin/locations/search', {
-                params: {
-                    search: inputValue,
-                    department_id: data.department_id || undefined,
-                    limit: 10
-                },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+    const loadLocationOptions = useCallback(
+        async (inputValue: string): Promise<SelectOption[]> => {
+            try {
+                const response = await axios.get('/admin/locations/search', {
+                    params: {
+                        search: inputValue,
+                        department_id: data.department_id || undefined,
+                        limit: 10,
+                    },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
 
-            return response.data.data.map((location: Location) => ({
-                label: `${location.location_name}${location.department ? ` (${location.department.department_name})` : ''}`,
-                value: location.location_id.toString()
-            }));
-        } catch (error) {
-            console.error('Error loading locations:', error);
-            return locations.map(location => ({
-                label: `${location.location_name}${location.department ? ` (${location.department.department_name})` : ''}`,
-                value: location.location_id.toString()
-            }));
-        }
-    }, [locations, data.department_id]);
+                return response.data.data.map((location: Location) => ({
+                    label: `${location.location_name}${location.department ? ` (${location.department.department_name})` : ''}`,
+                    value: location.location_id.toString(),
+                }));
+            } catch (error) {
+                console.error('Error loading locations:', error);
+                return locations.map((location) => ({
+                    label: `${location.location_name}${location.department ? ` (${location.department.department_name})` : ''}`,
+                    value: location.location_id.toString(),
+                }));
+            }
+        },
+        [locations, data.department_id],
+    );
 
     // Client-side validation function
     const validateData = (formData: EquipmentFormData): boolean => {
@@ -234,7 +253,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
 
     return (
         <form onSubmit={submit} className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {/* Left column */}
                 <div className="space-y-6">
                     <div className="space-y-2">
@@ -315,12 +334,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                 <div className="space-y-6">
                     <div className="space-y-2">
                         <Label htmlFor="model">Model</Label>
-                        <Input
-                            id="model"
-                            value={data.model}
-                            onChange={(e) => setData('model', e.target.value)}
-                            placeholder="Enter model name"
-                        />
+                        <Input id="model" value={data.model} onChange={(e) => setData('model', e.target.value)} placeholder="Enter model name" />
                         <InputError message={errors.model} />
                     </div>
 
@@ -391,6 +405,30 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                             className={getCombinedErrors('next_calibration_due') ? 'border-destructive' : ''}
                         />
                         <InputError message={getCombinedErrors('next_calibration_due')} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="process_req_range_start">Process Req Range Start</Label>
+                        <Input
+                            id="process_req_range_start"
+                            value={data.process_req_range_start}
+                            onChange={(e) => setData('process_req_range_start', e.target.value)}
+                            placeholder="Enter process requirement range start"
+                            className={getCombinedErrors('process_req_range_start') ? 'border-destructive' : ''}
+                        />
+                        <InputError message={getCombinedErrors('process_req_range_start')} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="process_req_range_end">Process Req Range End</Label>
+                        <Input
+                            id="process_req_range_end"
+                            value={data.process_req_range_end}
+                            onChange={(e) => setData('process_req_range_end', e.target.value)}
+                            placeholder="Enter process requirement range end"
+                            className={getCombinedErrors('process_req_range_end') ? 'border-destructive' : ''}
+                        />
+                        <InputError message={getCombinedErrors('process_req_range_end')} />
                     </div>
 
                     <div className="space-y-2">

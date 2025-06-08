@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('equipments', function (Blueprint $table) {
             $table->id('equipment_id');
-            $table->string('recall_number');
+            $table->string('recall_number')->nullable();
             $table->string('serial_number')->nullable();
             $table->text('description');
             $table->foreignId('employee_id')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
@@ -29,7 +29,10 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'pending_calibration', 'in_calibration', 'retired'])->default('active');
             $table->date('last_calibration_date')->nullable();
             $table->date('next_calibration_due')->nullable();
+            $table->text('process_req_range_start')->nullable();
+            $table->text('process_req_range_end')->nullable();
             
+            $table->softDeletes();
             $table->timestamps();
         });
     }

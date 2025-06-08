@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type Plant, type PaginationData } from '@/types';
+import { type BreadcrumbItem, type PaginationData, type Plant } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -75,7 +75,7 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Plant Management" />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">Plant Management</h1>
@@ -89,12 +89,10 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
                                 Add Plant
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col">
+                        <DialogContent className="flex max-h-[85vh] max-w-md flex-col overflow-hidden">
                             <DialogHeader className="flex-shrink-0">
                                 <DialogTitle>Add New Plant</DialogTitle>
-                                <DialogDescription>
-                                    Create a new plant. All fields marked with * are required.
-                                </DialogDescription>
+                                <DialogDescription>Create a new plant. All fields marked with * are required.</DialogDescription>
                             </DialogHeader>
                             <div className="flex-1 overflow-y-auto px-1">
                                 <PlantForm
@@ -112,7 +110,7 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
                 {/* Filters */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                         <Input
                             placeholder="Search plants by name..."
                             value={data.search}
@@ -123,13 +121,10 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
                 </div>
 
                 {/* Plants Table */}
-                <PlantTable
-                    plants={plants}
-                    onRefresh={refreshPlants}
-                />
+                <PlantTable plants={plants} onRefresh={refreshPlants} />
 
                 {/* Pagination Info */}
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center justify-between text-sm">
                     <div>
                         Showing {plants.from || 0} to {plants.to || 0} of {plants.total} plants
                     </div>

@@ -2,6 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\Role;
+use App\Models\Department;
+use App\Models\Plant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -30,8 +33,9 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('23344466666'),
-            'role_id' => 1, 
-            'department_id' => null, 
+            'role_id' => Role::factory(),
+            'department_id' => Department::factory(),
+            'plant_id' => Plant::factory(),
             'remember_token' => Str::random(10),
         ];
     }
@@ -43,6 +47,50 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Create an admin user
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => Role::factory()->admin(),
+            'department_id' => Department::factory()->admin(),
+        ]);
+    }
+
+    /**
+     * Create an employee user
+     */
+    public function employee(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => Role::factory()->employee(),
+        ]);
+    }
+
+    /**
+     * Create a technician user
+     */
+    public function technician(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => Role::factory()->technician(),
+            'department_id' => Department::factory()->calibrations(),
+        ]);
+    }
+
+    /**
+     * Create a user with existing role and department IDs
+     */
+    public function withExistingRelations(int $roleId = 1, ?int $departmentId = 1, ?int $plantId = 1): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => $roleId,
+            'department_id' => $departmentId,
+            'plant_id' => $plantId,
         ]);
     }
 }

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Track Incoming Record - {{ $trackIncoming->recall_number }}</title>
+    <title>Track Incoming Record - {{ $trackIncoming->recall_number ?: 'Pending Assignment' }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;

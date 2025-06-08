@@ -1,23 +1,14 @@
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { EmployeeStatusBadge } from '@/components/ui/status-badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { EmployeeStatusBadge } from '@/components/ui/status-badge';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackIncoming } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    Package,
-    Calendar,
-    User,
-    MapPin,
-    FileText,
-    Edit,
-    Eye
-} from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
 import { format } from 'date-fns';
+import { ArrowLeft, Calendar, Edit, Eye, FileText, MapPin, Package, User } from 'lucide-react';
 
 interface EmployeeTrackingIncomingShowProps {
     record: TrackIncoming;
@@ -36,7 +27,7 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
             href: '/employee/tracking/incoming',
         },
         {
-            title: record.recall_number,
+            title: record.recall_number || 'Pending Assignment',
             href: `/employee/tracking/incoming/${record.id}`,
         },
     ];
@@ -59,10 +50,10 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`My Request: ${record.recall_number}`} />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
                     <Link href={route('employee.tracking.incoming.index')}>
-                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to My Requests
                     </Link>
                 </Button>
@@ -70,27 +61,18 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold tracking-tight">
-                                Request: {record.recall_number}
-                            </h1>
+                            <h1 className="text-3xl font-bold tracking-tight">Request: {record.recall_number || 'Pending Assignment'}</h1>
                             <p className="text-muted-foreground">Calibration request details</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
                         {getStatusBadge(record.status)}
-                        {isOverdue && (
-                            <Badge variant="destructive">Overdue</Badge>
-                        )}
+                        {isOverdue && <Badge variant="destructive">Overdue</Badge>}
 
                         {canEditRequest() && (
-                            <Button
-                                asChild
-                                variant="outline"
-                                size="sm"
-                                className="ml-2"
-                            >
+                            <Button asChild variant="outline" size="sm" className="ml-2">
                                 <Link href={route('employee.tracking.request.index', { edit: record.id })}>
-                                    <Edit className="h-4 w-4 mr-2" />
+                                    <Edit className="mr-2 h-4 w-4" />
                                     Edit Request
                                 </Link>
                             </Button>
@@ -110,27 +92,27 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
                         <CardContent className="space-y-4">
                             <div>
                                 <Label className="text-sm font-medium">Description</Label>
-                                <p className="text-sm text-muted-foreground">{record.description}</p>
+                                <p className="text-muted-foreground text-sm">{record.description}</p>
                             </div>
 
                             {record.serial_number && (
                                 <div>
                                     <Label className="text-sm font-medium">Serial Number</Label>
-                                    <p className="text-sm text-muted-foreground">{record.serial_number}</p>
+                                    <p className="text-muted-foreground text-sm">{record.serial_number}</p>
                                 </div>
                             )}
 
                             {record.manufacturer && (
                                 <div>
                                     <Label className="text-sm font-medium">Manufacturer</Label>
-                                    <p className="text-sm text-muted-foreground">{record.manufacturer}</p>
+                                    <p className="text-muted-foreground text-sm">{record.manufacturer}</p>
                                 </div>
                             )}
 
                             {record.model && (
                                 <div>
                                     <Label className="text-sm font-medium">Model</Label>
-                                    <p className="text-sm text-muted-foreground">{record.model}</p>
+                                    <p className="text-muted-foreground text-sm">{record.model}</p>
                                 </div>
                             )}
 
@@ -156,9 +138,7 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
                         <CardContent className="space-y-4">
                             <div>
                                 <Label className="text-sm font-medium">Date Submitted</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    {format(new Date(record.date_in), 'MMMM dd, yyyy HH:mm')}
-                                </p>
+                                <p className="text-muted-foreground text-sm">{format(new Date(record.date_in), 'MMMM dd, yyyy HH:mm')}</p>
                             </div>
 
                             <div>
@@ -176,7 +156,7 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
                             {record.notes && (
                                 <div>
                                     <Label className="text-sm font-medium">Notes</Label>
-                                    <p className="text-sm text-muted-foreground">{record.notes}</p>
+                                    <p className="text-muted-foreground text-sm">{record.notes}</p>
                                 </div>
                             )}
                         </CardContent>
@@ -194,19 +174,17 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
                             {record.technician && (
                                 <div>
                                     <Label className="text-sm font-medium">Assigned Technician</Label>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                         {record.technician.first_name} {record.technician.last_name}
                                     </p>
-                                    {record.technician.email && (
-                                        <p className="text-xs text-muted-foreground">{record.technician.email}</p>
-                                    )}
+                                    {record.technician.email && <p className="text-muted-foreground text-xs">{record.technician.email}</p>}
                                 </div>
                             )}
 
                             {record.employee_in && (
                                 <div>
                                     <Label className="text-sm font-medium">Submitted By</Label>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                         {record.employee_in.first_name} {record.employee_in.last_name}
                                     </p>
                                 </div>
@@ -226,11 +204,9 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
                             {record.location && (
                                 <div>
                                     <Label className="text-sm font-medium">Current Location</Label>
-                                    <p className="text-sm text-muted-foreground">{record.location.location_name}</p>
+                                    <p className="text-muted-foreground text-sm">{record.location.location_name}</p>
                                     {record.location.department && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Department: {record.location.department.department_name}
-                                        </p>
+                                        <p className="text-muted-foreground text-xs">Department: {record.location.department.department_name}</p>
                                     )}
                                 </div>
                             )}
@@ -246,16 +222,14 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
                                 <FileText className="h-4 w-4" />
                                 Calibration Completion
                             </CardTitle>
-                            <CardDescription>
-                                Your request has been completed and is available for pickup
-                            </CardDescription>
+                            <CardDescription>Your request has been completed and is available for pickup</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 md:grid-cols-3">
                                 {record.trackOutgoing.cal_date && (
                                     <div>
                                         <Label className="text-sm font-medium">Calibration Date</Label>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-muted-foreground text-sm">
                                             {format(new Date(record.trackOutgoing.cal_date), 'MMMM dd, yyyy')}
                                         </p>
                                     </div>
@@ -264,7 +238,7 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
                                 {record.trackOutgoing.cal_due_date && (
                                     <div>
                                         <Label className="text-sm font-medium">Next Due Date</Label>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-muted-foreground text-sm">
                                             {format(new Date(record.trackOutgoing.cal_due_date), 'MMMM dd, yyyy')}
                                         </p>
                                     </div>
@@ -273,7 +247,7 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
                                 {record.trackOutgoing.date_out && (
                                     <div>
                                         <Label className="text-sm font-medium">Date Out</Label>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-muted-foreground text-sm">
                                             {format(new Date(record.trackOutgoing.date_out), 'MMMM dd, yyyy')}
                                         </p>
                                     </div>
@@ -283,16 +257,14 @@ const EmployeeTrackingIncomingShow: React.FC<EmployeeTrackingIncomingShowProps> 
                             {record.trackOutgoing.certificate_number && (
                                 <div>
                                     <Label className="text-sm font-medium">Certificate Number</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        {record.trackOutgoing.certificate_number}
-                                    </p>
+                                    <p className="text-muted-foreground text-sm">{record.trackOutgoing.certificate_number}</p>
                                 </div>
                             )}
 
                             <div className="flex gap-2 pt-4">
                                 <Button variant="outline" asChild>
                                     <Link href={route('employee.tracking.outgoing.show', record.trackOutgoing.id)}>
-                                        <Eye className="h-4 w-4 mr-2" />
+                                        <Eye className="mr-2 h-4 w-4" />
                                         View Pickup Details
                                     </Link>
                                 </Button>

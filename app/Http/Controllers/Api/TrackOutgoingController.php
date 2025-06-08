@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 
 class TrackOutgoingController extends Controller
@@ -18,6 +19,22 @@ class TrackOutgoingController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = TrackOutgoing::with(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']);
+
+        // Apply role-based filtering
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            // Technicians can only see records from their assigned incoming requests
+            $query->whereHas('trackIncoming', function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        } elseif ($user->role->role_name === 'employee') {
+            // Employees can only see outgoing records from their department
+            $query->whereHas('trackIncoming.employeeIn', function($q) use ($user) {
+                $q->where('department_id', $user->department_id);
+            });
+        }
+        // Admin users can see all records (no additional filtering)
 
         if ($request->has('search')) {
             $search = $request->get('search');
@@ -47,7 +64,18 @@ class TrackOutgoingController extends Controller
     {
         $incoming = TrackIncoming::find($request->incoming_id);
         if ($incoming) {
-            $incoming->update(['status' => 'completed']);
+            // Update both status and recall number in the incoming record
+            $incoming->update([
+                'status' => 'completed',
+                'recall_number' => $request->recall_number
+            ]);
+            
+            // Also update the recall number in the related equipment if it exists
+            if ($incoming->equipment) {
+                $incoming->equipment->update([
+                    'recall_number' => $request->recall_number
+                ]);
+            }
         }
 
         $validatedData = $request->validated();
@@ -59,6 +87,27 @@ class TrackOutgoingController extends Controller
         // Set released_by_id to current authenticated user (admin/operator releasing the equipment)
         $validatedData['released_by_id'] = auth()->user()->employee_id;
 
+        // Auto-calculate overdue based on CT Required vs Cycle Time
+        // Only auto-calculate if overdue is not explicitly provided (manual override)
+        if (!isset($validatedData['overdue']) && isset($validatedData['ct_reqd']) && isset($validatedData['cycle_time'])) {
+            $ctReqd = (int) $validatedData['ct_reqd'];
+            $cycleTime = (int) $validatedData['cycle_time'];
+            $validatedData['overdue'] = ($ctReqd < $cycleTime) ? 1 : 0;
+        } elseif (isset($validatedData['overdue'])) {
+            // Convert yes/no to 1/0 if coming from frontend
+            if (is_string($validatedData['overdue'])) {
+                $validatedData['overdue'] = ($validatedData['overdue'] === 'yes') ? 1 : 0;
+            }
+        }
+        
+        // Auto-calculate queuing days (incoming date to cal date)
+        // if ($incoming && isset($validatedData['cal_date'])) {
+            // $incomingDate = new \DateTime($incoming->date_in);
+            // $calDate = new \DateTime($validatedData['cal_date']);
+            
+            // $interval = $incomingDate->diff($calDate);
+            // $validatedData['cycle_time'] = $interval->days;
+        // }
         $record = TrackOutgoing::create($validatedData);
         $record->load(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']);
 
@@ -73,7 +122,36 @@ class TrackOutgoingController extends Controller
 
     public function update(TrackOutgoingRequest $request, TrackOutgoing $trackOutgoing): TrackOutgoingResource
     {
-        $trackOutgoing->update($request->validated());
+        // Check if user is trying to edit a completed record and is not an admin
+        if ($trackOutgoing->status === 'completed' && auth()->user()->role->role_name !== 'admin') {
+            abort(403, 'Only administrators can edit completed records.');
+        }
+
+        $validatedData = $request->validated();
+        
+        // Auto-calculate overdue based on CT Required vs Cycle Time
+        // Only auto-calculate if overdue is not explicitly provided (manual override)
+        if (!isset($validatedData['overdue']) && isset($validatedData['ct_reqd']) && isset($validatedData['cycle_time'])) {
+            $ctReqd = (int) $validatedData['ct_reqd'];
+            $cycleTime = (int) $validatedData['cycle_time'];
+            $validatedData['overdue'] = ($ctReqd < $cycleTime) ? 1 : 0;
+        } elseif (isset($validatedData['overdue'])) {
+            // Convert yes/no to 1/0 if coming from frontend
+            if (is_string($validatedData['overdue'])) {
+                $validatedData['overdue'] = ($validatedData['overdue'] === 'yes') ? 1 : 0;
+            }
+        }
+        
+        // Auto-calculate queuing days (incoming date to cal date)
+        // if (isset($validatedData['cal_date']) && $trackOutgoing->trackIncoming) {
+        //     $incomingDate = new \DateTime($trackOutgoing->trackIncoming->date_in);
+        //     $calDate = new \DateTime($validatedData['cal_date']);
+            
+        //     $interval = $incomingDate->diff($calDate);
+        //     $validatedData['cycle_time'] = $interval->days;
+        // }
+        
+        $trackOutgoing->update($validatedData);
         $trackOutgoing->load(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']);
 
         return new TrackOutgoingResource($trackOutgoing);
@@ -109,10 +187,26 @@ class TrackOutgoingController extends Controller
      */
     public function confirmPickup(Request $request, TrackOutgoing $trackOutgoing): JsonResponse
     {
-        $request->validate([
-            'employee_id' => 'required|exists:users,employee_id',
-            'confirmation_pin' => 'required|string'
-        ]);
+        // Get current authenticated user to check role
+        $currentUser = Auth::user();
+        $currentUser->load('role');
+        
+        // Check if current user is Admin or Technician - they can bypass PIN validation
+        $canBypassPin = in_array($currentUser->role?->role_name, ['admin', 'technician']);
+        
+        // Validate request based on role
+        if ($canBypassPin) {
+            // Admin/Technician only needs employee_id
+            $request->validate([
+                'employee_id' => 'required|exists:users,employee_id',
+            ]);
+        } else {
+            // Regular users need both employee_id and confirmation_pin
+            $request->validate([
+                'employee_id' => 'required|exists:users,employee_id',
+                'confirmation_pin' => 'required|string'
+            ]);
+        }
 
         try {
             // Verify the employee and PIN
@@ -125,11 +219,14 @@ class TrackOutgoingController extends Controller
                 ], 404);
             }
 
-            if (!Hash::check($request->confirmation_pin, $employee->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid PIN. Please try again.'
-                ], 401);
+            // Skip PIN validation for Admin/Technician roles
+            if (!$canBypassPin) {
+                if (!Hash::check($request->confirmation_pin, $employee->password)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid PIN. Please try again.'
+                    ], 401);
+                }
             }
 
             // Validate department match - employees from same department can pick up equipment
@@ -177,9 +274,14 @@ class TrackOutgoingController extends Controller
                 'picked_up_by' => $employee->employee_id
             ]);
 
+            $message = $canBypassPin 
+                ? 'Equipment pickup confirmed successfully (PIN bypassed for ' . ucfirst($currentUser->role->role_name) . ').'
+                : 'Equipment pickup confirmed successfully.';
+
             return response()->json([
                 'success' => true,
-                'message' => 'Equipment pickup confirmed successfully.',
+                'message' => $message,
+                'bypassed_pin' => $canBypassPin,
                 'data' => $trackOutgoing->fresh(['trackIncoming', 'employeeOut', 'releasedBy'])
             ]);
 

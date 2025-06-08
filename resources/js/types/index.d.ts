@@ -104,6 +104,8 @@ export interface Equipment {
     status: 'active' | 'inactive' | 'pending_calibration' | 'in_calibration' | 'retired';
     last_calibration_date?: string | null;
     next_calibration_due?: string | null;
+    process_req_range_start?: string | null;
+    process_req_range_end?: string | null;
     created_at: string;
     updated_at: string;
     user?: User;
@@ -163,7 +165,6 @@ export interface TrackIncoming {
     received_by?: User;
     track_outgoing?: TrackOutgoing;
 }
-}
 
 // New Track Outgoing interface (calibration completions)
 export interface TrackOutgoing {
@@ -176,6 +177,10 @@ export interface TrackOutgoing {
     released_by_id?: number | null;
     certificate_number?: string | null;
     cycle_time?: number | null;
+    ct_reqd?: number | null;
+    commit_etc?: number | null;
+    actual_etc?: number | null;
+    overdue?: number | null; // 0 = No, 1 = Yes
     status: 'for_pickup' | 'completed';
     notes?: string | null;
     created_at: string;
@@ -200,6 +205,7 @@ export interface PaginationData<T> {
 
 // Form types
 export interface UserFormData {
+    employee_id?: number;
     first_name: string;
     last_name: string;
     middle_name?: string;
@@ -242,6 +248,8 @@ export interface EquipmentFormData {
     status?: 'active' | 'inactive' | 'pending_calibration' | 'in_calibration' | 'retired';
     last_calibration_date?: string | null;
     next_calibration_due?: string | null;
+    process_req_range_start?: string | null;
+    process_req_range_end?: string | null;
 }
 
 export interface DepartmentFormData {
@@ -272,4 +280,3 @@ export interface TrackingFilters {
     date_from?: string;
     date_to?: string;
 }
-

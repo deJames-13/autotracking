@@ -32,10 +32,30 @@ class PasswordResetLinkController extends Controller
             'email' => 'required|email',
         ]);
 
-        Password::sendResetLink(
+        // Check if user exists and has an email address
+        $user = \App\Models\User::where('email', $request->email)->first();
+        
+        if (!$user) {
+            // Return a generic message for security (don't reveal if email exists)
+            return back()->with('status', __('A reset link will be sent if the account exists.'));
+        }
+        
+        if (empty($user->email)) {
+            return back()->withErrors([
+                'email' => 'This account does not have an email address configured. Please contact the administrator.'
+            ]);
+        }
+
+        $status = Password::sendResetLink(
             $request->only('email')
         );
 
-        return back()->with('status', __('A reset link will be sent if the account exists.'));
+        if ($status == Password::RESET_LINK_SENT) {
+            return back()->with('status', __('A password reset link has been sent to your email address.'));
+        }
+
+        return back()->withErrors([
+            'email' => __($status)
+        ]);
     }
 }

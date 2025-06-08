@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
@@ -100,9 +100,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 </div>
 
                 <div className="text-center">
-                    <div className="text-xs text-muted-foreground">
-                        Use your Employee ID or email with your PIN to sign in
-                    </div>
+                    <div className="text-muted-foreground text-xs">Use your Employee ID or email with your PIN to sign in</div>
                 </div>
             </form>
 

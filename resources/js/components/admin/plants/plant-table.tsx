@@ -1,13 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { type Plant, type PaginationData } from '@/types';
+import { type PaginationData, type Plant } from '@/types';
+import { router } from '@inertiajs/react';
 import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { router } from '@inertiajs/react';
-import { PlantViewDialog } from './plant-view-dialog';
-import { PlantEditDialog } from './plant-edit-dialog';
 import { PlantDeleteDialog } from './plant-delete-dialog';
+import { PlantEditDialog } from './plant-edit-dialog';
+import { PlantViewDialog } from './plant-view-dialog';
 
 interface PlantTableProps {
     plants: PaginationData<Plant>;
@@ -68,16 +68,12 @@ export function PlantTable({ plants, onRefresh }: PlantTableProps) {
                         ) : (
                             plants.data.map((plant) => (
                                 <TableRow key={plant.plant_id}>
-                                    <TableCell className="font-medium">
-                                        {plant.plant_id}
+                                    <TableCell className="font-medium">{plant.plant_id}</TableCell>
+                                    <TableCell>
+                                        <div className="font-medium">{plant.plant_name}</div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="font-medium">
-                                            {plant.plant_name}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm max-w-[300px] truncate" title={plant.address || ''}>
+                                        <div className="max-w-[300px] truncate text-sm" title={plant.address || ''}>
                                             {plant.address || <span className="text-muted-foreground italic">No address</span>}
                                         </div>
                                     </TableCell>
@@ -87,14 +83,10 @@ export function PlantTable({ plants, onRefresh }: PlantTableProps) {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="text-sm text-muted-foreground">
-                                            {plant.users?.length || 0} users
-                                        </div>
+                                        <div className="text-muted-foreground text-sm">{plant.users?.length || 0} users</div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="text-sm text-muted-foreground">
-                                            {new Date(plant.created_at).toLocaleDateString()}
-                                        </div>
+                                        <div className="text-muted-foreground text-sm">{new Date(plant.created_at).toLocaleDateString()}</div>
                                     </TableCell>
                                     <TableCell>
                                         <DropdownMenu>
@@ -113,10 +105,7 @@ export function PlantTable({ plants, onRefresh }: PlantTableProps) {
                                                     <Pencil className="mr-2 h-4 w-4" />
                                                     Edit
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => setDeletingPlant(plant)}
-                                                    className="text-destructive"
-                                                >
+                                                <DropdownMenuItem onClick={() => setDeletingPlant(plant)} className="text-destructive">
                                                     <Trash2 className="mr-2 h-4 w-4" />
                                                     Delete
                                                 </DropdownMenuItem>
@@ -131,11 +120,7 @@ export function PlantTable({ plants, onRefresh }: PlantTableProps) {
             </div>
 
             {/* Plant Dialogs */}
-            <PlantViewDialog
-                plant={viewingPlant}
-                open={!!viewingPlant}
-                onOpenChange={(open) => !open && setViewingPlant(null)}
-            />
+            <PlantViewDialog plant={viewingPlant} open={!!viewingPlant} onOpenChange={(open) => !open && setViewingPlant(null)} />
 
             <PlantEditDialog
                 plant={editingPlant}

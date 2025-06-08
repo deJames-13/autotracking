@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import axios from 'axios';
+import { useRole } from '@/hooks/use-role';
 import { useAppSelector } from '@/store/hooks';
+import axios from 'axios';
+import { Info } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 interface ConfirmEmployeeTabProps {
     data: {
@@ -13,20 +16,25 @@ interface ConfirmEmployeeTabProps {
         confirmation_pin: string;
         scannedEmployee?: any;
         receivedBy?: any;
-        edit?: Number;
+        edit?: number;
     };
-    onChange: (pin: string) => void;
+    onChange: (key: string, value: string) => void;
     errors?: Record<string, string>;
 }
 
 const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange, errors = {} }) => {
-    const { requestType, equipment } = useAppSelector(state => state.trackingRequest);
+    const { requestType, equipment } = useAppSelector((state) => state.trackingRequest);
+    const { isAdmin, isTechnician } = useRole();
     const [locationNames, setLocationNames] = useState({
         plant: '',
         department: '',
-        location: ''
+        location: '',
     });
     const [loading, setLoading] = useState(true);
+
+    // Determine if PIN input should be shown (not for Admin or Technician)
+    const shouldShowPinInput = !isAdmin() && !isTechnician();
+    const currentRole = isAdmin() ? 'Admin' : isTechnician() ? 'Technician' : 'User';
 
     // Fetch location names when component mounts or equipment data changes
     useEffect(() => {
@@ -46,7 +54,7 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                 if (!names.plant && data.equipment.plant) {
                     try {
                         const plantResponse = await axios.get(`/admin/plants/${data.equipment.plant}`, {
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
                         });
                         names.plant = plantResponse.data.plant_name || `Plant ID: ${data.equipment.plant}`;
                     } catch (error) {
@@ -59,7 +67,7 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                 if (!names.department && data.equipment.department) {
                     try {
                         const deptResponse = await axios.get(`/admin/departments/${data.equipment.department}`, {
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
                         });
                         names.department = deptResponse.data.department_name || `Department ID: ${data.equipment.department}`;
                     } catch (error) {
@@ -72,7 +80,7 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                 if (data.equipment.location) {
                     try {
                         const locationResponse = await axios.get(`/admin/locations/${data.equipment.location}`, {
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
                         });
                         names.location = locationResponse.data.location_name || `Location ID: ${data.equipment.location}`;
                     } catch (error) {
@@ -88,7 +96,7 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                 setLocationNames({
                     plant: data.equipment.plant ? `Plant ID: ${data.equipment.plant}` : 'Not assigned',
                     department: data.equipment.department ? `Department ID: ${data.equipment.department}` : 'Not assigned',
-                    location: data.equipment.location ? `Location ID: ${data.equipment.location}` : 'Not assigned'
+                    location: data.equipment.location ? `Location ID: ${data.equipment.location}` : 'Not assigned',
                 });
             } finally {
                 setLoading(false);
@@ -113,75 +121,93 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                 </CardHeader>
                 <CardContent>
                     <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-2">
-                            Request for Recall #{equipment.recallNumber || 'Not specified'}
-                        </h3>
+                        {equipment.recallNumber && (
+                            <h3 className="mb-2 text-lg font-semibold">
+                                Request for Recall #
+                                {equipment.recallNumber || (requestType === 'routine' ? 'Not specified' : 'Will be assigned during calibration')}
+                            </h3>
+                        )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div>
                                 <h4 className="font-medium">Technician</h4>
-                                <p>{data.technician?.full_name || `${data.technician?.first_name} ${data.technician?.last_name}` || 'Not selected'}</p>
+                                <p>
+                                    {data.technician?.full_name || `${data.technician?.first_name} ${data.technician?.last_name}` || 'Not selected'}
+                                </p>
                             </div>
 
                             <div>
                                 <h4 className="font-medium">Equipment</h4>
                                 <p>{data.equipment.description || 'Not specified'}</p>
-                                <p className="text-sm text-muted-foreground">
-                                    {data.equipment.manufacturer} {data.equipment.model} {data.equipment.serialNumber && `(S/N: ${data.equipment.serialNumber})`}
+                                <p className="text-muted-foreground text-sm">
+                                    {data.equipment.manufacturer} {data.equipment.model}{' '}
+                                    {data.equipment.serialNumber && `(S/N: ${data.equipment.serialNumber})`}
                                 </p>
                             </div>
 
                             <div>
                                 <h4 className="font-medium">Location</h4>
-                                <p>{getLocationName('plant')}, {getLocationName('department')}</p>
-                                <p className="text-sm text-muted-foreground">{getLocationName('location')}</p>
+                                <p>
+                                    {getLocationName('plant')}, {getLocationName('department')}
+                                </p>
+                                <p className="text-muted-foreground text-sm">{getLocationName('location')}</p>
                             </div>
 
                             <div>
                                 <h4 className="font-medium">Received By</h4>
                                 <p>{data.receivedBy ? `${data.receivedBy.first_name} ${data.receivedBy.last_name}` : 'Not assigned'}</p>
-                                {data.receivedBy && (
-                                    <p className="text-sm text-muted-foreground">ID: {data.receivedBy.employee_id}</p>
-                                )}
+                                {data.receivedBy && <p className="text-muted-foreground text-sm">ID: {data.receivedBy.employee_id}</p>}
                             </div>
                         </div>
                     </div>
 
                     <div className="border-t pt-6">
-                        <h3 className="font-semibold mb-4">Employee Confirmation</h3>
+                        <h3 className="mb-4 font-semibold">Employee Confirmation</h3>
 
                         {/* Show scanned employee info if available */}
                         {data.scannedEmployee && (
-                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+                            <div className="mb-6 rounded-md border border-green-200 bg-green-50 p-4">
                                 <div className="flex items-center text-green-800">
                                     <span className="font-medium">
                                         Registered by: {data.scannedEmployee.first_name} {data.scannedEmployee.last_name}
                                     </span>
                                 </div>
-                                <div className="text-sm text-green-600 mt-1">
-                                    ID: {data.scannedEmployee.employee_id} | {data.scannedEmployee.department?.department_name} - {data.scannedEmployee.plant?.plant_name}
+                                <div className="mt-1 text-sm text-green-600">
+                                    ID: {data.scannedEmployee.employee_id} | {data.scannedEmployee.department?.department_name} -{' '}
+                                    {data.scannedEmployee.plant?.plant_name}
                                 </div>
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-                            <div>
-                                <Label
-                                    htmlFor="pin"
-                                    className={errors.pin ? 'text-destructive' : ''}
-                                >
-                                    Employee PIN
-                                </Label>
-                                <Input
-                                    id="pin"
-                                    type="password"
-                                    placeholder="Enter PIN"
-                                    value={data.confirmation_pin}
-                                    onChange={(e) => onChange('confirmation_pin', e.target.value)}
-                                    className={errors.pin ? 'border-destructive' : ''}
-                                />
-                                {errors.pin && <p className="text-sm text-destructive mt-1">{errors.pin}</p>}
-                            </div>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-1">
+                            {/* Show PIN bypass notification for Admin/Technician */}
+                            {!shouldShowPinInput && (
+                                <Alert className="mb-4">
+                                    <Info className="h-4 w-4" />
+                                    <AlertDescription>
+                                        As a {currentRole}, PIN authentication is bypassed for this action. The request will be confirmed without
+                                        requiring employee PIN verification.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            {/* Show PIN input only for non-Admin/non-Technician users */}
+                            {shouldShowPinInput && (
+                                <div>
+                                    <Label htmlFor="pin" className={errors.pin ? 'text-destructive' : ''}>
+                                        Employee PIN
+                                    </Label>
+                                    <Input
+                                        id="pin"
+                                        type="password"
+                                        placeholder="Enter PIN"
+                                        value={data.confirmation_pin}
+                                        onChange={(e) => onChange('confirmation_pin', e.target.value)}
+                                        className={errors.pin ? 'border-destructive' : ''}
+                                    />
+                                    {errors.pin && <p className="text-destructive mt-1 text-sm">{errors.pin}</p>}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </CardContent>

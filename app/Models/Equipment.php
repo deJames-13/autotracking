@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Equipment extends Model
 {
+    use SoftDeletes;
     protected $table = 'equipments'; // Explicitly set table name
     protected $primaryKey = 'equipment_id';
     
@@ -21,7 +23,9 @@ class Equipment extends Model
         'location_id',
         'status',
         'last_calibration_date',
-        'next_calibration_due'
+        'next_calibration_due',
+        'process_req_range_start',
+        'process_req_range_end'
     ];
 
     protected $casts = [

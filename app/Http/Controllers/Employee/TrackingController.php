@@ -202,7 +202,7 @@ class TrackingController extends Controller
         }
 
         return Inertia::render('employee/tracking/outgoing/show', [
-            'record' => $trackOutgoing
+            'trackOutgoing' => $trackOutgoing
         ]);
     }
 

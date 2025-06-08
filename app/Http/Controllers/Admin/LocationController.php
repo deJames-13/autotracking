@@ -9,6 +9,7 @@ use App\Models\Location;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -122,17 +123,106 @@ class LocationController extends Controller
 
     public function destroy(Location $location, Request $request): RedirectResponse|JsonResponse
     {
-        $location->delete();
+        // Check if location has related tracking records
+        $trackIncomingCount = $location->trackIncoming()->count();
+        $trackOutgoingCount = $location->trackOutgoing()->count();
+        
+        if ($trackIncomingCount > 0 || $trackOutgoingCount > 0) {
+            $errorMessage = "Cannot archive location '{$location->location_name}' because it has {$trackIncomingCount} incoming tracking record(s) and {$trackOutgoingCount} outgoing tracking record(s). Please reassign or remove these records first.";
+            
+            // For Inertia requests, we need to throw a validation exception
+            if ($request->header('X-Inertia')) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'location' => $errorMessage
+                ]);
+            }
+            
+            // Return JSON error for AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 422);
+            }
+
+            return redirect()->route('admin.locations.index')
+                ->with('error', $errorMessage);
+        }
+
+        // Proceed with soft deletion if no related records
+        $location->delete(); // This is now a soft delete due to SoftDeletes trait
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'message' => 'Location deleted successfully.'
+                'message' => 'Location archived successfully.'
             ]);
         }
 
         return redirect()->route('admin.locations.index')
-            ->with('success', 'Location deleted successfully.');
+            ->with('success', 'Location archived successfully.');
+    }
+
+    /**
+     * Restore a soft deleted location
+     */
+    public function restore($id, Request $request): RedirectResponse|JsonResponse
+    {
+        $location = Location::onlyTrashed()->where('location_id', $id)->first();
+        
+        if (!$location) {
+            $errorMessage = 'Archived location not found.';
+            
+            // For Inertia requests, throw validation exception
+            if ($request->header('X-Inertia')) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'location' => $errorMessage
+                ]);
+            }
+
+            // Return JSON only for non-Inertia AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 404);
+            }
+
+            return redirect()->route('admin.locations.index')
+                ->with('error', $errorMessage);
+        }
+
+        $location->restore();
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'Location restored successfully.'
+            ]);
+        }
+
+        return redirect()->route('admin.locations.index')
+            ->with('success', 'Location restored successfully.');
+    }
+
+    /**
+     * Get archived locations for display
+     */
+    public function archived(Request $request): Response|JsonResponse
+    {
+        $locations = Location::onlyTrashed()
+            ->with(['department'])
+            ->orderBy('deleted_at', 'desc')
+            ->paginate(10);
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'data' => $locations
+            ]);
+        }
+
+        return Inertia::render('admin/locations/archived', [
+            'locations' => $locations,
+        ]);
     }
 
     /**

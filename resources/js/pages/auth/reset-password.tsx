@@ -50,8 +50,8 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                             autoComplete="email"
                             value={data.email}
                             className="mt-1 block w-full"
-                            readOnly
                             onChange={(e) => setData('email', e.target.value)}
+                            placeholder="Enter your email address"
                         />
                         <InputError message={errors.email} className="mt-2" />
                     </div>

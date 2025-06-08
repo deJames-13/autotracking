@@ -8,6 +8,7 @@ export interface SelectOption {
     label: string;
     value: string | number | null;
     __isNew__?: boolean;
+    userData?: any; // Add support for additional user data
 }
 
 interface SmartSelectFieldProps extends UseControllerProps {
@@ -74,6 +75,7 @@ export const InertiaSmartSelect = ({
     initialOption?: SelectOption | null;
     minSearchLength?: number;
 } & Omit<SmartSelectProps, 'onSelect' | 'value' | 'initialOption' | 'minSearchLength'>) => {
+
     // Ref to track if we've initialized the component
     const initialized = useRef(false);
     // Internal selectedOption state - ONLY updated by our controlled logic

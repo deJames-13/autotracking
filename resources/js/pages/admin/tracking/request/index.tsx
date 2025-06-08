@@ -1,39 +1,36 @@
-import { usePage } from '@inertiajs/react';
-import { useRole } from '@/hooks/use-role';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { Card, CardContent } from '@/components/ui/card';
-import TechnicianTab from '@/components/admin/tracking/request/technician-tab';
-import DetailTab from '@/components/admin/tracking/request/detail-tab';
 import CalibrationTab from '@/components/admin/tracking/request/calibration-tab';
 import ConfirmEmployeeTab from '@/components/admin/tracking/request/confirm-employee-tab';
+import DetailTab from '@/components/admin/tracking/request/detail-tab';
+import TechnicianTab from '@/components/admin/tracking/request/technician-tab';
 import { Button } from '@/components/ui/button';
 import { StepIndicator, type Step } from '@/components/ui/step-indicator';
-import { UserCircle2, Wrench, CalendarClock, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useRole } from '@/hooks/use-role';
+import AppLayout from '@/layouts/app-layout';
+import { persistor, store } from '@/store';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
+    addCompletedStep,
+    markFormClean,
+    resetForm,
+    setCurrentStep,
+    setReceivedBy,
     setRequestType,
+    setScannedEmployee,
     setTechnician,
-    updateEquipment,
     updateCalibration,
     updateConfirmationPin,
-    setCurrentStep,
-    addCompletedStep,
-    resetForm,
-    markFormClean,
-    setScannedEmployee,
-    setReceivedBy
-} from '@/store/slices/trackingRequestSlice'
-import { Provider } from 'react-redux'
-import { PersistGate } from 'redux-persist/integration/react'
-import { store, persistor } from '@/store'
-import { toast } from 'react-hot-toast';
+    updateEquipment,
+} from '@/store/slices/trackingRequestSlice';
+import { type BreadcrumbItem } from '@/types';
+import { Head, router, useForm } from '@inertiajs/react';
 import axios from 'axios';
+import { format } from 'date-fns';
+import { CheckCircle2, UserCircle2, Wrench } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
 
 interface TrackingRequestIndexProps {
     // Props needed for the request creation process
@@ -43,13 +40,11 @@ interface TrackingRequestIndexProps {
     confirm?: int; // Flag to indicate confirmation mode
 }
 
-const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
-    errors: serverErrors = {},
-    edit,
-    editData,
-    confirm
-}) => {
-    const { canManageRequestIncoming, user: currenUser } = useRole();
+const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: serverErrors = {}, edit, editData, confirm }) => {
+    const { canManageRequestIncoming, user: currenUser, isAdmin, isTechnician } = useRole();
+
+    // Determine if PIN input should be shown (not for Admin or Technician)
+    const shouldShowPinInput = !isAdmin() && !isTechnician();
     const dispatch = useAppDispatch();
     const [isEditMode] = useState(!!edit);
     const [isConfirmMode] = useState(!!confirm);
@@ -60,9 +55,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
             href: '/admin/tracking',
         },
         {
-            title: isConfirmMode
-                ? 'Confirm Employee Request'
-                : (edit ? 'Edit Tracking Request' : 'New Tracking Request'),
+            title: isConfirmMode ? 'Confirm Employee Request' : edit ? 'Edit Tracking Request' : 'New Tracking Request',
             href: '/admin/tracking/request',
         },
     ];
@@ -78,8 +71,8 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
         completedSteps,
         isFormDirty,
         scannedEmployee,
-        receivedBy
-    } = useAppSelector(state => state.trackingRequest)
+        receivedBy,
+    } = useAppSelector((state) => state.trackingRequest);
 
     // Form state with Inertia useForm - use Redux data as initial values
     const { post, processing, errors, clearErrors, setError } = useForm({
@@ -87,20 +80,22 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
         technician,
         equipment,
         calibration,
-        confirmation_pin
-    })
+        confirmation_pin,
+    });
 
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
     // Define the steps - exclude confirmation step in confirm mode
-    const steps: Step[] = isConfirmMode ? [
-        { id: 'technician', name: 'Technician', icon: <UserCircle2 className="h-5 w-5" /> },
-        { id: 'details', name: 'Equipment Details', icon: <Wrench className="h-5 w-5" /> },
-    ] : [
-        { id: 'technician', name: 'Technician', icon: <UserCircle2 className="h-5 w-5" /> },
-        { id: 'details', name: 'Equipment Details', icon: <Wrench className="h-5 w-5" /> },
-        { id: 'confirmation', name: 'Confirmation', icon: <CheckCircle2 className="h-5 w-5" /> },
-    ];
+    const steps: Step[] = isConfirmMode
+        ? [
+            { id: 'technician', name: 'Technician', icon: <UserCircle2 className="h-5 w-5" /> },
+            { id: 'details', name: 'Equipment Details', icon: <Wrench className="h-5 w-5" /> },
+        ]
+        : [
+            { id: 'technician', name: 'Technician', icon: <UserCircle2 className="h-5 w-5" /> },
+            { id: 'details', name: 'Equipment Details', icon: <Wrench className="h-5 w-5" /> },
+            { id: 'confirmation', name: 'Confirmation', icon: <CheckCircle2 className="h-5 w-5" /> },
+        ];
 
     // Merge server errors with client-side errors if needed
     useEffect(() => {
@@ -119,73 +114,87 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
 
             // Set technician data
             if (editData.technician) {
-                dispatch(setTechnician({
-                    employee_id: editData.technician.employee_id,
-                    first_name: editData.technician.first_name,
-                    last_name: editData.technician.last_name,
-                    full_name: `${editData.technician.first_name} ${editData.technician.last_name}`,
-                    email: editData.technician.email || '',
-                }));
+                dispatch(
+                    setTechnician({
+                        employee_id: editData.technician.employee_id,
+                        first_name: editData.technician.first_name,
+                        last_name: editData.technician.last_name,
+                        full_name: `${editData.technician.first_name} ${editData.technician.last_name}`,
+                        email: editData.technician.email || '',
+                    }),
+                );
             }
 
             // Set equipment data
             if (editData.equipment) {
-                dispatch(updateEquipment({
-                    plant: editData.equipment.plant_id || '',
-                    department: editData.equipment.department_id || '',
-                    location: editData.location?.location_id || '',
-                    location_name: editData.location?.location_name || '',
-                    description: editData.description || '',
-                    serialNumber: editData.equipment.serial_number || '',
-                    recallNumber: editData.recall_number || '',
-                    model: editData.equipment.model || '',
-                    manufacturer: editData.equipment.manufacturer || '',
-                    dueDate: editData.equipment.next_calibration_due ?
-                        format(new Date(editData.equipment.next_calibration_due), 'yyyy-MM-dd') : '',
-                    receivedBy: ''
-                }));
-            } else {
-
+                dispatch(
+                    updateEquipment({
+                        plant: editData.equipment.plant_id || '',
+                        department: editData.equipment.department_id || '',
+                        location: editData.location?.location_id || '',
+                        location_name: editData.location?.location_name || '',
+                        description: editData.description || '',
+                        serialNumber: editData.equipment.serial_number || '',
+                        recallNumber: editData.recall_number || '',
+                        model: editData.equipment.model || '',
+                        manufacturer: editData.equipment.manufacturer || '',
+                        dueDate: editData.equipment.next_calibration_due
+                            ? format(new Date(editData.equipment.next_calibration_due), 'yyyy-MM-dd')
+                            : '',
+                        receivedBy: '',
+                    }),
+                );
             }
+            // Note: Additional logic can be added here if needed in the future
 
             // Set received by data
             if (editData.received_by) {
-                dispatch(setReceivedBy({
-                    employee_id: editData.received_by.employee_id,
-                    first_name: editData.received_by.first_name,
-                    last_name: editData.received_by.last_name,
-                    full_name: `${editData.received_by.first_name} ${editData.received_by.last_name}`,
-                    email: editData.received_by.email || '',
-                }));
+                dispatch(
+                    setReceivedBy({
+                        employee_id: editData.received_by.employee_id,
+                        first_name: editData.received_by.first_name,
+                        last_name: editData.received_by.last_name,
+                        full_name: `${editData.received_by.first_name} ${editData.received_by.last_name}`,
+                        email: editData.received_by.email || '',
+                    }),
+                );
             } else {
-                dispatch(setReceivedBy({
-                    employee_id: currenUser.employee_id,
-                    first_name: currenUser.first_name,
-                    last_name: currenUser.last_name,
-                    full_name: `${currenUser.first_name} ${currenUser.last_name}`,
-                    email: currenUser.email || '',
-                }));
+                dispatch(
+                    setReceivedBy({
+                        employee_id: currenUser.employee_id,
+                        first_name: currenUser.first_name,
+                        last_name: currenUser.last_name,
+                        full_name: `${currenUser.first_name} ${currenUser.last_name}`,
+                        email: currenUser.email || '',
+                    }),
+                );
             }
 
             // Set scannedData
             if (editData.employee_in) {
-                dispatch(setScannedEmployee({
-                    employee_id: editData.employee_in.employee_id,
-                    first_name: editData.employee_in.first_name,
-                    last_name: editData.employee_in.last_name,
-                    full_name: `${editData.employee_in.first_name} ${editData.employee_in.last_name}`,
-                    email: editData.employee_in.email || '',
-                    department_id: editData.employee_in.department?.department_id,
-                    plant_id: editData.employee_in.plant?.plant_id,
-                    department: editData.employee_in.department ? {
-                        department_id: editData.employee_in.department.department_id,
-                        department_name: editData.employee_in.department.department_name
-                    } : undefined,
-                    plant: editData.employee_in.plant ? {
-                        plant_id: editData.employee_in.plant.plant_id,
-                        plant_name: editData.employee_in.plant.plant_name
-                    } : undefined
-                }));
+                dispatch(
+                    setScannedEmployee({
+                        employee_id: editData.employee_in.employee_id,
+                        first_name: editData.employee_in.first_name,
+                        last_name: editData.employee_in.last_name,
+                        full_name: `${editData.employee_in.first_name} ${editData.employee_in.last_name}`,
+                        email: editData.employee_in.email || '',
+                        department_id: editData.employee_in.department?.department_id,
+                        plant_id: editData.employee_in.plant?.plant_id,
+                        department: editData.employee_in.department
+                            ? {
+                                department_id: editData.employee_in.department.department_id,
+                                department_name: editData.employee_in.department.department_name,
+                            }
+                            : undefined,
+                        plant: editData.employee_in.plant
+                            ? {
+                                plant_id: editData.employee_in.plant.plant_id,
+                                plant_name: editData.employee_in.plant.plant_name,
+                            }
+                            : undefined,
+                    }),
+                );
             }
 
             // If in confirm mode, set initial step to 'details' since we need to update receivedBy
@@ -216,19 +225,29 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                 setValidationMessage('Please select a technician to continue.');
                 return false;
             }
-        }
-        else if (currentStep === 'details') {
+        } else if (currentStep === 'details') {
             const requiredFields = ['plant', 'department', 'location', 'description', 'serialNumber'] as const;
             let isValid = true;
 
-            requiredFields.forEach(field => {
+            requiredFields.forEach((field) => {
                 const value = equipment[field];
                 // Check for empty string, null, undefined, or 0 for ID fields
-                const isEmpty = value === '' || value === null || value === undefined ||
-                    (field === 'plant' || field === 'department' || field === 'location') && value === 0;
+                const isEmpty =
+                    value === '' ||
+                    value === null ||
+                    value === undefined ||
+                    ((field === 'plant' || field === 'department' || field === 'location') && value === 0);
 
                 if (isEmpty) {
-                    setError(`equipment.${field}`, `${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1').trim()} is required.`);
+                    setError(
+                        `equipment.${field}`,
+                        `${field.charAt(0).toUpperCase() +
+                        field
+                            .slice(1)
+                            .replace(/([A-Z])/g, ' $1')
+                            .trim()
+                        } is required.`,
+                    );
                     isValid = false;
                 }
             });
@@ -237,12 +256,11 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                 setValidationMessage('Please fill in all required equipment details.');
                 return false;
             }
-        }
-        else if (currentStep === 'calibration') {
+        } else if (currentStep === 'calibration') {
             const requiredFields = ['calibrationDate', 'expectedDueDate', 'dateOut'] as const;
             let isValid = true;
 
-            requiredFields.forEach(field => {
+            requiredFields.forEach((field) => {
                 if (!calibration[field]) {
                     setError(`calibration.${field}`, `${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')} is required.`);
                     isValid = false;
@@ -270,9 +288,9 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                 setValidationMessage('Expected due date must be in the future.');
                 return false;
             }
-        }
-        else if (currentStep === 'confirmation' && !isConfirmMode) {
-            if (!confirmation_pin || confirmation_pin.length < 4) {
+        } else if (currentStep === 'confirmation' && !isConfirmMode) {
+            // Only validate PIN for non-Admin/non-Technician users
+            if (shouldShowPinInput && (!confirmation_pin || confirmation_pin.length < 4)) {
                 setError('confirmation_pin', 'PIN must be at least 4 digits.');
                 setValidationMessage('PIN must be at least 4 digits.');
                 return false;
@@ -287,20 +305,20 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
         if (!validateCurrentStep()) return;
 
         // Mark current step as completed in Redux
-        dispatch(addCompletedStep(currentStep))
+        dispatch(addCompletedStep(currentStep));
 
         // Move to next step
-        const currentIndex = steps.findIndex(step => step.id === currentStep);
+        const currentIndex = steps.findIndex((step) => step.id === currentStep);
         if (currentIndex < steps.length - 1) {
-            dispatch(setCurrentStep(steps[currentIndex + 1].id))
+            dispatch(setCurrentStep(steps[currentIndex + 1].id));
         }
     };
 
     // Handle back
     const handleBack = () => {
-        const currentIndex = steps.findIndex(step => step.id === currentStep);
+        const currentIndex = steps.findIndex((step) => step.id === currentStep);
         if (currentIndex > 0) {
-            dispatch(setCurrentStep(steps[currentIndex - 1].id))
+            dispatch(setCurrentStep(steps[currentIndex - 1].id));
         }
     };
 
@@ -311,48 +329,69 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
             // Get current Redux state
             const currentState = store.getState().trackingRequest;
 
-            // Check if we have a scanned employee and PIN
-            if (!currentState.scannedEmployee?.employee_id || !currentState.confirmation_pin) {
-                toast.error("Employee ID and PIN are required.");
+            // Check if we have a scanned employee
+            if (!currentState.scannedEmployee?.employee_id) {
+                toast.error('Employee ID is required.');
                 return false;
             }
 
-            // Send request to verify PIN using Axios or fetch with proper CSRF handling
-            const response = await axios.post(route('api.tracking.request.confirm-pin'), {
+            // For Admin/Technician, skip PIN requirement
+            if (!shouldShowPinInput) {
+                toast.success('Employee validated successfully (PIN bypassed for privileged user).');
+                return true;
+            }
+
+            // For regular users, PIN is required
+            if (!currentState.confirmation_pin) {
+                toast.error('PIN is required.');
+                return false;
+            }
+
+            // Build request data - include PIN only if required
+            const requestData: any = {
                 employee_id: currentState.scannedEmployee.employee_id,
-                pin: currentState.confirmation_pin
-            });
+            };
+
+            // Only include PIN if not bypassed
+            if (shouldShowPinInput) {
+                requestData.pin = currentState.confirmation_pin;
+            }
+
+            // Send request to verify PIN using Axios or fetch with proper CSRF handling
+            const response = await axios.post(route('api.tracking.request.confirm-pin'), requestData);
 
             // Axios automatically handles response status
             const result = response.data;
 
             if (!result.success) {
-                toast.error(result.message || "Invalid PIN. Please try again.");
+                toast.error(result.message || 'Invalid PIN. Please try again.');
                 return false;
             }
 
-            // PIN verified successfully
-            toast.success("Employee PIN confirmed successfully.");
+            // PIN verified successfully or bypassed
+            const message = result.bypassed_pin
+                ? 'Employee validated successfully (PIN bypassed for privileged user).'
+                : 'Employee PIN confirmed successfully.';
+            toast.success(message);
             return true;
-
         } catch (error) {
             console.error('Error confirming PIN:', error);
 
             // Check if the error has a response from the server
             if (axios.isAxiosError(error) && error.response) {
-                toast.error(error.response.data.message || "PIN verification failed. Please try again.");
+                toast.error(error.response.data.message || 'PIN verification failed. Please try again.');
             } else {
-                toast.error("An error occurred while verifying the PIN. Please try again.");
+                toast.error('An error occurred while verifying the PIN. Please try again.');
             }
             return false;
         }
-    }
+    };
     // Handle form submission
     const handleSubmit = async () => {
         if (!validateCurrentStep()) return;
 
         // First confirm PIN before proceeding with submission (skip in confirm mode or if not needed)
-        const isPinConfirmed = isConfirmMode || (currentStep !== 'confirmation') || await handleConfirmPin();
+        const isPinConfirmed = isConfirmMode || currentStep !== 'confirmation' || (await handleConfirmPin());
         if (!isPinConfirmed) return;
 
         // Get current Redux state for submission
@@ -360,15 +399,12 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
 
         try {
             // For confirm mode, we need to send a specific flag
-            const endpoint = isConfirmMode
-                ? route('api.tracking.incoming.confirm-employee-request', edit)
-                : route('api.tracking.request.store');
-
+            const endpoint = isConfirmMode ? route('api.tracking.incoming.confirm-employee-request', edit) : route('api.tracking.request.store');
 
             const payload = isConfirmMode
                 ? {
                     received_by_id: currentState.receivedBy?.employee_id,
-                    employee_id_in: currentState.scannedEmployee?.employee_id
+                    employee_id_in: currentState.scannedEmployee?.employee_id,
                 }
                 : {
                     data: {
@@ -378,10 +414,10 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                         calibration: currentState.calibration,
                         confirmation_pin: currentState.confirmation_pin,
                         scannedEmployee: currentState.scannedEmployee,
-                        receivedBy: currentState.receivedBy
+                        receivedBy: currentState.receivedBy,
                     },
                     edit_id: edit,
-                    confirm_mode: isEditMode
+                    confirm_mode: isEditMode,
                 };
 
             // Submit the form with current Redux data using axios
@@ -392,9 +428,9 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                 // Show success message
                 const successMessage = isConfirmMode
                     ? 'Employee request confirmed successfully!'
-                    : (edit
-                        ? (response.data.message || 'Tracking request updated successfully!')
-                        : (response.data.message || 'Tracking request created successfully!'));
+                    : edit
+                        ? response.data.message || 'Tracking request updated successfully!'
+                        : response.data.message || 'Tracking request created successfully!';
 
                 toast.success(successMessage);
 
@@ -407,19 +443,18 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                     onSuccess: () => {
                         // Additional success handling if needed
                         console.log('Successfully navigated to incoming index');
-                    }
+                    },
                 });
             } else {
                 // Handle unsuccessful response
                 const errorMessage = isConfirmMode
                     ? 'Failed to confirm employee request'
-                    : (edit
-                        ? (response.data.message || 'Failed to update tracking request')
-                        : (response.data.message || 'Failed to create tracking request'));
+                    : edit
+                        ? response.data.message || 'Failed to update tracking request'
+                        : response.data.message || 'Failed to create tracking request';
 
                 toast.error(errorMessage);
             }
-
         } catch (error) {
             console.error('Error submitting form:', error);
 
@@ -435,9 +470,9 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                         dispatch(setCurrentStep('technician'));
                     } else if (
                         validationErrors['data.equipment'] ||
-                        Object.keys(validationErrors).some(key => key.startsWith('data.equipment.')) ||
+                        Object.keys(validationErrors).some((key) => key.startsWith('data.equipment.')) ||
                         validationErrors['data.receivedBy'] ||
-                        Object.keys(validationErrors).some(key => key.startsWith('data.receivedBy.'))
+                        Object.keys(validationErrors).some((key) => key.startsWith('data.receivedBy.'))
                     ) {
                         dispatch(setCurrentStep('details'));
                     } else if (validationErrors['data.confirmation_pin']) {
@@ -469,23 +504,26 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
     const getStepErrors = (step: string) => {
         return Object.entries(errors)
             .filter(([key]) => key.startsWith(step))
-            .reduce((acc, [key, value]) => {
-                const fieldName = key.replace(`${step}.`, '');
-                acc[fieldName] = value;
-                return acc;
-            }, {} as Record<string, string>);
+            .reduce(
+                (acc, [key, value]) => {
+                    const fieldName = key.replace(`${step}.`, '');
+                    acc[fieldName] = value;
+                    return acc;
+                },
+                {} as Record<string, string>,
+            );
     };
 
     // Modified function to handle nested data updates properly with better date handling
     const updateNestedData = (key: string, value: any) => {
         if (key === 'equipment') {
             // Use updateEquipment to properly merge values
-            dispatch(updateEquipment(value))
+            dispatch(updateEquipment(value));
         } else if (key === 'calibration') {
             // Handle dates in calibration data
-            dispatch(updateCalibration(value))
+            dispatch(updateCalibration(value));
         } else if (key === 'confirmation_pin') {
-            dispatch(updateConfirmationPin(value))
+            dispatch(updateConfirmationPin(value));
         } else {
             // Handle non-nested data
             dispatch(setTechnician(value));
@@ -548,25 +586,31 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
     // When recall number changes for routine, prefill equipment info
     useEffect(() => {
         if (requestType === 'routine' && equipment.recallNumber) {
-            axios.get(route('api.equipment.search-by-recall'), {
-                params: { recall_number: equipment.recallNumber },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            }).then(response => {
-                if (response.data.success && response.data.equipment) {
-                    dispatch(updateEquipment({
-                        ...response.data.equipment,
-                        recallNumber: equipment.recallNumber,
-                        existing: true,
-                        equipment_id: response.data.equipment.equipment_id
-                    }));
-                } else {
-                    dispatch(updateEquipment({
-                        recallNumber: equipment.recallNumber,
-                        existing: false,
-                        equipment_id: null
-                    }));
-                }
-            });
+            axios
+                .get(route('api.equipment.search-by-recall'), {
+                    params: { recall_number: equipment.recallNumber },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                })
+                .then((response) => {
+                    if (response.data.success && response.data.equipment) {
+                        dispatch(
+                            updateEquipment({
+                                ...response.data.equipment,
+                                recallNumber: equipment.recallNumber,
+                                existing: true,
+                                equipment_id: response.data.equipment.equipment_id,
+                            }),
+                        );
+                    } else {
+                        dispatch(
+                            updateEquipment({
+                                recallNumber: equipment.recallNumber,
+                                existing: false,
+                                equipment_id: null,
+                            }),
+                        );
+                    }
+                });
         }
     }, [requestType, equipment.recallNumber, dispatch]);
 
@@ -578,34 +622,26 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={isConfirmMode
-                ? 'Confirm Employee Request'
-                : (edit ? 'Edit Tracking Request' : 'New Tracking Request')}
-            />
+            <Head title={isConfirmMode ? 'Confirm Employee Request' : edit ? 'Edit Tracking Request' : 'New Tracking Request'} />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">
-                        {isConfirmMode
-                            ? 'Confirm Employee Request'
-                            : (edit ? 'Edit Tracking Request' : 'New Tracking Request')}
+                        {isConfirmMode ? 'Confirm Employee Request' : edit ? 'Edit Tracking Request' : 'New Tracking Request'}
                     </h1>
                     <p className="text-muted-foreground">
                         {isConfirmMode
                             ? 'Confirm and verify employee equipment request details'
-                            : (edit ? 'Modify existing equipment tracking request' : 'Create a new equipment tracking request')}
+                            : edit
+                                ? 'Modify existing equipment tracking request'
+                                : 'Create a new equipment tracking request'}
                     </p>
                 </div>
 
                 {/* Request Type Selection - Hide in confirm mode */}
                 {!isConfirmMode && (
-                    <Tabs
-                        defaultValue="new"
-                        value={requestType}
-                        onValueChange={handleRequestTypeChange}
-                        className="w-full"
-                    >
-                        <TabsList className="grid w-full grid-cols-2 bg-muted">
+                    <Tabs defaultValue="new" value={requestType} onValueChange={handleRequestTypeChange} className="w-full">
+                        <TabsList className="bg-muted grid w-full grid-cols-2">
                             <TabsTrigger
                                 value="new"
                                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
@@ -624,17 +660,17 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                     </Tabs>
                 )}
 
-                {errors.requestType && (
-                    <p className="text-sm text-destructive mt-1">{errors.requestType}</p>
-                )}
+                {errors.requestType && <p className="text-destructive mt-1 text-sm">{errors.requestType}</p>}
 
                 {/* Steps Indicator - Custom steps for confirm mode */}
                 <StepIndicator
-                    steps={isConfirmMode ?
-                        [
-                            { id: 'technician', name: 'Technician', icon: <UserCircle2 className="h-5 w-5" /> },
-                            { id: 'details', name: 'Equipment Details', icon: <Wrench className="h-5 w-5" /> }
-                        ] : steps
+                    steps={
+                        isConfirmMode
+                            ? [
+                                { id: 'technician', name: 'Technician', icon: <UserCircle2 className="h-5 w-5" /> },
+                                { id: 'details', name: 'Equipment Details', icon: <Wrench className="h-5 w-5" /> },
+                            ]
+                            : steps
                     }
                     currentStep={currentStep}
                     completedSteps={completedSteps}
@@ -690,7 +726,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                     </div>
 
                     {/* Navigation Buttons */}
-                    <div className="flex justify-between mt-8">
+                    <div className="mt-8 flex justify-between">
                         {currentStep !== 'technician' && (
                             <Button variant="outline" onClick={handleBack} disabled={processing}>
                                 Back
@@ -702,16 +738,14 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({
                                 <Button onClick={handleSubmit} disabled={processing}>
                                     Confirm Request
                                 </Button>
+                            ) : currentStep !== 'confirmation' ? (
+                                <Button onClick={handleNext} disabled={processing}>
+                                    Next
+                                </Button>
                             ) : (
-                                currentStep !== 'confirmation' ? (
-                                    <Button onClick={handleNext} disabled={processing}>
-                                        Next
-                                    </Button>
-                                ) : (
-                                    <Button onClick={handleSubmit} disabled={processing}>
-                                        Submit Request
-                                    </Button>
-                                        )
+                                <Button onClick={handleSubmit} disabled={processing}>
+                                    Submit Request
+                                </Button>
                             )}
                         </div>
                     </div>

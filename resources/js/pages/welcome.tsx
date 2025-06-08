@@ -1,6 +1,5 @@
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import bg_display from '../assets/amkor_technology_cover.jpg'
 
 export default function Welcome() {
     const { auth } = usePage<SharedData>().props;
@@ -27,7 +26,7 @@ export default function Welcome() {
                     style={{
                         backgroundColor: 'hsl(var(--primary) / 0.1)',
                         backdropFilter: 'blur(2px)',
-                        WebkitBackdropFilter: 'blur(2px)'
+                        WebkitBackdropFilter: 'blur(2px)',
                     }}
                 />
 
@@ -36,7 +35,7 @@ export default function Welcome() {
                         {auth.user ? (
                             <Link
                                 href={route('dashboard')}
-                                className="inline-block rounded-sm border border-border px-5 py-1.5 text-sm leading-normal text-foreground hover:border-border/80 dark:border-border dark:text-foreground dark:hover:border-border/80"
+                                className="border-border text-foreground hover:border-border/80 dark:border-border dark:text-foreground dark:hover:border-border/80 inline-block rounded-sm border px-5 py-1.5 text-sm leading-normal"
                             >
                                 Dashboard
                             </Link>
@@ -44,15 +43,15 @@ export default function Welcome() {
                             <>
                                 <Link
                                     href={route('login')}
-                                        className="font-bold uppercase inline-block rounded-sm border border-primary bg-primary px-5 py-1.5 text-sm leading-normal text-primary-foreground hover:bg-primary/90 dark:border-primary dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
+                                    className="border-primary bg-primary text-primary-foreground hover:bg-primary/90 dark:border-primary dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 inline-block rounded-sm border px-5 py-1.5 text-sm leading-normal font-bold uppercase"
                                 >
-                                        Login
+                                    Login
                                 </Link>
                                 <Link
-                                        href={route('admin.login')}
-                                        className="uppercase inline-block rounded-sm border border-primary/40 bg-primary px-5 py-1.5 text-sm leading-normal text-primary-foreground hover:bg-primary/90 dark:border-primary dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/60 "
+                                    href={route('admin.login')}
+                                    className="border-primary/40 bg-primary text-primary-foreground hover:bg-primary/90 dark:border-primary dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/60 inline-block rounded-sm border px-5 py-1.5 text-sm leading-normal uppercase"
                                 >
-                                        Admin
+                                    Admin
                                 </Link>
                             </>
                         )}
@@ -60,25 +59,25 @@ export default function Welcome() {
                 </header>
                 <div className="welcome card relative z-10 flex w-full items-center justify-center opacity-100 transition-opacity duration-750 lg:grow starting:opacity-0">
                     <main className="flex w-full max-w-[335px] flex-col-reverse lg:max-w-4xl lg:flex-row">
-                        <div className="flex-1 rounded-br-lg rounded-bl-lg bg-card p-6 pb-12 text-[13px] leading-[20px] shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:rounded-tl-lg lg:rounded-br-none lg:p-20 dark:bg-card dark:text-card-foreground dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]">
-                            <h1 className="mb-1 font-medium text-card-foreground">Welcome to AutoTracking</h1>
-                            <p className="mb-2 text-muted-foreground">
+                        <div className="bg-card dark:bg-card dark:text-card-foreground flex-1 rounded-br-lg rounded-bl-lg p-6 pb-12 text-[13px] leading-[20px] shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:rounded-tl-lg lg:rounded-br-none lg:p-20 dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]">
+                            <h1 className="text-card-foreground mb-1 font-medium">Welcome to AutoTracking</h1>
+                            <p className="text-muted-foreground mb-2">
                                 Intelligent tracking and monitoring system.
                                 <br />
                                 Get started with automated tracking solutions.
                             </p>
                             <ul className="mb-4 flex flex-col lg:mb-6">
-                                <li className="relative flex items-center gap-4 py-2 before:absolute before:top-1/2 before:bottom-0 before:left-[0.4rem] before:border-l before:border-border dark:before:border-border">
-                                    <span className="relative bg-card py-1 dark:bg-card">
-                                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-border bg-background shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)] dark:border-border dark:bg-background">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-muted dark:bg-muted" />
+                                <li className="before:border-border dark:before:border-border relative flex items-center gap-4 py-2 before:absolute before:top-1/2 before:bottom-0 before:left-[0.4rem] before:border-l">
+                                    <span className="bg-card dark:bg-card relative py-1">
+                                        <span className="border-border bg-background dark:border-border dark:bg-background flex h-3.5 w-3.5 items-center justify-center rounded-full border shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)]">
+                                            <span className="bg-muted dark:bg-muted h-1.5 w-1.5 rounded-full" />
                                         </span>
                                     </span>
                                     <span>
                                         Explore the
                                         <a
                                             href="/dashboard"
-                                            className="ml-1 inline-flex items-center space-x-1 font-medium text-primary underline underline-offset-4 dark:text-primary"
+                                            className="text-primary dark:text-primary ml-1 inline-flex items-center space-x-1 font-medium underline underline-offset-4"
                                         >
                                             <span>Dashboard</span>
                                             <svg
@@ -98,17 +97,17 @@ export default function Welcome() {
                                         </a>
                                     </span>
                                 </li>
-                                <li className="relative flex items-center gap-4 py-2 before:absolute before:top-0 before:bottom-1/2 before:left-[0.4rem] before:border-l before:border-border dark:before:border-border">
-                                    <span className="relative bg-card py-1 dark:bg-card">
-                                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-border bg-background shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)] dark:border-border dark:bg-background">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-muted dark:bg-muted" />
+                                <li className="before:border-border dark:before:border-border relative flex items-center gap-4 py-2 before:absolute before:top-0 before:bottom-1/2 before:left-[0.4rem] before:border-l">
+                                    <span className="bg-card dark:bg-card relative py-1">
+                                        <span className="border-border bg-background dark:border-border dark:bg-background flex h-3.5 w-3.5 items-center justify-center rounded-full border shadow-[0px_0px_1px_0px_rgba(0,0,0,0.03),0px_1px_2px_0px_rgba(0,0,0,0.06)]">
+                                            <span className="bg-muted dark:bg-muted h-1.5 w-1.5 rounded-full" />
                                         </span>
                                     </span>
                                     <span>
                                         View
                                         <a
                                             href="https://amkor.com/"
-                                            className="ml-1 inline-flex items-center space-x-1 font-medium text-primary underline underline-offset-4 dark:text-primary"
+                                            className="text-primary dark:text-primary ml-1 inline-flex items-center space-x-1 font-medium underline underline-offset-4"
                                         >
                                             <span>Website</span>
                                             <svg
@@ -133,7 +132,7 @@ export default function Welcome() {
                                 <li>
                                     <a
                                         href={route('dashboard')}
-                                        className="inline-block rounded-sm border border-primary bg-primary px-5 py-1.5 text-sm leading-normal text-primary-foreground hover:bg-primary/90 dark:border-primary dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
+                                        className="border-primary bg-primary text-primary-foreground hover:bg-primary/90 dark:border-primary dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 inline-block rounded-sm border px-5 py-1.5 text-sm leading-normal"
                                     >
                                         Get Started
                                     </a>
@@ -142,7 +141,7 @@ export default function Welcome() {
                         </div>
                         <div className="relative -mb-px aspect-[335/376] w-full shrink-0 overflow-hidden rounded-t-lg bg-[#fff2f2] lg:mb-0 lg:-ml-px lg:aspect-auto lg:w-[438px] lg:rounded-t-none lg:rounded-r-lg dark:bg-[#1D0002]">
                             <svg
-                                className="w-full max-w-none translate-y-0 text-primary opacity-100 transition-all duration-750 dark:text-primary starting:translate-y-6 starting:opacity-0"
+                                className="text-primary dark:text-primary w-full max-w-none translate-y-0 opacity-100 transition-all duration-750 starting:translate-y-6 starting:opacity-0"
                                 viewBox="0 0 438 104"
                                 fill="none"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -159,10 +158,12 @@ export default function Welcome() {
                                 <path d="M400 18H420V86H400V18Z" fill="currentColor" />
 
                                 {/* Connecting line */}
-                                <path d="M30 30L90 45L130 35L170 50L210 25L250 40L290 32L330 48L370 38L410 28"
+                                <path
+                                    d="M30 30L90 45L130 35L170 50L210 25L250 40L290 32L330 48L370 38L410 28"
                                     stroke="currentColor"
                                     strokeWidth="2"
-                                    fill="none" />
+                                    fill="none"
+                                />
                             </svg>
                             <svg
                                 className="relative -mt-[4.9rem] -ml-8 w-[448px] max-w-none lg:-mt-[6.6rem] lg:ml-0 dark:hidden"
@@ -232,9 +233,7 @@ export default function Welcome() {
                                         strokeWidth={1}
                                     />
                                 </g>
-                                <g
-                                    className="translate-y-0 opacity-100 transition-all delay-300 duration-750 starting:translate-y-4 starting:opacity-0"
-                                >
+                                <g className="translate-y-0 opacity-100 transition-all delay-300 duration-750 starting:translate-y-4 starting:opacity-0">
                                     <path
                                         d="M246.544 254.79L246.875 254.79C253.722 247.905 264.046 238.82 277.849 227.537C291.21 216.253 301.259 207.264 307.995 200.57C314.62 193.685 319.147 186.418 321.577 178.768C324.006 171.117 322.846 163.18 318.097 154.956C312.796 145.775 305.342 138.412 295.735 132.865C286.238 127.127 276.189 124.258 265.588 124.257C255.208 124.257 248.416 127.03 245.214 132.576C241.902 137.931 243.006 145.39 248.528 154.953L183.928 154.951C174.652 138.885 170.676 124.541 172 111.918C173.546 99.2946 179.84 89.5408 190.882 82.6559C202.035 75.5798 216.887 72.0421 235.439 72.0428C254.874 72.0435 274.144 75.5825 293.248 82.6598C312.242 89.5457 329.579 99.3005 345.261 111.924C360.942 124.548 373.421 138.892 382.697 154.958C391.311 169.877 395.121 182.978 394.128 194.262C393.355 205.546 389.656 215.396 383.031 223.811C376.627 232.226 366.688 242.554 353.217 254.794L435.375 254.797L464.198 304.716L275.367 304.709L246.544 254.79Z"
                                         fill="#4B0600"

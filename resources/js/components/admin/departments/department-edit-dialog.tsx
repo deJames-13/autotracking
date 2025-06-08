@@ -10,12 +10,7 @@ interface DepartmentEditDialogProps {
     onSuccess: () => void;
 }
 
-export function DepartmentEditDialog({
-    department,
-    open,
-    onOpenChange,
-    onSuccess
-}: DepartmentEditDialogProps) {
+export function DepartmentEditDialog({ department, open, onOpenChange, onSuccess }: DepartmentEditDialogProps) {
     const handleSuccess = () => {
         console.log('DepartmentEditDialog: Edit successful, calling onSuccess');
         onOpenChange(false);
@@ -30,19 +25,13 @@ export function DepartmentEditDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md max-h-[85vh]">
+            <DialogContent className="max-h-[85vh] max-w-md">
                 <DialogHeader>
                     <DialogTitle>Edit Department</DialogTitle>
-                    <DialogDescription>
-                        Update department information.
-                    </DialogDescription>
+                    <DialogDescription>Update department information.</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] pr-4">
-                    <DepartmentForm
-                        department={department}
-                        onSuccess={handleSuccess}
-                        onCancel={handleCancel}
-                    />
+                    <DepartmentForm department={department} onSuccess={handleSuccess} onCancel={handleCancel} />
                 </ScrollArea>
             </DialogContent>
         </Dialog>

@@ -1,213 +1,131 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { StatusBadge, OutgoingStatusBadge } from '@/components/ui/status-badge';
-import { useRole } from '@/hooks/use-role';
+import { TrackOutgoingTable } from '@/components/admin/tracking/track-outgoing-table';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type TrackOutgoing, type PaginationData } from '@/types';
-import { Head, router, useForm, Link } from '@inertiajs/react';
-import { Search, Eye, FileText, Calendar } from 'lucide-react';
-import { useEffect } from 'react';
-import { format } from 'date-fns';
+import { type PaginationData, type TrackOutgoing } from '@/types';
+import { Head } from '@inertiajs/react';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Tracking Management',
-        href: '/admin/tracking',
-    },
-    {
-        title: 'Outgoing Completions',
-        href: '/admin/tracking/outgoing',
-    },
-];
-
-interface TrackingOutgoingIndexProps {
-    filters?: {
-        search?: string;
-        status?: string;
-    };
-    completions: PaginationData<TrackOutgoing>;
+interface TrackOutgoingIndexProps {
+    // Props can be extended as needed
 }
 
-const TrackingOutgoingIndex: React.FC<TrackingOutgoingIndexProps> = ({
-    filters = {},
-    completions
-}) => {
-    const { canManageRequestIncoming } = useRole();
+interface FilterOptions {
+    statuses: Array<{ value: string; label: string }>;
+    technicians: Array<{ value: string; label: string }>;
+    employees_out: Array<{ value: string; label: string }>;
+    released_by: Array<{ value: string; label: string }>;
+}
 
-    const { data, setData, get, processing } = useForm({
-        search: filters.search || '',
-        status: filters.status || '',
-    });
+export default function TrackOutgoingIndex(props: TrackOutgoingIndexProps) {
+    const [trackOutgoing, setTrackOutgoing] = useState<PaginationData<TrackOutgoing> | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
+    const [currentFilters, setCurrentFilters] = useState<Record<string, any>>({});
+    const [currentSearch, setCurrentSearch] = useState('');
 
-    // Redirect if user doesn't have permission
-    useEffect(() => {
-        if (!canManageRequestIncoming()) {
-            router.visit('/dashboard');
+    // Fetch table data
+    const fetchTableData = async (page = 1, perPage = 10, search = '', filters = {}) => {
+        try {
+            setLoading(true);
+            const response = await axios.get(route('admin.tracking.outgoing.table-data'), {
+                params: {
+                    page,
+                    per_page: perPage,
+                    search,
+                    ...filters,
+                },
+            });
+            setTrackOutgoing(response.data);
+        } catch (error) {
+            console.error('Error fetching track outgoing data:', error);
+            toast.error('Failed to load track outgoing data');
+        } finally {
+            setLoading(false);
         }
-    }, [canManageRequestIncoming]);
-
-    const handleFilterChange = () => {
-        get(route('admin.tracking.outgoing.index'), {
-            preserveState: true,
-            replace: true,
-        });
     };
 
+    // Fetch filter options
+    const fetchFilterOptions = async () => {
+        try {
+            const response = await axios.get(route('admin.tracking.outgoing.filter-options'));
+            setFilterOptions(response.data);
+        } catch (error) {
+            console.error('Error fetching filter options:', error);
+            toast.error('Failed to load filter options');
+        }
+    };
+
+    // Load initial data
     useEffect(() => {
-        const delayedSearch = setTimeout(() => {
-            if (data.search !== filters.search) {
-                handleFilterChange();
-            }
-        }, 500);
+        fetchTableData();
+        fetchFilterOptions();
+    }, []);
 
-        return () => clearTimeout(delayedSearch);
-    }, [data.search]);
-
-    if (!canManageRequestIncoming()) {
-        return null;
-    }
-
-    const getStatusBadge = (status: string) => {
-        return <OutgoingStatusBadge status={status as any} />;
+    // Handle search
+    const handleSearch = (search: string) => {
+        setCurrentSearch(search);
+        fetchTableData(1, trackOutgoing?.per_page || 10, search, currentFilters);
     };
 
+    // Handle filter
+    const handleFilter = (filters: Record<string, any>) => {
+        setCurrentFilters(filters);
+        fetchTableData(1, trackOutgoing?.per_page || 10, currentSearch, filters);
+    };
+
+    // Handle page change
+    const handlePageChange = (page: number) => {
+        fetchTableData(page, trackOutgoing?.per_page || 10, currentSearch, currentFilters);
+    };
+
+    // Handle per page change
+    const handlePerPageChange = (perPage: number) => {
+        fetchTableData(1, perPage, currentSearch, currentFilters);
+    };
+
+    // Handle refresh
+    const handleRefresh = () => {
+        fetchTableData(trackOutgoing?.current_page || 1, trackOutgoing?.per_page || 10, currentSearch, currentFilters);
+    };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Outgoing Calibration Completions" />
+        <AppLayout>
+            <Head title="Track Outgoing Equipment" />
 
-            <div className="space-y-6 p-6">
+            <div className="flex flex-col space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Outgoing Calibration Completions</h1>
-                        <p className="text-muted-foreground">Manage completed calibrations ready for pickup</p>
+                        <h1 className="text-2xl font-bold tracking-tight">Track Outgoing Equipment</h1>
+                        <p className="text-muted-foreground">Manage and track outgoing equipment calibration completions</p>
                     </div>
-                </div>
 
-                {/* Filters */}
-                <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search by recall number or certificate number..."
-                            value={data.search}
-                            onChange={(e) => setData('search', e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-                    <select
-                        value={data.status}
-                        onChange={(e) => setData('status', e.target.value)}
-                        className="px-3 py-2 border border-border rounded-md bg-background"
+                    {/* <Button
+                        onClick={() => {
+                            // Export functionality can be added here
+                            toast.success('Export feature coming soon');
+                        }}
+                        size="sm"
+                        variant="outline"
                     >
-                        <option value="">All Statuses</option>
-                        <option value="completed">Completed</option>
-                    </select>
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                    </Button> */}
                 </div>
 
-                {/* Completions Table */}
-                {completions.data.length > 0 ? (
-                    <div className="border rounded-md overflow-hidden">
-                        <table className="min-w-full divide-y divide-border">
-                            <thead className="bg-muted">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Recall #
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Equipment
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Calibration Date
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Next Due Date
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Date Out
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-card divide-y divide-border">
-                                {completions.data.map(completion => (
-                                    <tr key={completion.id} className="hover:bg-muted/50" onDoubleClick={() => router.visit(route('admin.tracking.outgoing.show', completion.id))}>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            {completion.recall_number}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <div>
-                                                <div className="font-medium">
-                                                    {completion.track_incoming?.description ||
-                                                        completion.equipment?.description || 'N/A'}
-                                                </div>
-                                                {completion.track_incoming && (
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {completion.track_incoming.manufacturer} {completion.track_incoming.model}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                            {format(new Date(completion.cal_date), 'MMM dd, yyyy')}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="h-3 w-3 text-muted-foreground" />
-                                                <span className={
-                                                    new Date(completion.cal_due_date) < new Date()
-                                                        ? 'text-destructive font-medium'
-                                                        : 'text-muted-foreground'
-                                                }>
-                                                    {format(new Date(completion.cal_due_date), 'MMM dd, yyyy')}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                            {format(new Date(completion.date_out), 'MMM dd, yyyy')}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            {getStatusBadge(completion.status)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                asChild
-                                            >
-                                                <Link href={route('admin.tracking.outgoing.show', completion.id)}>
-                                                    <Eye className="h-3 w-3 mr-1" />
-                                                    View
-                                                </Link>
-                                            </Button>
-
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {/* Pagination would go here */}
-                        {completions.last_page > 1 && (
-                            <div className="px-6 py-3 bg-muted text-center text-sm text-muted-foreground">
-                                Showing {completions.from} to {completions.to} of {completions.total} results
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="text-center py-12">
-                        <p className="text-muted-foreground">No outgoing calibration completions found.</p>
-                    </div>
+                {trackOutgoing && (
+                    <TrackOutgoingTable
+                        trackOutgoing={trackOutgoing}
+                        loading={loading}
+                        filterOptions={filterOptions}
+                        onRefresh={handleRefresh}
+                        onSearch={handleSearch}
+                        onFilter={handleFilter}
+                        onPageChange={handlePageChange}
+                        onPerPageChange={handlePerPageChange}
+                    />
                 )}
             </div>
         </AppLayout>
     );
-};
-
-export default TrackingOutgoingIndex;
+}

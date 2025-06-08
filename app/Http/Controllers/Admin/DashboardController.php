@@ -21,28 +21,44 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // Check if user is admin or personnel_in_charge
-        if (!in_array($user->role?->role_name, ['admin', 'personnel_in_charge'])) {
+        // Check if user is admin or technician
+        if (!in_array($user->role?->role_name, ['admin', 'technician'])) {
             abort(403, 'Access denied.');
+        }
+
+        // Role-based query filtering
+        $baseTrackIncomingQuery = TrackIncoming::query();
+        $baseEquipmentQuery = Equipment::query();
+        
+        if ($user->role->role_name === 'technician') {
+            // Technicians can only see their own records
+            $baseTrackIncomingQuery->where(function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
         }
 
         // Get dashboard statistics
         $stats = [
-            'total_equipment' => Equipment::count(),
-            'active_requests' => TrackIncoming::where('status', '!=', 'completed')->count(),
-            'equipment_tracked' => TrackIncoming::count(),
-            'total_users' => User::count(),
-            'overdue_equipment' => TrackIncoming::where('due_date', '<', now())
+            'total_equipment' => $user->role->role_name === 'technician' ? 
+                $baseEquipmentQuery->count() : Equipment::count(),
+            'active_requests' => (clone $baseTrackIncomingQuery)->where('status', '!=', 'completed')->count(),
+            'equipment_tracked' => (clone $baseTrackIncomingQuery)->count(),
+            'total_users' => $user->role->role_name === 'admin' ? User::count() : 0,
+            'overdue_equipment' => (clone $baseTrackIncomingQuery)
+                ->where('due_date', '<', now())
                 ->where('status', '!=', 'completed')
                 ->count(),
-            'recent_updates' => TrackIncoming::where('created_at', '>=', now()->subDays(7))->count(),
+            'recent_updates' => (clone $baseTrackIncomingQuery)->where('created_at', '>=', now()->subDays(7))->count(),
         ];
 
-        // Get recent activities
-        $recentActivities = TrackIncoming::with(['equipment', 'employeeIn', 'technician'])
+        // Get recent activities (role-based filtering)
+        $recentActivitiesQuery = (clone $baseTrackIncomingQuery)
+            ->with(['equipment', 'employeeIn', 'technician'])
             ->latest()
-            ->limit(10)
-            ->get()
+            ->limit(10);
+
+        $recentActivities = $recentActivitiesQuery->get()
             ->map(function ($record) {
                 $equipment = $record->equipment ? $record->equipment->recall_number : 'Unknown Equipment';
                 
@@ -57,12 +73,14 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Get pending tracking requests (equipment in calibration but not ready for pickup)
-        $pendingRequests = TrackIncoming::with(['equipment', 'employeeIn', 'technician'])
+        // Get pending tracking requests (role-based filtering)
+        $pendingRequestsQuery = (clone $baseTrackIncomingQuery)
+            ->with(['equipment', 'employeeIn', 'technician'])
             ->where('status', '!=', 'completed')
             ->latest()
-            ->limit(5)
-            ->get()
+            ->limit(5);
+
+        $pendingRequests = $pendingRequestsQuery->get()
             ->map(function ($record) {
                 return [
                     'id' => $record->id,

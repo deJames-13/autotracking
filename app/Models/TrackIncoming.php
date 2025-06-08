@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TrackIncoming extends Model
 {
+    use SoftDeletes;
     protected $table = 'track_incoming';
     
     protected $fillable = [

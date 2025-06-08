@@ -2,12 +2,12 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type Department, type Location, type PaginationData } from '@/types';
+import { router } from '@inertiajs/react';
 import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { router } from '@inertiajs/react';
-import { LocationViewDialog } from './location-view-dialog';
-import { LocationEditDialog } from './location-edit-dialog';
 import { LocationDeleteDialog } from './location-delete-dialog';
+import { LocationEditDialog } from './location-edit-dialog';
+import { LocationViewDialog } from './location-view-dialog';
 
 interface LocationTableProps {
     locations: PaginationData<Location>;
@@ -55,13 +55,9 @@ export function LocationTable({ locations, departments, onRefresh }: LocationTab
                         ) : (
                             locations.data.map((location) => (
                                 <TableRow key={location.location_id}>
-                                    <TableCell className="font-medium">
-                                        {location.location_id}
-                                    </TableCell>
+                                    <TableCell className="font-medium">{location.location_id}</TableCell>
                                     <TableCell>
-                                        <div className="font-medium">
-                                            {location.location_name}
-                                        </div>
+                                        <div className="font-medium">{location.location_name}</div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="text-sm">
@@ -72,9 +68,7 @@ export function LocationTable({ locations, departments, onRefresh }: LocationTab
                                     </TableCell>
 
                                     <TableCell>
-                                        <div className="text-sm text-muted-foreground">
-                                            {new Date(location.created_at).toLocaleDateString()}
-                                        </div>
+                                        <div className="text-muted-foreground text-sm">{new Date(location.created_at).toLocaleDateString()}</div>
                                     </TableCell>
                                     <TableCell>
                                         <DropdownMenu>
@@ -93,10 +87,7 @@ export function LocationTable({ locations, departments, onRefresh }: LocationTab
                                                     <Pencil className="mr-2 h-4 w-4" />
                                                     Edit
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => setDeletingLocation(location)}
-                                                    className="text-destructive"
-                                                >
+                                                <DropdownMenuItem onClick={() => setDeletingLocation(location)} className="text-destructive">
                                                     <Trash2 className="mr-2 h-4 w-4" />
                                                     Delete
                                                 </DropdownMenuItem>
@@ -111,11 +102,7 @@ export function LocationTable({ locations, departments, onRefresh }: LocationTab
             </div>
 
             {/* Location Dialogs */}
-            <LocationViewDialog
-                location={viewingLocation}
-                open={!!viewingLocation}
-                onOpenChange={(open) => !open && setViewingLocation(null)}
-            />
+            <LocationViewDialog location={viewingLocation} open={!!viewingLocation} onOpenChange={(open) => !open && setViewingLocation(null)} />
 
             <LocationEditDialog
                 location={editingLocation}

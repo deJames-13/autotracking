@@ -23,6 +23,8 @@ class EquipmentResource extends JsonResource
             'status' => $this->status,
             'last_calibration_date' => $this->last_calibration_date,
             'next_calibration_due' => $this->next_calibration_due,
+            'process_req_range_start' => $this->process_req_range_start,
+            'process_req_range_end' => $this->process_req_range_end,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'user' => new UserResource($this->whenLoaded('user')),

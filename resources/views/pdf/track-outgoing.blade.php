@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Track Outgoing Record - {{ $trackOutgoing->recall_number }}</title>
+    <title>Track Outgoing Record - {{ $trackOutgoing->recall_number ?: 'N/A' }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;

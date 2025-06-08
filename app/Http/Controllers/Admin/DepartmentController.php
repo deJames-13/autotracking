@@ -8,6 +8,7 @@ use App\Models\Department;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -97,17 +98,118 @@ class DepartmentController extends Controller
 
     public function destroy(Department $department, Request $request): RedirectResponse|JsonResponse
     {
-        $department->delete();
+        // Check for foreign key constraints before deletion
+        $usersCount = $department->users()->count();
+        $equipmentCount = $department->equipment()->count();
+        $locationsCount = $department->locations()->count();
+
+        if ($usersCount > 0 || $equipmentCount > 0 || $locationsCount > 0) {
+            $errorMessage = 'Cannot archive department. It has ';
+            $dependencies = [];
+            
+            if ($usersCount > 0) {
+                $dependencies[] = "{$usersCount} user(s)";
+            }
+            if ($equipmentCount > 0) {
+                $dependencies[] = "{$equipmentCount} equipment item(s)";
+            }
+            if ($locationsCount > 0) {
+                $dependencies[] = "{$locationsCount} location(s)";
+            }
+            
+            $errorMessage .= implode(', ', $dependencies) . ' assigned to it.';
+
+            // For Inertia requests, throw validation exception
+            if ($request->header('X-Inertia')) {
+                throw ValidationException::withMessages([
+                    'department' => $errorMessage
+                ]);
+            }
+
+            // Return JSON only for non-Inertia AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 422);
+            }
+
+            return redirect()->route('admin.departments.index')
+                ->with('error', $errorMessage);
+        }
+
+        $department->delete(); // This is now a soft delete due to SoftDeletes trait
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'message' => 'Department deleted successfully.'
+                'message' => 'Department archived successfully.'
             ]);
         }
 
         return redirect()->route('admin.departments.index')
-            ->with('success', 'Department deleted successfully.');
+            ->with('success', 'Department archived successfully.');
+    }
+
+    /**
+     * Restore a soft deleted department
+     */
+    public function restore($id, Request $request): RedirectResponse|JsonResponse
+    {
+        $department = Department::onlyTrashed()->where('department_id', $id)->first();
+        
+        if (!$department) {
+            $errorMessage = 'Archived department not found.';
+            
+            // For Inertia requests, throw validation exception
+            if ($request->header('X-Inertia')) {
+                throw ValidationException::withMessages([
+                    'department' => $errorMessage
+                ]);
+            }
+
+            // Return JSON only for non-Inertia AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 404);
+            }
+
+            return redirect()->route('admin.departments.index')
+                ->with('error', $errorMessage);
+        }
+
+        $department->restore();
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'Department restored successfully.'
+            ]);
+        }
+
+        return redirect()->route('admin.departments.index')
+            ->with('success', 'Department restored successfully.');
+    }
+
+    /**
+     * Get archived departments for display
+     */
+    public function archived(Request $request): Response|JsonResponse
+    {
+        $departments = Department::onlyTrashed()
+            ->orderBy('deleted_at', 'desc')
+            ->paginate(10);
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'data' => $departments
+            ]);
+        }
+
+        return Inertia::render('admin/departments/archived', [
+            'departments' => $departments,
+        ]);
     }
 
     /**

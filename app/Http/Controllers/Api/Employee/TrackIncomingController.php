@@ -90,9 +90,19 @@ class TrackIncomingController extends Controller
                     ], 404);
                 }
                 
+                // Auto-assign technician and received_by if user is a technician
+                $user = Auth::user();
+                $technicianId = $requestData['technician']['employee_id'];
+                $receivedById = $requestData['receivedBy']['employee_id'] ?? null;
+                
+                if ($user->role->role_name === 'technician') {
+                    $technicianId = $user->employee_id;
+                    $receivedById = $user->employee_id;
+                }
+                
                 // Update existing record with new data
                 $trackIncoming->update([
-                    'technician_id' => $requestData['technician']['employee_id'],
+                    'technician_id' => $technicianId,
                     'description' => $requestData['equipment']['description'],
                     'serial_number' => $requestData['equipment']['serialNumber'],
                     'model' => $requestData['equipment']['model'] ?? $trackIncoming->model,
@@ -103,7 +113,7 @@ class TrackIncomingController extends Controller
                     'location_id' => $requestData['equipment']['location'] ?? $trackIncoming->location_id,
                     // Keep employee and status fields unchanged
                     'employee_id_in' => $trackIncoming->employee_id_in,
-                    'received_by_id' => null,
+                    'received_by_id' => $receivedById,
                     'status' => 'for_confirmation',
                 ]);
                 
@@ -132,6 +142,8 @@ class TrackIncomingController extends Controller
                             'description' => $requestData['equipment']['description'] ?? $equipment->description,
                             'model' => $requestData['equipment']['model'] ?? $equipment->model,
                             'manufacturer' => $requestData['equipment']['manufacturer'] ?? $equipment->manufacturer,
+                            'process_req_range_start' => $requestData['equipment']['processReqRangeStart'] ?? $equipment->process_req_range_start,
+                            'process_req_range_end' => $requestData['equipment']['processReqRangeEnd'] ?? $equipment->process_req_range_end,
                         ]);
                     }
                 }
@@ -165,24 +177,38 @@ class TrackIncomingController extends Controller
                     'location_id' => $requestData['equipment']['location'],
                     'status' => 'active',
                     'next_calibration_due' => $requestData['equipment']['dueDate'],
+                    'process_req_range_start' => $requestData['equipment']['processReqRangeStart'] ?? null,
+                    'process_req_range_end' => $requestData['equipment']['processReqRangeEnd'] ?? null,
                 ]);
             } else {
                 // Update existing equipment with new calibration due date if needed
                 $equipment->update([
                     'next_calibration_due' => $requestData['equipment']['dueDate'],
+                    'process_req_range_start' => $requestData['equipment']['processReqRangeStart'] ?? $equipment->process_req_range_start,
+                    'process_req_range_end' => $requestData['equipment']['processReqRangeEnd'] ?? $equipment->process_req_range_end,
                 ]);
             }
             
+            
+            // Auto-assign technician and received_by if user is a technician
+            $user = Auth::user();
+            $technicianId = $requestData['technician']['employee_id'];
+            $receivedById = $requestData['receivedBy']['employee_id'] ?? null;
+            
+            if ($user->role->role_name === 'technician') {
+                $technicianId = $user->employee_id;
+                $receivedById = $user->employee_id;
+            }
             
             // Create the TrackIncoming record
             // Create track incoming record
             $trackIncoming = TrackIncoming::create([
                 'recall_number' => $recallNumber,
-                'technician_id' => $requestData['technician']['employee_id'],
+                'technician_id' => $technicianId,
                 'description' => $requestData['equipment']['description'],
                 'equipment_id' => $equipment->equipment_id,
                 'location_id' => $requestData['equipment']['location'],
-                'received_by_id' => null,
+                'received_by_id' => $receivedById,
                 'serial_number' => $requestData['equipment']['serialNumber'],
                 'model' => $requestData['equipment']['model'],
                 'manufacturer' => $requestData['equipment']['manufacturer'],

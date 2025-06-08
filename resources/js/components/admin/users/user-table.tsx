@@ -1,24 +1,41 @@
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { type Department, type Plant, type Role, type User, type PaginationData } from '@/types';
+import { Button } from '@/components/ui/button';
+import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { type Department, type PaginationData, type Plant, type Role, type User } from '@/types';
 import { router } from '@inertiajs/react';
-import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-import { UserForm } from './user-form';
+import { Download, Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import Barcode from 'react-barcode';
+import { toast } from 'react-hot-toast';
+import { UserForm } from './user-form';
 
 interface UserTableProps {
     users: PaginationData<User>;
+    loading?: boolean;
     roles: Role[];
     departments: Department[];
     plants: Plant[];
     onRefresh?: () => void;
+    onSearch?: (search: string) => void;
+    onFilter?: (filters: Record<string, unknown>) => void;
+    onPageChange?: (page: number) => void;
+    onPerPageChange?: (perPage: number) => void;
 }
 
-export function UserTable({ users, roles, departments, plants, onRefresh }: UserTableProps) {
+export function UserTable({
+    users,
+    loading = false,
+    roles,
+    departments,
+    plants,
+    onRefresh,
+    onSearch,
+    onFilter,
+    onPageChange,
+    onPerPageChange,
+}: UserTableProps) {
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [viewingUser, setViewingUser] = useState<User | null>(null);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
@@ -30,17 +47,32 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
     };
 
     const handleDelete = (user: User) => {
-        console.log('UserTable: Deleting user', user.employee_id);
-        
+        console.log('UserTable: Archiving user', user.employee_id);
+
         router.delete(route('admin.users.destroy', user.employee_id), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
-                console.log('UserTable: Delete success triggered');
+                console.log('UserTable: Archive success triggered');
                 setDeletingUser(null);
+                toast.success('User archived successfully');
                 router.reload({ only: ['users'] });
             },
             onError: (errors) => {
-                console.error('Error deleting user:', errors);
-            }
+                console.error('Error archiving user:', errors);
+
+                // Handle validation errors
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors).flat();
+                    if (errorMessages.length > 0) {
+                        toast.error(errorMessages[0] as string);
+                        return;
+                    }
+                }
+
+                // Generic fallback error
+                toast.error('Failed to archive user. Please try again.');
+            },
         });
     };
 
@@ -48,8 +80,6 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
         switch (roleName) {
             case 'admin':
                 return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-            case 'personnel_in_charge':
-                return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
             case 'technician':
                 return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
             case 'employee':
@@ -60,120 +90,280 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
     };
 
     const formatRoleName = (roleName: string) => {
-        return roleName.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return roleName.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
     };
+
+    // Handle barcode download
+    const handleDownloadBarcode = () => {
+        try {
+            // Find the barcode SVG element
+            const barcodeSvg = document.querySelector('.user-barcode-container svg') as SVGSVGElement;
+            if (!barcodeSvg) {
+                toast.error('Barcode not found');
+                return;
+            }
+
+            // Get SVG dimensions
+            const svgRect = barcodeSvg.getBoundingClientRect();
+            const svgWidth = svgRect.width || 300;
+            const svgHeight = svgRect.height || 100;
+
+            // Create a canvas to convert SVG to PNG
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                toast.error('Could not create download canvas');
+                return;
+            }
+
+            // Set canvas size with some padding
+            canvas.width = svgWidth + 20;
+            canvas.height = svgHeight + 20;
+
+            // Fill with white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Convert SVG to data URL
+            const svgData = new XMLSerializer().serializeToString(barcodeSvg);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const svgUrl = URL.createObjectURL(svgBlob);
+
+            // Create an image element to load the SVG
+            const img = new Image();
+            img.onload = () => {
+                // Draw the SVG image onto the canvas with padding
+                ctx.drawImage(img, 10, 10, svgWidth, svgHeight);
+
+                // Convert canvas to blob and download
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        toast.error('Could not generate barcode image');
+                        return;
+                    }
+
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `user-barcode-${viewingUser?.employee_id || 'unknown'}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    URL.revokeObjectURL(svgUrl);
+
+                    toast.success('Barcode downloaded successfully');
+                }, 'image/png');
+            };
+
+            img.onerror = () => {
+                toast.error('Failed to load barcode for download');
+                URL.revokeObjectURL(svgUrl);
+            };
+
+            img.src = svgUrl;
+        } catch (error) {
+            console.error('Error downloading barcode:', error);
+            toast.error('Failed to download barcode');
+        }
+    };
+
+    // Define DataTable columns
+    const columns: DataTableColumn<User>[] = [
+        {
+            key: 'name',
+            label: 'Name',
+            render: (value, row) => (
+                <div className="space-y-0.5">
+                    <div className="font-medium">{row.full_name || `${row.first_name} ${row.last_name}`}</div>
+                    <div className="text-muted-foreground text-xs">ID: {row.employee_id}</div>
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[200px]',
+        },
+        {
+            key: 'email',
+            label: 'Email',
+            render: (value, row) => <div className="text-sm">{row.email || <span className="text-muted-foreground italic">No email</span>}</div>,
+            sortable: true,
+            width: 'w-[200px]',
+        },
+        {
+            key: 'role',
+            label: 'Role',
+            render: (value, row) => (
+                <Badge variant="secondary" className={getRoleBadgeColor(row.role?.role_name || '')}>
+                    {formatRoleName(row.role?.role_name || 'Unknown')}
+                </Badge>
+            ),
+            sortable: true,
+            width: 'w-[120px]',
+        },
+        {
+            key: 'department',
+            label: 'Department',
+            render: (value, row) => (
+                <div className="text-sm">
+                    {row.department?.department_name || <span className="text-muted-foreground italic">No department</span>}
+                </div>
+            ),
+            sortable: true,
+            width: 'w-[150px]',
+        },
+        {
+            key: 'plant',
+            label: 'Plant',
+            render: (value, row) => (
+                <div className="text-sm">{row.plant?.plant_name || <span className="text-muted-foreground italic">No plant</span>}</div>
+            ),
+            sortable: true,
+            width: 'w-[120px]',
+        },
+        {
+            key: 'created_at',
+            label: 'Created',
+            render: (value, row) => <div className="text-muted-foreground text-sm">{new Date(row.created_at).toLocaleDateString()}</div>,
+            sortable: true,
+            width: 'w-[100px]',
+        },
+        {
+            key: 'actions',
+            label: 'Actions',
+            render: (value, row) => (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setViewingUser(row)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEditingUser(row)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setDeletingUser(row)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Archive
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ),
+            width: 'w-[70px]',
+        },
+    ];
+
+    // Define DataTable filters
+    const filters: DataTableFilter[] = [
+        {
+            key: 'role_name',
+            label: 'Role',
+            type: 'select',
+            options: [
+                { value: 'all', label: 'All Roles' },
+                ...roles.map((role) => ({
+                    value: role.role_name,
+                    label: formatRoleName(role.role_name),
+                })),
+            ],
+        },
+        {
+            key: 'department_id',
+            label: 'Department',
+            type: 'select',
+            options: [
+                { value: 'all', label: 'All Departments' },
+                ...departments.map((dept) => ({
+                    value: dept.department_id.toString(),
+                    label: dept.department_name,
+                })),
+            ],
+        },
+        {
+            key: 'plant_id',
+            label: 'Plant',
+            type: 'select',
+            options: [
+                { value: 'all', label: 'All Plants' },
+                ...plants.map((plant) => ({
+                    value: plant.plant_id.toString(),
+                    label: plant.plant_name,
+                })),
+            ],
+        },
+    ];
+
+    // Handle DataTable events
+    const handleSearch = useCallback(
+        (search: string) => {
+            if (onSearch) {
+                onSearch(search);
+            }
+        },
+        [onSearch],
+    );
+
+    const handleFilter = useCallback(
+        (filters: Record<string, unknown>) => {
+            if (onFilter) {
+                onFilter(filters);
+            }
+        },
+        [onFilter],
+    );
+
+    const handlePageChange = useCallback(
+        (page: number) => {
+            if (onPageChange) {
+                onPageChange(page);
+            }
+        },
+        [onPageChange],
+    );
+
+    const handlePerPageChange = useCallback(
+        (perPage: number) => {
+            if (onPerPageChange) {
+                onPerPageChange(perPage);
+            }
+        },
+        [onPerPageChange],
+    );
 
     return (
         <>
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[200px]">Name</TableHead>
-                            <TableHead className="w-[200px]">Email</TableHead>
-                            <TableHead className="w-[120px]">Role</TableHead>
-                            <TableHead className="w-[150px]">Department</TableHead>
-                            <TableHead className="w-[120px]">Plant</TableHead>
-                            <TableHead className="w-[100px]">Created</TableHead>
-                            <TableHead className="w-[70px]">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {users.data.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">
-                                    No users found.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            users.data.map((user) => (
-                                <TableRow key={user.employee_id}>
-                                    <TableCell className="font-medium">
-                                        <div className="space-y-0.5">
-                                            <div className="font-medium">
-                                                {user.full_name || `${user.first_name} ${user.last_name}`}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                ID: {user.employee_id}
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {user.email || (
-                                                <span className="text-muted-foreground italic">No email</span>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant="secondary"
-                                            className={getRoleBadgeColor(user.role?.role_name || '')}
-                                        >
-                                            {formatRoleName(user.role?.role_name || 'Unknown')}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {user.department?.department_name || (
-                                                <span className="text-muted-foreground italic">No department</span>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {user.plant?.plant_name || (
-                                                <span className="text-muted-foreground italic">No plant</span>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm text-muted-foreground">
-                                            {new Date(user.created_at).toLocaleDateString()}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Open menu</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => setViewingUser(user)}>
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    View
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => setEditingUser(user)}>
-                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                    Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => setDeletingUser(user)}
-                                                    className="text-destructive"
-                                                >
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+            <DataTable
+                data={users.data}
+                columns={columns}
+                filters={filters}
+                loading={loading}
+                pagination={{
+                    current_page: users.current_page,
+                    last_page: users.last_page,
+                    per_page: users.per_page,
+                    total: users.total,
+                }}
+                onSearch={handleSearch}
+                onFilter={handleFilter}
+                onPageChange={handlePageChange}
+                onPerPageChange={handlePerPageChange}
+                searchable={true}
+                filterable={true}
+                emptyMessage="No users found."
+                rowKey="employee_id"
+            />
 
             {/* Edit User Dialog */}
             <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-                <DialogContent className="w-full max-w-[90vw] lg:max-w-[80vw] xl:max-w-[72rem] max-h-[85vh] overflow-hidden flex flex-col">
+                <DialogContent className="flex max-h-[85vh] w-full max-w-[90vw] flex-col overflow-scroll lg:max-w-[80vw] xl:max-w-[72rem]">
                     <DialogHeader>
                         <DialogTitle>Edit User</DialogTitle>
-                        <DialogDescription>
-                            Update user information. Leave password blank to keep the current password.
-                        </DialogDescription>
+                        <DialogDescription>Update user information. Leave password blank to keep the current password.</DialogDescription>
                     </DialogHeader>
                     {editingUser && (
                         <UserForm
@@ -198,65 +388,69 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
                         <div className="space-y-6">
                             {/* Employee ID Barcode */}
                             {viewingUser.employee_id && (
-                                <div className="flex flex-col items-center mb-4">
-                                    <Barcode
-                                        value={String(viewingUser.employee_id)}
-                                        width={2}
-                                        height={60}
-                                        displayValue={true}
-                                        fontSize={16}
-                                        margin={8}
-                                    />
-                                    <span className="text-xs text-muted-foreground mt-1">Employee ID Barcode</span>
+                                <div className="mb-4 flex flex-col items-center">
+                                    <div className="user-barcode-container">
+                                        <Barcode
+                                            value={String(viewingUser.employee_id)}
+                                            width={2}
+                                            height={60}
+                                            displayValue={true}
+                                            fontSize={16}
+                                            margin={8}
+                                        />
+                                    </div>
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <span className="text-muted-foreground text-xs">Employee ID Barcode</span>
+                                        <Button variant="outline" size="sm" onClick={handleDownloadBarcode} className="h-6 px-2">
+                                            <Download className="mr-1 h-3 w-3" />
+                                            Download
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Employee ID</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Employee ID</label>
                                     <p className="text-sm">{viewingUser.employee_id}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Full Name</label>
                                     <p className="text-sm">
-                                        {viewingUser.full_name || `${viewingUser.first_name} ${viewingUser.middle_name || ''} ${viewingUser.last_name}`.trim()}
+                                        {viewingUser.full_name ||
+                                            `${viewingUser.first_name} ${viewingUser.middle_name || ''} ${viewingUser.last_name}`.trim()}
                                     </p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Email</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Email</label>
                                     <p className="text-sm">{viewingUser.email || 'No email'}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Role</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Role</label>
                                     <p className="text-sm">
-                                        <Badge
-                                            variant="secondary"
-                                            className={getRoleBadgeColor(viewingUser.role?.role_name || '')}
-                                        >
+                                        <Badge variant="secondary" className={getRoleBadgeColor(viewingUser.role?.role_name || '')}>
                                             {formatRoleName(viewingUser.role?.role_name || 'Unknown')}
                                         </Badge>
                                     </p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Department</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Department</label>
                                     <p className="text-sm">{viewingUser.department?.department_name || 'No department'}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Plant</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Plant</label>
                                     <p className="text-sm">{viewingUser.plant?.plant_name || 'No plant'}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Email Verified</label>
+                                    <label className="text-muted-foreground text-sm font-medium">Email Verified</label>
                                     <p className="text-sm">
-                                        <Badge variant={viewingUser.email_verified_at ? "default" : "secondary"}>
+                                        <Badge variant={viewingUser.email_verified_at ? 'default' : 'secondary'}>
                                             {viewingUser.email_verified_at ? 'Verified' : 'Not verified'}
                                         </Badge>
                                     </p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-sm font-medium text-muted-foreground">Created</label>
-                                    <p className="text-sm">
-                                        {new Date(viewingUser.created_at).toLocaleString()}
-                                    </p>
+                                    <label className="text-muted-foreground text-sm font-medium">Created</label>
+                                    <p className="text-sm">{new Date(viewingUser.created_at).toLocaleString()}</p>
                                 </div>
                             </div>
                         </div>
@@ -264,31 +458,23 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
+            {/* Archive Confirmation Dialog */}
             <Dialog open={!!deletingUser} onOpenChange={() => setDeletingUser(null)}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Delete User</DialogTitle>
+                        <DialogTitle>Archive User</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to delete this user? This action cannot be undone.
+                            Are you sure you want to archive this user? The user will be hidden from the main list but can be restored later.
                         </DialogDescription>
                     </DialogHeader>
                     {deletingUser && (
                         <div className="space-y-4">
-                            <div className="p-4 border rounded-lg bg-muted/50">
-                                <div className="font-medium">
-                                    {deletingUser.full_name || `${deletingUser.first_name} ${deletingUser.last_name}`}
-                                </div>
-                                <div className="text-sm text-muted-foreground mt-1">
-                                    {deletingUser.email && (
-                                        <div>{deletingUser.email}</div>
-                                    )}
-                                    <div>
-                                        Role: {formatRoleName(deletingUser.role?.role_name || '')}
-                                    </div>
-                                    <div>
-                                        ID: {deletingUser.employee_id}
-                                    </div>
+                            <div className="bg-muted/50 rounded-lg border p-4">
+                                <div className="font-medium">{deletingUser.full_name || `${deletingUser.first_name} ${deletingUser.last_name}`}</div>
+                                <div className="text-muted-foreground mt-1 text-sm">
+                                    {deletingUser.email && <div>{deletingUser.email}</div>}
+                                    <div>Role: {formatRoleName(deletingUser.role?.role_name || '')}</div>
+                                    <div>ID: {deletingUser.employee_id}</div>
                                 </div>
                             </div>
                             <div className="flex justify-end gap-3">
@@ -296,7 +482,7 @@ export function UserTable({ users, roles, departments, plants, onRefresh }: User
                                     Cancel
                                 </Button>
                                 <Button variant="destructive" onClick={() => handleDelete(deletingUser)}>
-                                    Delete User
+                                    Archive User
                                 </Button>
                             </div>
                         </div>

@@ -84,6 +84,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         
     // Tracking management - API routes (AJAX)
+    // TODO: because it is in web, meaning it is accessible in web
     Route::prefix('api')->name('api.')->group(function () {
         Route::get('tracking/request/generate-recall', [ApiTrackingController::class, 'generateUniqueRecall'])->name('tracking.request.generate-recall');
         Route::post('tracking/request', [ApiTrackingController::class, 'store'])->name('tracking.request.store');
@@ -125,6 +126,36 @@ Route::prefix('admin')->name('admin.')->group(function () {
         
         // Users management - specific routes before resource
         Route::get('search-by-barcode/users', [AdminUserController::class, 'searchByBarcode'])->name('users.search-by-barcode');
+        Route::get('users/table-data', [AdminUserController::class, 'tableData'])->name('users.table-data');
+        Route::post('users/generate-employee-id', [AdminUserController::class, 'generateNewEmployeeId'])->name('users.generate-employee-id');
+        Route::post('users/{user:employee_id}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::post('users/validate-email', [AdminUserController::class, 'validateEmail'])->name('users.validate-email');
+        Route::get('email/health', [AdminUserController::class, 'checkEmailHealth'])->name('email.health');
+        Route::post('email/test', [AdminUserController::class, 'testEmailSystem'])->name('email.test');
+        
+        // Tracking table data routes
+        Route::get('tracking/incoming/table-data', [AdminTrackingController::class, 'trackIncomingTableData'])->name('tracking.incoming.table-data');
+        Route::get('tracking/incoming/filter-options', [AdminTrackingController::class, 'trackIncomingFilterOptions'])->name('tracking.incoming.filter-options');
+        Route::get('tracking/outgoing/table-data', [AdminTrackingController::class, 'trackOutgoingTableData'])->name('tracking.outgoing.table-data');
+        Route::get('tracking/outgoing/filter-options', [AdminTrackingController::class, 'trackOutgoingFilterOptions'])->name('tracking.outgoing.filter-options');
+        
+        // Restore routes for soft deleted records
+        Route::post('users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');
+        Route::post('departments/{id}/restore', [AdminDepartmentController::class, 'restore'])->name('departments.restore');
+        Route::post('locations/{id}/restore', [AdminLocationController::class, 'restore'])->name('locations.restore');
+        Route::post('equipment/{id}/restore', [AdminEquipmentController::class, 'restore'])->name('equipment.restore');
+        Route::post('plants/{id}/restore', [AdminPlantController::class, 'restore'])->name('plants.restore');
+        
+        // Force delete routes for permanent deletion
+        Route::delete('users/{id}/force-delete', [AdminUserController::class, 'forceDelete'])->name('users.force-delete');
+        Route::delete('plants/{id}/force-delete', [AdminPlantController::class, 'forceDelete'])->name('plants.force-delete');
+        
+        // Archived records routes
+        Route::get('users/archived', [AdminUserController::class, 'archived'])->name('users.archived');
+        Route::get('departments/archived', [AdminDepartmentController::class, 'archived'])->name('departments.archived');
+        Route::get('locations/archived', [AdminLocationController::class, 'archived'])->name('locations.archived');
+        Route::get('equipment/archived', [AdminEquipmentController::class, 'archived'])->name('equipment.archived');
+        Route::get('plants/archived', [AdminPlantController::class, 'archived'])->name('plants.archived');
         
         Route::resource('users', AdminUserController::class)->parameters([
             'users' => 'user:employee_id'
@@ -140,6 +171,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         ]);
         
         // Equipment management
+        Route::get('equipment/table-data', [AdminEquipmentController::class, 'tableData'])->name('equipment.table-data');
         Route::resource('equipment', AdminEquipmentController::class)->parameters([
             'equipment' => 'equipment:equipment_id'
         ]);

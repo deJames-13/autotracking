@@ -10,12 +10,7 @@ interface PlantEditDialogProps {
     onSuccess: () => void;
 }
 
-export function PlantEditDialog({
-    plant,
-    open,
-    onOpenChange,
-    onSuccess
-}: PlantEditDialogProps) {
+export function PlantEditDialog({ plant, open, onOpenChange, onSuccess }: PlantEditDialogProps) {
     const handleSuccess = () => {
         console.log('PlantEditDialog: Edit successful, calling onSuccess');
         onOpenChange(false);
@@ -30,19 +25,13 @@ export function PlantEditDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md max-h-[85vh]">
+            <DialogContent className="max-h-[85vh] max-w-md">
                 <DialogHeader>
                     <DialogTitle>Edit Plant</DialogTitle>
-                    <DialogDescription>
-                        Update plant information.
-                    </DialogDescription>
+                    <DialogDescription>Update plant information.</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] pr-4">
-                    <PlantForm
-                        plant={plant}
-                        onSuccess={handleSuccess}
-                        onCancel={handleCancel}
-                    />
+                    <PlantForm plant={plant} onSuccess={handleSuccess} onCancel={handleCancel} />
                 </ScrollArea>
             </DialogContent>
         </Dialog>

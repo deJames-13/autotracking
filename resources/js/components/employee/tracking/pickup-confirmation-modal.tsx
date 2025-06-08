@@ -1,19 +1,12 @@
-import { useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
-} from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, AlertTriangle } from 'lucide-react';
 import { type TrackOutgoing } from '@/types';
 import axios from 'axios';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 interface PickupConfirmationModalProps {
@@ -23,12 +16,7 @@ interface PickupConfirmationModalProps {
     onSuccess: () => void;
 }
 
-export const PickupConfirmationModal: React.FC<PickupConfirmationModalProps> = ({
-    trackOutgoing,
-    open,
-    onOpenChange,
-    onSuccess
-}) => {
+export const PickupConfirmationModal: React.FC<PickupConfirmationModalProps> = ({ trackOutgoing, open, onOpenChange, onSuccess }) => {
     const [pin, setPin] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -40,7 +28,7 @@ export const PickupConfirmationModal: React.FC<PickupConfirmationModalProps> = (
 
         try {
             const response = await axios.post(route('api.employee.tracking.outgoing.pickup', trackOutgoing.id), {
-                confirmation_pin: pin
+                confirmation_pin: pin,
             });
 
             if (response.data.success) {
@@ -94,8 +82,10 @@ export const PickupConfirmationModal: React.FC<PickupConfirmationModalProps> = (
                         <Alert>
                             <AlertTriangle className="h-4 w-4" />
                             <AlertDescription>
-                                <strong>Equipment:</strong> {trackOutgoing.track_incoming?.description || 'N/A'}<br />
-                                <strong>Serial Number:</strong> {trackOutgoing.track_incoming?.serial_number || 'N/A'}<br />
+                                <strong>Equipment:</strong> {trackOutgoing.track_incoming?.description || 'N/A'}
+                                <br />
+                                <strong>Serial Number:</strong> {trackOutgoing.track_incoming?.serial_number || 'N/A'}
+                                <br />
                                 <strong>Certificate:</strong> {trackOutgoing.certificate_number || 'N/A'}
                             </AlertDescription>
                         </Alert>
@@ -106,7 +96,7 @@ export const PickupConfirmationModal: React.FC<PickupConfirmationModalProps> = (
                             <Input
                                 id="pin"
                                 type="password"
-                                placeholder="Enter your 4-digit PIN"
+                                placeholder="Enter your PIN"
                                 value={pin}
                                 onChange={(e) => setPin(e.target.value)}
                                 maxLength={4}
@@ -115,9 +105,7 @@ export const PickupConfirmationModal: React.FC<PickupConfirmationModalProps> = (
                                 disabled={isLoading}
                                 className={error ? 'border-red-500' : ''}
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Enter your 4-digit PIN to confirm pickup
-                            </p>
+                            <p className="text-muted-foreground text-xs">Enter your PIN to confirm pickup</p>
                         </div>
 
                         {/* Error Message */}
@@ -130,18 +118,10 @@ export const PickupConfirmationModal: React.FC<PickupConfirmationModalProps> = (
                     </div>
 
                     <DialogFooter className="flex gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleCancel}
-                            disabled={isLoading}
-                        >
+                        <Button type="button" variant="outline" onClick={handleCancel} disabled={isLoading}>
                             Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            disabled={isLoading || pin.length !== 4}
-                        >
+                        <Button type="submit" disabled={isLoading || pin.length !== 4}>
                             {isLoading ? 'Confirming...' : 'Confirm Pickup'}
                         </Button>
                     </DialogFooter>

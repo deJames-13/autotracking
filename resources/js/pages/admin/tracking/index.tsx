@@ -1,12 +1,11 @@
+import { ReportsTable } from '@/components/admin/tracking/reports/table';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm, Link } from '@inertiajs/react';
-import { Plus, Search } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { useEffect } from 'react';
-import { ReportsTable } from '@/components/admin/tracking/reports/table';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -61,7 +60,7 @@ const TrackingIndex: React.FC<TrackingIndexProps> = ({ filters = {}, requests = 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Tracking Management" />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">Tracking Management</h1>
@@ -76,38 +75,29 @@ const TrackingIndex: React.FC<TrackingIndexProps> = ({ filters = {}, requests = 
                 {/* Quick Navigation Cards */}
                 <div className="grid gap-4 md:grid-cols-3">
                     <Link href={route('admin.tracking.incoming.index')}>
-                        <div className="rounded-md border border-border p-6 hover:bg-muted/50 transition-colors cursor-pointer">
-                            <h3 className="text-lg font-semibold mb-2">Incoming Requests</h3>
-                            <p className="text-sm text-muted-foreground">
-                                View equipment submitted for calibration
-                            </p>
+                        <div className="border-border hover:bg-muted/50 cursor-pointer rounded-md border p-6 transition-colors">
+                            <h3 className="mb-2 text-lg font-semibold">Incoming Requests</h3>
+                            <p className="text-muted-foreground text-sm">View equipment submitted for calibration</p>
                         </div>
                     </Link>
 
                     <Link href={route('admin.tracking.outgoing.index')}>
-                        <div className="rounded-md border border-border p-6 hover:bg-muted/50 transition-colors cursor-pointer">
-                            <h3 className="text-lg font-semibold mb-2">Outgoing Completions</h3>
-                            <p className="text-sm text-muted-foreground">
-                                View completed calibrations ready for pickup
-                            </p>
+                        <div className="border-border hover:bg-muted/50 cursor-pointer rounded-md border p-6 transition-colors">
+                            <h3 className="mb-2 text-lg font-semibold">Outgoing Completions</h3>
+                            <p className="text-muted-foreground text-sm">View completed calibrations ready for pickup</p>
                         </div>
                     </Link>
 
                     <Link href={route('admin.tracking.request.index')}>
-                        <div className="rounded-md border border-border p-6 hover:bg-muted/50 transition-colors cursor-pointer">
-                            <h3 className="text-lg font-semibold mb-2">Create New Request</h3>
-                            <p className="text-sm text-muted-foreground">
-                                Submit new equipment for calibration
-                            </p>
+                        <div className="border-border hover:bg-muted/50 cursor-pointer rounded-md border p-6 transition-colors">
+                            <h3 className="mb-2 text-lg font-semibold">Create New Request</h3>
+                            <p className="text-muted-foreground text-sm">Submit new equipment for calibration</p>
                         </div>
                     </Link>
                 </div>
 
                 {/* Reports Table */}
-                <ReportsTable
-                    className='min-h-screen'
-                />
-
+                <ReportsTable className="min-h-screen" />
             </div>
         </AppLayout>
     );

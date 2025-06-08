@@ -1,5 +1,5 @@
-import { usePage } from '@inertiajs/react';
 import { type SharedData } from '@/types';
+import { usePage } from '@inertiajs/react';
 
 export function useRole() {
     const { auth } = usePage<SharedData>().props;
@@ -10,7 +10,7 @@ export function useRole() {
     };
 
     const canManageEquipment = () => {
-        return ['admin', 'personnel_in_charge'].includes(user.role?.role_name || '');
+        return user.role?.role_name === 'admin';
     };
 
     const canManagePlants = () => {
@@ -18,7 +18,7 @@ export function useRole() {
     };
 
     const canManageRequestIncoming = () => {
-        return ['admin', 'personnel_in_charge'].includes(user.role?.role_name || '');
+        return ['admin', 'technician'].includes(user.role?.role_name || '');
     };
 
     const canViewEmployeeTracking = () => {
@@ -33,6 +33,22 @@ export function useRole() {
         return ['employee', 'technician', 'admin'].includes(user.role?.role_name || '');
     };
 
+    const canAccessAdminRoutes = () => {
+        return ['admin', 'technician'].includes(user.role?.role_name || '');
+    };
+
+    const canOnlySeeOwnRecords = () => {
+        return user.role?.role_name === 'technician';
+    };
+
+    const canApproveRequests = () => {
+        return ['admin', 'technician'].includes(user.role?.role_name || '');
+    };
+
+    const canManageOutgoing = () => {
+        return ['admin', 'technician'].includes(user.role?.role_name || '');
+    };
+
     const isAdmin = () => {
         return user.role?.role_name === 'admin';
     };
@@ -42,7 +58,7 @@ export function useRole() {
     };
 
     const isPersonnelInCharge = () => {
-        return user.role?.role_name === 'personnel_in_charge';
+        return false; // Role no longer exists
     };
 
     const isTechnician = () => {
@@ -57,6 +73,10 @@ export function useRole() {
         canViewEmployeeTracking,
         canCheckInOut,
         canSubmitCalibrationRequest,
+        canAccessAdminRoutes,
+        canOnlySeeOwnRecords,
+        canApproveRequests,
+        canManageOutgoing,
         isAdmin,
         isEmployee,
         isPersonnelInCharge,

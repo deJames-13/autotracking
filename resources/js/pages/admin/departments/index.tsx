@@ -75,7 +75,7 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Department Management" />
 
-            <div className="space-y-6 p-6">
+            <div className="space-y-6 p-2">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">Department Management</h1>
@@ -89,12 +89,10 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
                                 Add Department
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col">
+                        <DialogContent className="flex max-h-[85vh] max-w-md flex-col overflow-hidden">
                             <DialogHeader className="flex-shrink-0">
                                 <DialogTitle>Add New Department</DialogTitle>
-                                <DialogDescription>
-                                    Create a new department. All fields marked with * are required.
-                                </DialogDescription>
+                                <DialogDescription>Create a new department. All fields marked with * are required.</DialogDescription>
                             </DialogHeader>
                             <div className="flex-1 overflow-y-auto px-1">
                                 <DepartmentForm
@@ -112,7 +110,7 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
                 {/* Filters */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                         <Input
                             placeholder="Search departments by name..."
                             value={data.search}
@@ -123,13 +121,10 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
                 </div>
 
                 {/* Departments Table */}
-                <DepartmentTable
-                    departments={departments}
-                    onRefresh={refreshDepartments}
-                />
+                <DepartmentTable departments={departments} onRefresh={refreshDepartments} />
 
                 {/* Pagination Info */}
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center justify-between text-sm">
                     <div>
                         Showing {departments.from || 0} to {departments.to || 0} of {departments.total} departments
                     </div>

@@ -1,36 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { EquipmentSchema } from '@/validation/tracking-request-schema';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
-import { QrCode, Scan, Search } from 'lucide-react';
-import axios from 'axios';
-import { User } from '@/types';
-import { toast } from 'react-hot-toast';
-import { CalendarIcon, User as UserIcon } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Scanner } from '@yudiel/react-qr-scanner';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import { usePage } from '@inertiajs/react';
-import { type SharedData } from '@/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setScannedEmployee, updateEquipment } from '@/store/slices/trackingRequestSlice';
+import { setReceivedBy, setScannedEmployee, updateEquipment } from '@/store/slices/trackingRequestSlice';
+import { User, type SharedData } from '@/types';
+import { EquipmentSchema } from '@/validation/tracking-request-schema';
+import { usePage } from '@inertiajs/react';
+import { Scanner } from '@yudiel/react-qr-scanner';
+import axios from 'axios';
+import { format } from 'date-fns';
+import { CalendarIcon, Scan, Search, User as UserIcon } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface DetailTabProps {
     data: EquipmentSchema;
@@ -51,19 +38,19 @@ const DetailTab: React.FC<DetailTabProps> = ({
     errors = {},
     technician,
     receivedBy,
-    hideReceivedBy = false
+    hideReceivedBy = false,
 }) => {
     const { auth } = usePage<SharedData>().props;
     const currentUser = auth.user;
     const dispatch = useAppDispatch();
-    const { requestType = '' } = useAppSelector(state => state.trackingRequest);
+    const { requestType = '' } = useAppSelector((state) => state.trackingRequest);
     const [recallNumber, setRecallNumber] = useState<string>(data.recallNumber || '');
     const [recallBarcode, setRecallBarcode] = useState('');
     const [recallBarcodeError, setRecallBarcodeError] = useState('');
     const [recallLoading, setRecallLoading] = useState(false);
 
     // Get scannedEmployee from Redux instead of local state
-    const { scannedEmployee } = useAppSelector(state => state.trackingRequest);
+    const { scannedEmployee } = useAppSelector((state) => state.trackingRequest);
 
     const [departments, setDepartments] = useState<SelectOption[]>([]);
     const [locations, setLocations] = useState<SelectOption[]>([]);
@@ -89,7 +76,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
         try {
             const response = await axios.get(route('admin.users.search-by-barcode'), {
                 params: { barcode },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
 
             if (response.data.success && response.data.employee) {
@@ -148,24 +135,34 @@ const DetailTab: React.FC<DetailTabProps> = ({
         try {
             const response = await axios.get(route('api.equipment.search-by-recall'), {
                 params: { recall_number: recall },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             if (response.data.success && response.data.equipment) {
-                dispatch(updateEquipment({
-                    ...response.data.equipment,
-                    recallNumber: recall,
+                dispatch(
+                    updateEquipment({
+                        ...response.data.equipment,
+                        recallNumber: recall,
+                        serialNumber: response.data.equipment.serial_number || '',
+                        processReqRangeStart: response.data.equipment.process_req_range_start || '',
+                        processReqRangeEnd: response.data.equipment.process_req_range_end || '',
+                        existing: true,
+                        equipment_id: response.data.equipment.equipment_id,
+                    }),
+                );
+                // Auto-fill form fields including new process requirement range fields
+                onChange({
                     serialNumber: response.data.equipment.serial_number || '',
-                    existing: true,
-                    equipment_id: response.data.equipment.equipment_id
-                }));
-                // Auto-fill serial number in the form
-                onChange({ serialNumber: response.data.equipment.serial_number || '' });
+                    processReqRangeStart: response.data.equipment.process_req_range_start || '',
+                    processReqRangeEnd: response.data.equipment.process_req_range_end || '',
+                });
             } else {
-                dispatch(updateEquipment({
-                    recallNumber: recall,
-                    existing: false,
-                    equipment_id: null
-                }));
+                dispatch(
+                    updateEquipment({
+                        recallNumber: recall,
+                        existing: false,
+                        equipment_id: null,
+                    }),
+                );
             }
         } catch (error) {
             setRecallBarcodeError('Error searching for equipment');
@@ -208,7 +205,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
         try {
             const response = await axios.get(route('api.equipment.search-by-recall'), {
                 params: { recall_number: inputValue },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             if (response.data.success && response.data.equipment) {
                 // Use recall_number from backend
@@ -220,20 +217,24 @@ const DetailTab: React.FC<DetailTabProps> = ({
         }
     };
 
-
-    // Handle barcode input change
+    // Handle barcode input change (no automatic search)
     const handleBarcodeChange = (value: string) => {
         setEmployeeBarcode(value);
         setBarcodeError(''); // Clear error when user starts typing
-        if (value.length >= 1) { // Employee ID can be just 1 digit
-            fetchEmployeeByBarcode(value);
-        } else {
-            // Update Redux state instead of local state
-            dispatch(setScannedEmployee(null));
-            if (onScannedEmployeeChange) {
-                onScannedEmployeeChange(null);
-            }
+        // Clear previous results when input changes
+        dispatch(setScannedEmployee(null));
+        if (onScannedEmployeeChange) {
+            onScannedEmployeeChange(null);
         }
+    };
+
+    // Handle employee search when button is clicked
+    const handleEmployeeSearch = () => {
+        if (!employeeBarcode.trim()) {
+            setBarcodeError('Please enter an employee ID');
+            return;
+        }
+        fetchEmployeeByBarcode(employeeBarcode.trim());
     };
 
     // Handle barcode scan
@@ -258,13 +259,13 @@ const DetailTab: React.FC<DetailTabProps> = ({
             const response = await axios.get(route('admin.locations.search-locations'), {
                 params: {
                     // department_id: departmentId,
-                    limit: 10
+                    limit: 10,
                 },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             const departmentLocations = response.data.map((location: any) => ({
                 label: location.label,
-                value: location.value
+                value: location.value,
             }));
 
             setLocations(departmentLocations);
@@ -273,7 +274,6 @@ const DetailTab: React.FC<DetailTabProps> = ({
             if (departmentLocations.length > 0 && (!data.location || data.location === '' || data.location === null)) {
                 onChange({ location: departmentLocations[0].value });
             }
-
         } catch (error) {
             console.error('Error fetching locations for department:', error);
         } finally {
@@ -288,26 +288,28 @@ const DetailTab: React.FC<DetailTabProps> = ({
             try {
                 // Fetch departments
                 const deptResponse = await axios.get(route('admin.departments.search-departments'), {
-                    params: { search: '', limit: 10 }
+                    params: { search: '', limit: 10 },
                 });
                 setDepartments(deptResponse.data);
 
                 // Fetch plants
                 const plantResponse = await axios.get(route('admin.plants.search-plants'), {
-                    params: { search: '', limit: 10 }
+                    params: { search: '', limit: 10 },
                 });
                 setPlants(plantResponse.data);
 
                 // Fetch locations without department filter
                 const locResponse = await axios.get('/admin/locations', {
                     params: { limit: 10 },
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 });
 
-                setLocations(locResponse.data.data.data.map((location: any) => ({
-                    label: location.location_name,
-                    value: location.location_id
-                })));
+                setLocations(
+                    locResponse.data.data.data.map((location: any) => ({
+                        label: location.location_name,
+                        value: location.location_id,
+                    })),
+                );
             } catch (error) {
                 console.error('Error fetching initial data:', error);
             } finally {
@@ -338,6 +340,25 @@ const DetailTab: React.FC<DetailTabProps> = ({
             setLoadingLocations(true);
             fetchLocationsByDepartment(value as number);
         }
+        // Special handling for receivedBy field
+        if (field === 'receivedBy' && value) {
+            // When receivedBy changes, we need to update both the equipment state and Redux receivedBy state
+            // First, find the user data from the loadUserOptions
+            loadUserOptions('')
+                .then((options) => {
+                    const selectedOption = options.find((opt) => opt.value === value);
+                    if (selectedOption && selectedOption.userData && onReceivedByChange) {
+                        // Update Redux receivedBy state with complete user data
+                        dispatch(setReceivedBy(selectedOption.userData));
+
+                        // Also call the callback for backward compatibility
+                        onReceivedByChange(selectedOption.userData);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error loading user data for receivedBy:', error);
+                });
+        }
 
         // Update Redux state with the single field change
         const updatedData = { [field]: value };
@@ -354,7 +375,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
 
             // Otherwise load from API
             const response = await axios.get(route('admin.departments.search-departments'), {
-                params: { search: inputValue, limit: 10 }
+                params: { search: inputValue, limit: 10 },
             });
             return response.data;
         } catch (error) {
@@ -373,7 +394,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
 
             // Otherwise load from API
             const response = await axios.get(route('admin.plants.search-plants'), {
-                params: { search: inputValue, limit: 10 }
+                params: { search: inputValue, limit: 10 },
             });
             return response.data;
         } catch (error) {
@@ -393,7 +414,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
             // Only include department_id as an optional filter, not a requirement
             const params: Record<string, string> = {
                 search: inputValue,
-                limit: '10'
+                limit: '10',
             };
 
             // Add department as an optional filter if selected
@@ -404,13 +425,13 @@ const DetailTab: React.FC<DetailTabProps> = ({
             const response = await axios.get('/admin/locations', {
                 params,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
             });
 
             return response.data.data.data.map((location: any) => ({
                 label: location.location_name,
-                value: location.location_id
+                value: location.location_id,
             }));
         } catch (error) {
             console.error('Error loading locations:', error);
@@ -435,15 +456,15 @@ const DetailTab: React.FC<DetailTabProps> = ({
 
             const response = await axios.post('/admin/locations', params, {
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
             });
 
             toast.success(`Location "${inputValue}" created successfully`);
 
             return {
                 label: inputValue,
-                value: response.data.data.location_id
+                value: response.data.data.location_id,
             };
         } catch (error: any) {
             console.error('Error creating location:', error);
@@ -464,14 +485,22 @@ const DetailTab: React.FC<DetailTabProps> = ({
             const response = await axios.get('/admin/users', {
                 params: {
                     search: inputValue,
-                    limit: 10
+                    limit: 10,
                 },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
-
             return response.data.data.data.map((user: any) => ({
                 label: `${user.first_name} ${user.last_name}`,
-                value: user.user_id
+                value: user.user_id || user.employee_id,
+                // Store additional user data for later use
+                userData: {
+                    user_id: user.user_id,
+                    employee_id: user.employee_id || user.user_id,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    full_name: `${user.first_name} ${user.last_name}`,
+                    email: user.email || '',
+                },
             }));
         } catch (error) {
             console.error('Error loading users:', error);
@@ -487,7 +516,6 @@ const DetailTab: React.FC<DetailTabProps> = ({
             handleChange('dueDate', formattedDate);
         }
     };
-
 
     useEffect(() => {
         if (data.dueDate !== localDueDate && data.dueDate) {
@@ -522,14 +550,28 @@ const DetailTab: React.FC<DetailTabProps> = ({
         // Skip if hideReceivedBy is true
         if (!hideReceivedBy && !receivedBy && currentUser && onReceivedByChange) {
             // Set the current user as receivedBy
-            onReceivedByChange(currentUser);
+            const userObj = {
+                user_id: currentUser.user_id,
+                employee_id: currentUser.employee_id || currentUser.user_id,
+                first_name: currentUser.first_name,
+                last_name: currentUser.last_name,
+                full_name: `${currentUser.first_name} ${currentUser.last_name}`,
+                email: currentUser.email || '',
+            };
+
+            // Update Redux state
+            dispatch(setReceivedBy(userObj));
+
+            // Also call the callback for backward compatibility
+            onReceivedByChange(userObj);
+
             // Also update the equipment receivedBy field
             handleChange('receivedBy', currentUser.user_id);
         }
-    }, [receivedBy, onReceivedByChange, currentUser]);
+    }, [receivedBy, onReceivedByChange, currentUser, hideReceivedBy, dispatch]);
 
     // DONT REMOVE
-    // console.log(recallNumber)
+    console.log(data);
 
     return (
         <div className="space-y-6">
@@ -538,72 +580,73 @@ const DetailTab: React.FC<DetailTabProps> = ({
                     <CardTitle>Details</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {/* Recall Number Section for All Requests */}
-                    <div className="mb-6 p-4 border rounded-lg bg-muted/20">
-                        <label className="w-full block font-semibold mb-2">Recall Number</label>
-                        <div className="w-full flex gap-2 items-center ">
-                            <div className='w-full'>
-                                <InertiaSmartSelect
-                                    name="recallNumber"
-                                    value={recallNumber}
-                                    onChange={handleRecallNumberChange}
-                                    loadOptions={loadRecallOptions}
-                                    placeholder="Search or enter recall number"
-                                    isDisabled={recallLoading}
-                                    error={requestType && requestType == 'routine' ? errors.recallNumber : undefined}
-                                    minSearchLength={1}
-                                />
-                            </div>
-                            {/* Barcode scanner button for recall number */}
-                            <div>
-                                <Dialog open={showRecallScanner} onOpenChange={setShowRecallScanner}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="outline" className="w-full">
-                                            <Scan className="h-4 w-4 mr-2" />
-                                            Scan Recall Barcode
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="sm:max-w-md">
-                                        <DialogHeader>
-                                            <DialogTitle>Scan Recall Number Barcode</DialogTitle>
-                                            <DialogDescription>
-                                                Position the barcode within the camera frame to scan
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="flex items-center justify-center p-4">
-                                            <div className="w-full max-w-sm">
-                                                <Scanner
-                                                    onScan={handleRecallScan}
-                                                    onError={handleScanError}
-                                                    formats={['code_128', 'code_39']}
-                                                    constraints={{
-                                                        video: {
-                                                            facingMode: 'environment'
-                                                        }
-                                                    }}
-                                                    allowMultiple={false}
-                                                    scanDelay={500}
-                                                    components={{
-                                                        finder: true,
-                                                        torch: true,
-                                                        zoom: false
-                                                    }}
-                                                />
+                    {/* Recall Number Section - Only show for routine requests */}
+                    {requestType === 'routine' && (
+                        <div className="bg-muted/20 mb-6 rounded-lg border p-4">
+                            <label className="mb-2 block w-full font-semibold">Recall Number</label>
+                            <div className="flex w-full items-center gap-2">
+                                <div className="w-full">
+                                    <InertiaSmartSelect
+                                        name="recallNumber"
+                                        value={recallNumber}
+                                        onChange={handleRecallNumberChange}
+                                        loadOptions={loadRecallOptions}
+                                        placeholder="Search or enter recall number"
+                                        isDisabled={recallLoading}
+                                        error={errors.recallNumber}
+                                        minSearchLength={1}
+                                        required
+                                    />
+                                </div>
+                                {/* Barcode scanner button for recall number */}
+                                <div>
+                                    <Dialog open={showRecallScanner} onOpenChange={setShowRecallScanner}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="outline" className="w-full">
+                                                <Scan className="mr-2 h-4 w-4" />
+                                                Scan Recall Barcode
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-md">
+                                            <DialogHeader>
+                                                <DialogTitle>Scan Recall Number Barcode</DialogTitle>
+                                                <DialogDescription>Position the barcode within the camera frame to scan</DialogDescription>
+                                            </DialogHeader>
+                                            <div className="flex items-center justify-center p-4">
+                                                <div className="w-full max-w-sm">
+                                                    <Scanner
+                                                        onScan={handleRecallScan}
+                                                        onError={handleScanError}
+                                                        formats={['code_128', 'code_39']}
+                                                        constraints={{
+                                                            video: {
+                                                                facingMode: 'environment',
+                                                            },
+                                                        }}
+                                                        allowMultiple={false}
+                                                        scanDelay={500}
+                                                        components={{
+                                                            finder: true,
+                                                            torch: true,
+                                                            zoom: false,
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
                             </div>
+                            {recallBarcodeError && <div className="mt-1 text-xs text-red-500">{recallBarcodeError}</div>}
                         </div>
-                        {requestType && requestType == 'routine' && recallBarcodeError && <div className="text-red-500 text-xs mt-1">{recallBarcodeError}</div>}
-                    </div>
+                    )}
                     {/* Employee Barcode Section */}
-                    <div className="mb-6 p-4 border rounded-lg bg-muted/20">
-                        <h3 className="font-medium text-sm mb-4 flex items-center">
-                            <UserIcon className="h-4 w-4 mr-2" />
+                    <div className="bg-muted/20 mb-6 rounded-lg border p-4">
+                        <h3 className="mb-4 flex items-center text-sm font-medium">
+                            <UserIcon className="mr-2 h-4 w-4" />
                             Employee Information
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-5">
                             <div className="md:col-span-3">
                                 <Label htmlFor="employeeBarcode" className={errors.employeeBarcode ? 'text-destructive' : ''}>
                                     Employee Barcode (Employee ID) *
@@ -611,31 +654,35 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 <Input
                                     id="employeeBarcode"
                                     value={employeeBarcode}
-                                    onChange={e => setEmployeeBarcode(e.target.value)}
+                                    onChange={(e) => handleBarcodeChange(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && employeeBarcode.trim()) {
+                                            handleEmployeeSearch();
+                                        }
+                                    }}
                                     placeholder="Scan or enter employee ID"
                                     className={errors.employeeBarcode ? 'border-destructive' : ''}
                                     disabled={loadingEmployee}
                                 />
-                                {errors.employeeBarcode && <p className="text-sm text-destructive mt-1">{errors.employeeBarcode}</p>}
-                                {barcodeError && <span className="text-sm text-red-600 mt-1 block">{barcodeError}</span>}
+                                {errors.employeeBarcode && <p className="text-destructive mt-1 text-sm">{errors.employeeBarcode}</p>}
+                                {barcodeError && <span className="mt-1 block text-sm text-red-600">{barcodeError}</span>}
                             </div>
-                            <Button onClick={() => fetchEmployeeByBarcode(employeeBarcode)} disabled={loadingEmployee || !employeeBarcode}>
+                            <Button onClick={handleEmployeeSearch} disabled={loadingEmployee || !employeeBarcode.trim()}>
+                                <Search className="mr-2 h-4 w-4" />
                                 Search
                             </Button>
                             <div>
                                 <Dialog open={showScanner} onOpenChange={setShowScanner}>
                                     <DialogTrigger asChild>
                                         <Button variant="outline" className="w-full">
-                                            <Scan className="h-4 w-4 mr-2" />
+                                            <Scan className="mr-2 h-4 w-4" />
                                             Scan Barcode
                                         </Button>
                                     </DialogTrigger>
                                     <DialogContent className="sm:max-w-md">
                                         <DialogHeader>
                                             <DialogTitle>Scan Employee Barcode</DialogTitle>
-                                            <DialogDescription>
-                                                Position the Code 128 barcode within the camera frame to scan
-                                            </DialogDescription>
+                                            <DialogDescription>Position the Code 128 barcode within the camera frame to scan</DialogDescription>
                                         </DialogHeader>
                                         <div className="flex items-center justify-center p-4">
                                             <div className="w-full max-w-sm">
@@ -645,15 +692,15 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                                     formats={['code_128', 'code_39']}
                                                     constraints={{
                                                         video: {
-                                                            facingMode: 'environment'
-                                                        }
+                                                            facingMode: 'environment',
+                                                        },
                                                     }}
                                                     allowMultiple={false}
                                                     scanDelay={500}
                                                     components={{
                                                         finder: true,
                                                         torch: true,
-                                                        zoom: false
+                                                        zoom: false,
                                                     }}
                                                 />
                                             </div>
@@ -665,22 +712,23 @@ const DetailTab: React.FC<DetailTabProps> = ({
 
                         {/* Employee Info Display */}
                         {scannedEmployee && (
-                            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                            <div className="mt-4 rounded-md border border-green-200 bg-green-50 p-3">
                                 <div className="flex items-center text-green-800">
-                                    <UserIcon className="h-4 w-4 mr-2" />
+                                    <UserIcon className="mr-2 h-4 w-4" />
                                     <span className="font-medium">
                                         {scannedEmployee.first_name} {scannedEmployee.last_name}
                                     </span>
                                 </div>
-                                <div className="text-sm text-green-600 mt-1">
-                                    ID: {scannedEmployee.employee_id} | {scannedEmployee.department?.department_name} - {scannedEmployee.plant?.plant_name}
+                                <div className="mt-1 text-sm text-green-600">
+                                    ID: {scannedEmployee.employee_id} | {scannedEmployee.department?.department_name} -{' '}
+                                    {scannedEmployee.plant?.plant_name}
                                 </div>
                             </div>
                         )}
                     </div>
 
                     {/* Organizational info in one row */}
-                    <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="mb-6 grid grid-cols-3 gap-4">
                         <div>
                             <Label htmlFor="plant" className={errors.plant ? 'text-destructive' : ''}>
                                 Plant
@@ -700,9 +748,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 minSearchLength={0}
                             />
                             {scannedEmployee?.plant && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Auto-filled from employee: {scannedEmployee.plant.plant_name}
-                                </p>
+                                <p className="text-muted-foreground mt-1 text-xs">Auto-filled from employee: {scannedEmployee.plant.plant_name}</p>
                             )}
                         </div>
 
@@ -725,7 +771,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 minSearchLength={0}
                             />
                             {scannedEmployee?.department && (
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="text-muted-foreground mt-1 text-xs">
                                     Auto-filled from employee: {scannedEmployee.department.department_name}
                                 </p>
                             )}
@@ -755,8 +801,8 @@ const DetailTab: React.FC<DetailTabProps> = ({
 
                     {/* Equipment details below */}
                     <div className="border-t pt-6">
-                        <h3 className="font-medium text-sm mb-4">Equipment Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <h3 className="mb-4 text-sm font-medium">Equipment Information</h3>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div className="md:col-span-2">
                                 <Label htmlFor="description" className={errors.description ? 'text-destructive' : ''}>
                                     Equipment Description
@@ -767,7 +813,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     onChange={(e) => handleChange('description', e.target.value)}
                                     className={errors.description ? 'border-destructive' : ''}
                                 />
-                                {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
+                                {errors.description && <p className="text-destructive mt-1 text-sm">{errors.description}</p>}
                             </div>
                             <div>
                                 <Label htmlFor="serialNumber" className={errors.serialNumber ? 'text-destructive' : ''}>
@@ -779,7 +825,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     onChange={(e) => handleChange('serialNumber', e.target.value)}
                                     className={errors.serialNumber ? 'border-destructive' : ''}
                                 />
-                                {errors.serialNumber && <p className="text-sm text-destructive mt-1">{errors.serialNumber}</p>}
+                                {errors.serialNumber && <p className="text-destructive mt-1 text-sm">{errors.serialNumber}</p>}
                             </div>
 
                             <div>
@@ -792,7 +838,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     onChange={(e) => handleChange('model', e.target.value)}
                                     className={errors.model ? 'border-destructive' : ''}
                                 />
-                                {errors.model && <p className="text-sm text-destructive mt-1">{errors.model}</p>}
+                                {errors.model && <p className="text-destructive mt-1 text-sm">{errors.model}</p>}
                             </div>
 
                             <div>
@@ -805,16 +851,44 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     onChange={(e) => handleChange('manufacturer', e.target.value)}
                                     className={errors.manufacturer ? 'border-destructive' : ''}
                                 />
-                                {errors.manufacturer && <p className="text-sm text-destructive mt-1">{errors.manufacturer}</p>}
+                                {errors.manufacturer && <p className="text-destructive mt-1 text-sm">{errors.manufacturer}</p>}
                             </div>
 
+                            {/* Process Requirement Range fields */}
+                            <div>
+                                <Label htmlFor="processReqRangeStart" className={errors.processReqRangeStart ? 'text-destructive' : ''}>
+                                    Process Req Range Start
+                                </Label>
+                                <Input
+                                    id="processReqRangeStart"
+                                    value={data.processReqRangeStart || data.process_req_range_start || ''}
+                                    onChange={(e) => handleChange('processReqRangeStart', e.target.value)}
+                                    placeholder="Enter process requirement range start"
+                                    className={errors.processReqRangeStart ? 'border-destructive' : ''}
+                                />
+                                {errors.processReqRangeStart && <p className="text-destructive mt-1 text-sm">{errors.processReqRangeStart}</p>}
+                            </div>
+
+                            <div>
+                                <Label htmlFor="processReqRangeEnd" className={errors.processReqRangeEnd ? 'text-destructive' : ''}>
+                                    Process Req Range End
+                                </Label>
+                                <Input
+                                    id="processReqRangeEnd"
+                                    value={data.processReqRangeEnd || data.process_req_range_end || ''}
+                                    onChange={(e) => handleChange('processReqRangeEnd', e.target.value)}
+                                    placeholder="Enter process requirement range end"
+                                    className={errors.processReqRangeEnd ? 'border-destructive' : ''}
+                                />
+                                {errors.processReqRangeEnd && <p className="text-destructive mt-1 text-sm">{errors.processReqRangeEnd}</p>}
+                            </div>
                         </div>
                     </div>
 
                     {/* Due date section */}
-                    <div className="border-t pt-6 mt-6">
-                        <h3 className="font-medium text-sm mb-4">Scheduling Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="mt-6 border-t pt-6">
+                        <h3 className="mb-4 text-sm font-medium">Scheduling Information</h3>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div>
                                 <Label htmlFor="dueDate" className={errors.dueDate ? 'text-destructive' : ''}>
                                     Due Date
@@ -824,9 +898,9 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                         <Button
                                             variant="outline"
                                             className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !localDueDate && "text-muted-foreground",
-                                                errors.dueDate && "border-destructive"
+                                                'w-full justify-start text-left font-normal',
+                                                !localDueDate && 'text-muted-foreground',
+                                                errors.dueDate && 'border-destructive',
                                             )}
                                         >
                                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -842,12 +916,8 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                         />
                                     </PopoverContent>
                                 </Popover>
-                                {errors.dueDate && <p className="text-sm text-destructive mt-1">{errors.dueDate}</p>}
-                                {technician && localDueDate && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Auto-filled to current day
-                                    </p>
-                                )}
+                                {errors.dueDate && <p className="text-destructive mt-1 text-sm">{errors.dueDate}</p>}
+                                {technician && localDueDate && <p className="text-muted-foreground mt-1 text-xs">Auto-filled to current day</p>}
                             </div>
 
                             {!hideReceivedBy && (
@@ -857,8 +927,8 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     </Label>
                                     <InertiaSmartSelect
                                         name="receivedBy"
-                                        value={data.receivedBy?.employee_id}
-                                        label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : (data.receivedBy ? data.receivedBy.first_name + ' ' + data.receivedBy.last_name : undefined)}
+                                        value={receivedBy?.employee_id}
+                                        label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : 'None'}
                                         onChange={(value) => handleChange('receivedBy', value as string)}
                                         loadOptions={loadUserOptions}
                                         placeholder="Select user"
@@ -868,9 +938,9 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                         defaultOptions={true}
                                         minSearchLength={2}
                                     />
-                                    {errors.receivedBy && <p className="text-sm text-destructive mt-1">{errors.receivedBy}</p>}
+                                    {errors.receivedBy && <p className="text-destructive mt-1 text-sm">{errors.receivedBy}</p>}
                                     {receivedBy && (
-                                        <p className="text-xs text-muted-foreground mt-1">
+                                        <p className="text-muted-foreground mt-1 text-xs">
                                             Auto-filled to current user: {receivedBy.first_name} {receivedBy.last_name}
                                         </p>
                                     )}

@@ -8,6 +8,7 @@ use App\Models\Plant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -98,17 +99,141 @@ class PlantController extends Controller
 
     public function destroy(Plant $plant, Request $request): RedirectResponse|JsonResponse
     {
-        $plant->delete();
+        // Check for foreign key constraints before deletion
+        $userCount = $plant->users()->count();
+        
+        if ($userCount > 0) {
+            $errorMessage = "Cannot archive plant. It has {$userCount} user(s) assigned to it.";
+
+            // For Inertia requests, throw validation exception
+            if ($request->header('X-Inertia')) {
+                throw ValidationException::withMessages([
+                    'plant' => $errorMessage
+                ]);
+            }
+
+            // Return JSON only for non-Inertia AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 422);
+            }
+
+            return redirect()->route('admin.plants.index')
+                ->with('error', $errorMessage);
+        }
+
+        $plant->delete(); // This is now a soft delete due to SoftDeletes trait
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'message' => 'Plant deleted successfully.'
+                'message' => 'Plant archived successfully.'
             ]);
         }
 
         return redirect()->route('admin.plants.index')
-            ->with('success', 'Plant deleted successfully.');
+            ->with('success', 'Plant archived successfully.');
+    }
+
+    /**
+     * Restore a soft deleted plant
+     */
+    public function restore($id, Request $request): RedirectResponse|JsonResponse
+    {
+        $plant = Plant::onlyTrashed()->where('plant_id', $id)->first();
+        
+        if (!$plant) {
+            $errorMessage = 'Archived plant not found.';
+            
+            // For Inertia requests, throw validation exception
+            if ($request->header('X-Inertia')) {
+                throw ValidationException::withMessages([
+                    'plant' => $errorMessage
+                ]);
+            }
+
+            // Return JSON only for non-Inertia AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 404);
+            }
+
+            return redirect()->route('admin.plants.index')
+                ->with('error', $errorMessage);
+        }
+
+        $plant->restore();
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'Plant restored successfully.'
+            ]);
+        }
+
+        return redirect()->route('admin.plants.index')
+            ->with('success', 'Plant restored successfully.');
+    }
+
+    /**
+     * Permanently delete a plant (force delete)
+     */
+    public function forceDelete($id, Request $request): RedirectResponse|JsonResponse
+    {
+        $plant = Plant::onlyTrashed()->where('plant_id', $id)->first();
+        
+        if (!$plant) {
+            $errorMessage = 'Archived plant not found.';
+            
+            if ($request->header('X-Inertia')) {
+                throw ValidationException::withMessages([
+                    'plant' => $errorMessage
+                ]);
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 404);
+            }
+
+            return redirect()->route('admin.plants.archived')
+                ->with('error', $errorMessage);
+        }
+
+        $plant->forceDelete();
+
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'Plant permanently deleted.'
+            ]);
+        }
+
+        return redirect()->route('admin.plants.archived')
+            ->with('success', 'Plant permanently deleted.');
+    }
+
+    /**
+     * Get archived plants for display
+     */
+    public function archived(Request $request): Response|JsonResponse
+    {
+        $plants = Plant::onlyTrashed()
+            ->orderBy('deleted_at', 'desc')
+            ->paginate(10);
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'data' => $plants
+            ]);
+        }
+
+        return Inertia::render('admin/plants/archived', [
+            'plants' => $plants,
+        ]);
     }
 
     /**

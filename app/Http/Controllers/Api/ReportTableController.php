@@ -7,6 +7,7 @@ use App\Models\TrackIncoming;
 use App\Models\TrackOutgoing;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\TrackingReportExport;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -26,6 +27,15 @@ class ReportTableController extends Controller
             'trackOutgoing.employeeOut'
         ]);
 
+        // Role-based filtering for technicians
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            $query->where(function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        }
+
         // Apply search filters
         if ($request->filled('search')) {
             $search = $request->get('search');
@@ -42,13 +52,6 @@ class ReportTableController extends Controller
         }
 
         // Apply filters - handle both old and new parameter names
-        if ($request->filled('equipment_name') || $request->filled('equipment_filter')) {
-            $equipmentName = $request->get('equipment_name') ?: $request->get('equipment_filter');
-            $query->whereHas('equipment', function($eq) use ($equipmentName) {
-                $eq->where('description', 'like', '%' . $equipmentName . '%');
-            });
-        }
-
         if ($request->filled('recall_number') || $request->filled('recall_filter')) {
             $recallNumber = $request->get('recall_number') ?: $request->get('recall_filter');
             $query->where('recall_number', 'like', '%' . $recallNumber . '%');
@@ -56,12 +59,20 @@ class ReportTableController extends Controller
 
         if ($request->filled('status') || $request->filled('status_filter')) {
             $status = $request->get('status') ?: $request->get('status_filter');
-            $query->where('status', $status);
-        }
-
-        if ($request->filled('technician_id') || $request->filled('technician_filter')) {
-            $technicianId = $request->get('technician_id') ?: $request->get('technician_filter');
-            $query->where('technician_id', $technicianId);
+            
+            // Check if it's an incoming or outgoing status
+            $incomingOnlyStatuses = ['for_confirmation', 'pending_calibration'];
+            $outgoingStatuses = ['for_pickup', 'completed'];
+            
+            if (in_array($status, $incomingOnlyStatuses)) {
+                // Filter by track_incoming status only
+                $query->where('status', $status);
+            } elseif (in_array($status, $outgoingStatuses)) {
+                // Filter by track_outgoing status only
+                $query->whereHas('trackOutgoing', function($outgoing) use ($status) {
+                    $outgoing->where('status', $status);
+                });
+            }
         }
 
         if ($request->filled('location_id') || $request->filled('location_filter')) {
@@ -143,16 +154,6 @@ class ReportTableController extends Controller
      */
     public function filterOptions(): JsonResponse
     {
-        $technicians = \App\Models\User::whereHas('trackIncomingAsTechnician')
-            ->select('employee_id', 'first_name', 'last_name')
-            ->get()
-            ->map(function($user) {
-                return [
-                    'value' => $user->employee_id,
-                    'label' => $user->first_name . ' ' . $user->last_name
-                ];
-            });
-
         $locations = \App\Models\Location::whereHas('trackIncoming')
             ->select('location_id', 'location_name')
             ->get()
@@ -164,12 +165,15 @@ class ReportTableController extends Controller
             });
 
         $statuses = [
+            // Incoming-only statuses
+            ['value' => 'for_confirmation', 'label' => 'For Confirmation'],
             ['value' => 'pending_calibration', 'label' => 'Pending Calibration'],
+            // Outgoing-only statuses
+            ['value' => 'for_pickup', 'label' => 'For Pickup'],
             ['value' => 'completed', 'label' => 'Completed'],
         ];
 
         return response()->json([
-            'technicians' => $technicians,
             'locations' => $locations,
             'statuses' => $statuses,
         ]);
@@ -181,15 +185,26 @@ class ReportTableController extends Controller
     public function export(Request $request, string $format)
     {
         $filters = $request->all();
+        $printAll = $request->boolean('print_all', false);
+        
+        // Log the export request details
+        \Log::info('Export Request:', [
+            'format' => $format,
+            'filters' => $filters,
+            'print_all' => $printAll,
+            'request_url' => $request->fullUrl(),
+            'request_method' => $request->method()
+        ]);
         
         switch ($format) {
             case 'xlsx':
-                return $this->exportExcel($filters);
+                return $this->exportExcel($filters, $printAll);
             case 'csv':
-                return $this->exportCsv($filters);
+                return $this->exportCsv($filters, $printAll);
             case 'pdf':
-                return $this->exportPdf($filters);
+                return $this->exportPdf($filters, $printAll);
             default:
+                \Log::error('Invalid export format requested:', ['format' => $format]);
                 return response()->json(['error' => 'Invalid export format'], 400);
         }
     }
@@ -197,38 +212,129 @@ class ReportTableController extends Controller
     /**
      * Export to Excel
      */
-    private function exportExcel(array $filters)
+    private function exportExcel(array $filters, bool $printAll = false)
     {
-        return Excel::download(new TrackingReportExport($filters), 'tracking_reports_' . date('Y_m_d') . '.xlsx');
+        // Log the filters being applied
+        \Log::info('Excel Export - Filters applied:', [
+            'filters' => $filters,
+            'print_all' => $printAll
+        ]);
+        
+        // Create export instance and test data retrieval
+        $export = new TrackingReportExport($filters, null, $printAll);
+        
+        // Get the data to verify it's not empty
+        $query = TrackIncoming::with([
+            'equipment', 
+            'technician', 
+            'location', 
+            'employeeIn',
+            'trackOutgoing.employeeOut'
+        ]);
+        
+        // Apply same filters as in export (unless print all mode)
+        if (!$printAll) {
+            $this->applyFilters($query, $filters);
+        }
+        $testData = $query->get();
+        
+        \Log::info('Excel Export - Data count before export:', [
+            'count' => $testData->count(),
+            'mode' => $printAll ? 'print_all' : 'filtered'
+        ]);
+        
+        $filename = $printAll ? 'tracking_reports_all_' . date('Y_m_d') . '.xlsx' : 'tracking_reports_' . date('Y_m_d') . '.xlsx';
+        return Excel::download($export, $filename);
     }
 
     /**
      * Export to CSV
      */
-    private function exportCsv(array $filters)
+    private function exportCsv(array $filters, bool $printAll = false)
     {
-        return Excel::download(new TrackingReportExport($filters), 'tracking_reports_' . date('Y_m_d') . '.csv', \Maatwebsite\Excel\Excel::CSV);
+        // Log the filters being applied
+        \Log::info('CSV Export - Filters applied:', [
+            'filters' => $filters,
+            'print_all' => $printAll
+        ]);
+        
+        // Create export instance and test data retrieval
+        $export = new TrackingReportExport($filters, null, $printAll);
+        
+        // Get the data to verify it's not empty
+        $query = TrackIncoming::with([
+            'equipment', 
+            'technician', 
+            'location', 
+            'employeeIn',
+            'trackOutgoing.employeeOut'
+        ]);
+        
+        // Apply same filters as in export (unless print all mode)
+        if (!$printAll) {
+            $this->applyFilters($query, $filters);
+        }
+        $testData = $query->get();
+        
+        \Log::info('CSV Export - Data count before export:', [
+            'count' => $testData->count(),
+            'mode' => $printAll ? 'print_all' : 'filtered'
+        ]);
+        
+        $filename = $printAll ? 'tracking_reports_all_' . date('Y_m_d') . '.csv' : 'tracking_reports_' . date('Y_m_d') . '.csv';
+        return Excel::download($export, $filename, \Maatwebsite\Excel\Excel::CSV);
     }
 
     /**
      * Export to PDF
      */
-    private function exportPdf(array $filters)
+    private function exportPdf(array $filters, bool $printAll = false)
     {
-        // Use Laravel Excel with DOMPDF for PDF generation
-        $export = new TrackingReportExport($filters, 'pdf');
+        // Log the filters being applied
+        \Log::info('PDF Export - Filters applied:', [
+            'filters' => $filters,
+            'print_all' => $printAll
+        ]);
         
-        // Generate the PDF content
-        $pdf = Excel::raw($export, \Maatwebsite\Excel\Excel::DOMPDF);
+        // Get the data directly using same logic as export
+        $query = TrackIncoming::with([
+            'equipment', 
+            'technician', 
+            'location', 
+            'employeeIn',
+            'trackOutgoing.employeeOut'
+        ]);
+
+        // Apply role-based filtering first
+        $this->applyRoleBasedFiltering($query);
+
+        // Only apply additional filters if not in "print all" mode
+        if (!$printAll) {
+            $this->applyFilters($query, $filters);
+        }
+
+        $reports = $query->orderBy('date_in', 'desc')->get();
+        
+        \Log::info('PDF Export - Data count before export:', [
+            'count' => $reports->count(),
+            'mode' => $printAll ? 'print_all' : 'filtered'
+        ]);
+        
+        // Use pure DOMPDF for PDF generation
+        $pdf = Pdf::loadView('pdf.tracking-reports', [
+            'reports' => $reports
+        ]);
+        
+        // Configure PDF options
+        $pdf->setPaper('legal', 'landscape')
+            ->setOption('defaultFont', 'Arial')
+            ->setOption('fontHeightRatio', 1.0)
+            ->setOption('enable_font_subsetting', false);
+        
+        $filename = $printAll ? 'tracking_reports_all_' . date('Y_m_d') . '.pdf' : 'tracking_reports_' . date('Y_m_d') . '.pdf';
         
         // Stream the PDF for inline viewing (preview mode)
-        return response($pdf, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="tracking_reports_' . date('Y_m_d') . '.pdf"',
-            'Cache-Control' => 'no-cache, no-store, must-revalidate',
-            'Pragma' => 'no-cache',
-            'Expires' => '0'
-        ]);
+        return $pdf->stream($filename);
     }
 
     /**
@@ -236,6 +342,15 @@ class ReportTableController extends Controller
      */
     private function applyFilters($query, array $filters)
     {
+        // Role-based filtering for technicians
+        $user = Auth::user();
+        if ($user->role->role_name === 'technician') {
+            $query->where(function($q) use ($user) {
+                $q->where('technician_id', $user->employee_id)
+                  ->orWhere('received_by_id', $user->employee_id);
+            });
+        }
+
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function($q) use ($search) {
@@ -250,13 +365,6 @@ class ReportTableController extends Controller
             });
         }
 
-        if (!empty($filters['equipment_name']) || !empty($filters['equipment_filter'])) {
-            $equipmentName = $filters['equipment_name'] ?? $filters['equipment_filter'];
-            $query->whereHas('equipment', function($eq) use ($equipmentName) {
-                $eq->where('description', 'like', '%' . $equipmentName . '%');
-            });
-        }
-
         if (!empty($filters['recall_number']) || !empty($filters['recall_filter'])) {
             $recallNumber = $filters['recall_number'] ?? $filters['recall_filter'];
             $query->where('recall_number', 'like', '%' . $recallNumber . '%');
@@ -264,12 +372,20 @@ class ReportTableController extends Controller
 
         if (!empty($filters['status']) || !empty($filters['status_filter'])) {
             $status = $filters['status'] ?? $filters['status_filter'];
-            $query->where('status', $status);
-        }
-
-        if (!empty($filters['technician_id']) || !empty($filters['technician_filter'])) {
-            $technicianId = $filters['technician_id'] ?? $filters['technician_filter'];
-            $query->where('technician_id', $technicianId);
+            
+            // Check if it's an incoming or outgoing status
+            $incomingStatuses = ['for_confirmation', 'pending_calibration', 'completed'];
+            $outgoingStatuses = ['for_pickup'];
+            
+            if (in_array($status, $incomingStatuses)) {
+                // Filter by track_incoming status
+                $query->where('status', $status);
+            } elseif (in_array($status, $outgoingStatuses)) {
+                // Filter by track_outgoing status
+                $query->whereHas('trackOutgoing', function($outgoing) use ($status) {
+                    $outgoing->where('status', $status);
+                });
+            }
         }
 
         if (!empty($filters['location_id']) || !empty($filters['location_filter'])) {
@@ -318,5 +434,56 @@ class ReportTableController extends Controller
         $pdf = Pdf::loadView('pdf.tracking-record', ['trackingRecord' => $trackIncoming]);
         
         return $pdf->download("tracking-record-{$trackIncoming->recall_number}.pdf");
+    }
+
+    /**
+     * Apply role-based filtering to the query based on current user's role
+     */
+    private function applyRoleBasedFiltering($query)
+    {
+        $user = Auth::user();
+        
+        if (!$user || !$user->role) {
+            \Log::warning('ReportTableController - User or role not found, restricting access');
+            // If no user or role, restrict to empty results for security
+            $query->whereRaw('1 = 0');
+            return;
+        }
+
+        $roleName = $user->role->role_name;
+        
+        \Log::info('ReportTableController - Applying role-based filtering', [
+            'user_id' => $user->id,
+            'employee_id' => $user->employee_id,
+            'role' => $roleName
+        ]);
+        
+        switch ($roleName) {
+            case 'technician':
+                // Technicians can only see records they are assigned to (as technician or received_by)
+                $query->where(function($q) use ($user) {
+                    $q->where('technician_id', $user->employee_id)
+                      ->orWhere('received_by_id', $user->employee_id);
+                });
+                \Log::info('ReportTableController - Applied technician filtering for employee_id: ' . $user->employee_id);
+                break;
+                
+            case 'employee':
+                // Employees can only see their own submitted records
+                $query->where('employee_id_in', $user->employee_id);
+                \Log::info('ReportTableController - Applied employee filtering for employee_id: ' . $user->employee_id);
+                break;
+                
+            case 'admin':
+                // Admins can see all records (no additional filtering)
+                \Log::info('ReportTableController - No additional filtering applied for role: ' . $roleName);
+                break;
+                
+            default:
+                // Unknown roles get no access for security
+                \Log::warning('ReportTableController - Unknown role detected, restricting access: ' . $roleName);
+                $query->whereRaw('1 = 0');
+                break;
+        }
     }
 }

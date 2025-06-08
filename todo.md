@@ -1,33 +1,59 @@
 
 
+-- TESTING
+- [x] Cycle time    
+    - [x] Manual inputs for CT Reqd (days) standard 
+    - [x] Manual inputs for Commit and Actual ETCs 
+    - [x] auto calculate queuing days, start to finish
+    - [x] auto calculate overdue
 
-- [ ] Cycle time    
-    - [ ] Manual inputs for CT Reqd (days) standard 
-    - [ ] Manual inputs for Commit and Actual ETCs 
-    - [ ] auto calculate queuing days, start to finish
-    - [ ] auto calculate overdue
-- [ ] Incoming Request Revision
-    - [ ] Received By not working properly when changing from select
-    - [ ] Recall number should be after calibration
-        - [ ] Recall number auto generates when not specified
-        - [ ] allow editing of recall number
+- [x] Incoming Request Revision
+    - [x] Received By not working properly when changing from select
+    - [x] Recall number should be after calibration
+        - [x] Recall number auto generates when not specified
+        - [x] allow editing of recall number
 
-- [ ] Table paginated/filters (turn to datatable)
+- [ ] Table paginated/filters (turn to datatable)  
+    - [x] user
+    - [x] equipment
 
-- [ ] Roles
-    - [ ] Admin
-        - [ ] Can see all
-        - [ ] Can for accept (no pin needed)
-    - [ ] Technician
-        - [ ] Can only see incoming, calibration, outgoing, 
-    - [ ] Employee
-        - [ ] Can only see incoming and outgoing
+    - [ ] incoming
+    - [ ] outgoing
+        - [x] remove export button
 
-- [ ] Accounts
-    - [ ] Manual input or auto generated of id (unique)
-    - [ ] On user creation, email user with their employee id and pin
-    - [ ] Admin can reset password immediately, email automatically on change  
+- [x] Accounts
+    - [x] Manual input or auto generated of id (unique)
+    - [x] On user creation, email user with their employee id and pin
+    - [x] Admin can reset password immediately, email automatically on change  
 
+- [x] Bar Code downloadables
+
+
+- [x] Equipment
+    - [x] process requirement range (start - end) (for new items) in request detail-tab
+
+- [x] Roles
+    - [x] Admin
+        - [x] Can see all
+        - [x] Can for accept (no pin needed)
+
+    - [x] Technician
+        - [x] Can only see theyre own incoming, calibration, outgoing, 
+        
+    - [x] Employee
+        - [x] Can only see theyre own incoming and outgoing
+
+-- TODO
+- [ ] Latest modified on top
+- [ ] Update email notification
+- [ ] Refresh error on crud pages
+
+
+- [ ] Imports
+    - [ ] batch user imports
+    - [ ] batch department
+    - [ ] batch plant
+    - [ ] batch locations
 
 - [x] Setup Routine Cal
     - [x] Recall number can not be unique to allow archiving of past records
