@@ -815,6 +815,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                     <div className="flex items-center justify-center p-4">
                         <div className="w-full max-w-sm">
                             <Scanner
+                                formats={['code_128', 'code_39']}
                                 onScan={handleScan}
                                 onError={handleScanError}
                                 constraints={{
