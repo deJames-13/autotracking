@@ -200,7 +200,9 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
                             {/* Barcode for Recall Number */}
                             {trackIncoming.recall_number && (
                                 <div className="mb-4 flex flex-col items-center">
-                                    <Barcode value={trackIncoming.recall_number} width={2} height={60} displayValue={true} fontSize={16} margin={8} />
+                                    <Barcode
+                                        format='CODE128'
+                                        value={trackIncoming.recall_number} width={2} height={60} displayValue={true} fontSize={16} margin={8} />
                                     <span className="text-muted-foreground mt-1 text-xs">Recall Number Barcode</span>
                                 </div>
                             )}

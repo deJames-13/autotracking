@@ -391,6 +391,7 @@ export function UserTable({
                                 <div className="mb-4 flex flex-col items-center">
                                     <div className="user-barcode-container">
                                         <Barcode
+                                            format='CODE128'
                                             value={String(viewingUser.employee_id)}
                                             width={2}
                                             height={60}
