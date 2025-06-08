@@ -103,7 +103,9 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
                         {equipment.recall_number && (
                             <div className="mb-4 flex flex-col items-center">
                                 <div className="equipment-barcode-container">
-                                    <Barcode value={equipment.recall_number} width={2} height={60} displayValue={true} fontSize={16} margin={8} />
+                                    <Barcode
+                                        format='CODE128'
+                                        value={equipment.recall_number} width={2} height={60} displayValue={true} fontSize={16} margin={8} />
                                 </div>
                                 <div className="mt-2 flex items-center gap-2">
                                     <span className="text-muted-foreground text-xs">Recall Number Barcode</span>

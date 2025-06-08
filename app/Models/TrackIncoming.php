@@ -32,21 +32,17 @@ class TrackIncoming extends Model
         'date_in' => 'datetime'
     ];
     
-    // Generate a unique recall number
+    // Generate a unique recall number with 7-10 characters (A-Z, 0-9), no prefix
     public static function generateUniqueRecallNumber(): string
     {
-        $timestamp = now()->format('ymdHis');
-        $random = mt_rand(10000, 99999);
-        $combined = $timestamp * $random;
-        $first6 = substr($combined, 0, 6);
-        $recallNumber = "RCL-{$first6}";
-        
-        while (self::where('recall_number', $recallNumber)->exists()) {
-            $random = mt_rand(10000, 99999);
-            $combined = $timestamp * $random;
-            $first6 = substr($combined, 0, 6);
-            $recallNumber = "RCL-{$first6}";
-        }
+        $length = rand(7, 10);
+        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        do {
+            $recallNumber = '';
+            for ($i = 0; $i < $length; $i++) {
+                $recallNumber .= $characters[random_int(0, strlen($characters) - 1)];
+            }
+        } while (self::where('recall_number', $recallNumber)->exists());
         return $recallNumber;
     }
     

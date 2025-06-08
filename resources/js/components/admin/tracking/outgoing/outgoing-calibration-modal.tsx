@@ -74,29 +74,36 @@ export function OutgoingCalibrationModal({ incomingRecord, open, onOpenChange, o
             setCalDueDate(oneYearLater);
             setDateOut(currentDate);
 
-            // Generate recall number if not present (for new requests)
-            let recallNumber = incomingRecord.recall_number;
-            if (!recallNumber) {
-                // Generate a unique recall number for new requests
-                const timestamp = Date.now().toString();
-                const random = Math.floor(10000 + Math.random() * 90000);
-                recallNumber = `RCL-${timestamp.slice(-6)}-${random}`;
-            }
+            // Async function to handle recall number generation
+            const initializeRecallNumber = async () => {
+                let recallNumber = incomingRecord.recall_number;
+                if (!recallNumber) {
+                    try {
+                        const response = await axios.get(route('api.tracking.request.generate-recall'));
+                        recallNumber = response.data.recall_number;
+                    } catch (error) {
+                        toast.error('Failed to generate recall number from server.');
+                        recallNumber = '';
+                    }
+                }
 
-            setData({
-                incoming_id: incomingRecord.id,
-                recall_number: recallNumber,
-                cal_date: format(currentDate, 'yyyy-MM-dd'),
-                cal_due_date: format(oneYearLater, 'yyyy-MM-dd'),
-                date_out: format(currentDate, 'yyyy-MM-dd HH:mm:ss'),
-                employee_id_out: '',
-                cycle_time: calculateCycleTime(incomingRecord.date_in, currentDate),
-                ct_reqd: null,
-                commit_etc: null,
-                actual_etc: null,
-                overdue: 'no',
-                confirmation_pin: '',
-            });
+                setData({
+                    incoming_id: incomingRecord.id,
+                    recall_number: recallNumber,
+                    cal_date: format(currentDate, 'yyyy-MM-dd'),
+                    cal_due_date: format(oneYearLater, 'yyyy-MM-dd'),
+                    date_out: format(currentDate, 'yyyy-MM-dd HH:mm:ss'),
+                    employee_id_out: '',
+                    cycle_time: calculateCycleTime(incomingRecord.date_in, currentDate),
+                    ct_reqd: null,
+                    commit_etc: null,
+                    actual_etc: null,
+                    overdue: 'no',
+                    confirmation_pin: '',
+                });
+            };
+
+            initializeRecallNumber();
         }
     }, [incomingRecord, open]);
 
@@ -427,6 +434,7 @@ export function OutgoingCalibrationModal({ incomingRecord, open, onOpenChange, o
                                     required
                                 />
                                 {errors.recall_number && <p className="text-destructive mt-1 text-sm">{errors.recall_number}</p>}
+                                <p className="text-destructive mt-1 text-xs italic">Auto generated, please change this.</p>
                             </div>
                             <div>
                                 <span className="font-medium">Description:</span>

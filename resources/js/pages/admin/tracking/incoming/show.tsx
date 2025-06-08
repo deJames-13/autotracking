@@ -31,7 +31,6 @@ interface TrackingIncomingShowProps {
 }
 
 const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trackIncoming }) => {
-    console.log(trackIncoming);
     const { canManageRequestIncoming } = useRole();
     const [showCalibrationModal, setShowCalibrationModal] = useState(false);
     const dispatch = useAppDispatch();
