@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { type Plant } from '@/types';
 import { router } from '@inertiajs/react';
+import { toast } from 'react-hot-toast';
 
 interface PlantDeleteDialogProps {
     plant: Plant | null;
@@ -14,16 +15,31 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
     const handleDelete = () => {
         if (!plant) return;
 
-        console.log('PlantDeleteDialog: Deleting plant', plant.plant_id);
+        console.log('PlantDeleteDialog: Archiving plant', plant.plant_id);
         
         router.delete(route('admin.plants.destroy', plant.plant_id), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
-                console.log('PlantDeleteDialog: Delete successful, calling onSuccess');
+                console.log('PlantDeleteDialog: Archive successful, calling onSuccess');
                 onOpenChange(false);
+                toast.success('Plant archived successfully');
                 onSuccess();
             },
             onError: (errors) => {
-                console.error('Error deleting plant:', errors);
+                console.error('Error archiving plant:', errors);
+
+                // Handle validation errors
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors).flat();
+                    if (errorMessages.length > 0) {
+                        toast.error(errorMessages[0] as string);
+                        return;
+                    }
+                }
+
+                // Generic fallback error
+                toast.error('Failed to archive plant. Please try again.');
             }
         });
     };
@@ -38,9 +54,9 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Delete Plant</DialogTitle>
+                    <DialogTitle>Archive Plant</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to delete this plant? This action cannot be undone.
+                        Are you sure you want to archive this plant? The plant will be hidden from the main list but can be restored later.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -60,7 +76,7 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
                             Cancel
                         </Button>
                         <Button variant="destructive" onClick={handleDelete}>
-                            Delete Plant
+                            Archive Plant
                         </Button>
                     </div>
                 </div>

@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { type Location } from '@/types';
 import { router } from '@inertiajs/react';
+import { toast } from 'react-hot-toast';
 
 interface LocationDeleteDialogProps {
     location: Location | null;
@@ -17,13 +18,24 @@ export function LocationDeleteDialog({ location, open, onOpenChange, onSuccess }
         console.log('LocationDeleteDialog: Deleting location', location.location_id);
 
         router.delete(route('admin.locations.destroy', location.location_id), {
-            onSuccess: () => {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: (page) => {
                 console.log('LocationDeleteDialog: Delete successful, calling onSuccess');
+                toast.success('Location archived successfully');
                 onOpenChange(false);
                 onSuccess();
             },
             onError: (errors) => {
-                console.error('Error deleting location:', errors);
+                console.error('Error archiving location:', errors);
+                // Handle validation errors from Laravel
+                if (errors.location) {
+                    toast.error(errors.location);
+                } else if (errors.message) {
+                    toast.error(errors.message);
+                } else {
+                    toast.error('Failed to archive location. Please try again.');
+                }
             }
         });
     };
@@ -38,9 +50,9 @@ export function LocationDeleteDialog({ location, open, onOpenChange, onSuccess }
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Delete Location</DialogTitle>
+                    <DialogTitle>Archive Location</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to delete this location? This action cannot be undone.
+                        Are you sure you want to archive this location? You can restore it later if needed.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -59,7 +71,7 @@ export function LocationDeleteDialog({ location, open, onOpenChange, onSuccess }
                             Cancel
                         </Button>
                         <Button variant="destructive" onClick={handleDelete}>
-                            Delete Location
+                            Archive Location
                         </Button>
                     </div>
                 </div>

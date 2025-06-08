@@ -17,18 +17,21 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->string('telephone')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
         
         Schema::create('departments', function (Blueprint $table) {
             $table->id('department_id');
             $table->string('department_name');
             $table->timestamps();
+            $table->softDeletes();
         });
         
         Schema::create('roles', function (Blueprint $table) {
             $table->id('role_id');
             $table->string('role_name');
             $table->timestamps();
+            $table->softDeletes();
         });
         
         Schema::create('users', function (Blueprint $table) {
@@ -45,6 +48,8 @@ return new class extends Migration
             $table->foreignId('plant_id')->nullable()->constrained('plants', 'plant_id')->onDelete('set null');
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
+
         });
         
         Schema::create('locations', function (Blueprint $table) {

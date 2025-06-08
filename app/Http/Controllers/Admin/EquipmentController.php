@@ -12,6 +12,7 @@ use App\Models\Location;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -175,11 +176,105 @@ class EquipmentController extends Controller
             ->with('success', 'Equipment updated successfully.');
     }
 
-    public function destroy(Equipment $equipment): RedirectResponse
+    public function destroy(Equipment $equipment, Request $request): RedirectResponse|JsonResponse
     {
-        $equipment->delete();
+        // Check for foreign key constraints before deletion
+        $trackIncomingCount = $equipment->trackIncoming()->count();
+
+        if ($trackIncomingCount > 0) {
+            $errorMessage = "Cannot archive equipment. It has {$trackIncomingCount} tracking record(s) associated with it.";
+
+            // For Inertia requests, throw validation exception
+            if ($request->header('X-Inertia')) {
+                throw ValidationException::withMessages([
+                    'equipment' => $errorMessage
+                ]);
+            }
+
+            // Return JSON only for non-Inertia AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 422);
+            }
+
+            return redirect()->route('admin.equipment.index')
+                ->with('error', $errorMessage);
+        }
+
+        $equipment->delete(); // This is now a soft delete due to SoftDeletes trait
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'Equipment archived successfully.'
+            ]);
+        }
 
         return redirect()->route('admin.equipment.index')
-            ->with('success', 'Equipment deleted successfully.');
+            ->with('success', 'Equipment archived successfully.');
+    }
+
+    /**
+     * Restore a soft deleted equipment
+     */
+    public function restore($id, Request $request): RedirectResponse|JsonResponse
+    {
+        $equipment = Equipment::onlyTrashed()->where('equipment_id', $id)->first();
+        
+        if (!$equipment) {
+            $errorMessage = 'Archived equipment not found.';
+            
+            // For Inertia requests, throw validation exception
+            if ($request->header('X-Inertia')) {
+                throw ValidationException::withMessages([
+                    'equipment' => $errorMessage
+                ]);
+            }
+
+            // Return JSON only for non-Inertia AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 404);
+            }
+
+            return redirect()->route('admin.equipment.index')
+                ->with('error', $errorMessage);
+        }
+
+        $equipment->restore();
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'Equipment restored successfully.'
+            ]);
+        }
+
+        return redirect()->route('admin.equipment.index')
+            ->with('success', 'Equipment restored successfully.');
+    }
+
+    /**
+     * Get archived equipment for display
+     */
+    public function archived(Request $request): Response|JsonResponse
+    {
+        $equipment = Equipment::onlyTrashed()
+            ->with(['department', 'location', 'user'])
+            ->orderBy('deleted_at', 'desc')
+            ->paginate(10);
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'data' => $equipment
+            ]);
+        }
+
+        return Inertia::render('admin/equipment/archived', [
+            'equipment' => $equipment,
+        ]);
     }
 }

@@ -6,7 +6,7 @@ import { Head, router } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { TrackOutgoingTable } from '@/components/admin/tracking/track-outgoing-table';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [

@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { type Equipment } from '@/types';
 import { router } from '@inertiajs/react';
+import { toast } from 'react-hot-toast';
 
 interface EquipmentDeleteDialogProps {
     equipment: Equipment | null;
@@ -14,16 +15,31 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
     const handleDelete = () => {
         if (!equipment) return;
 
-        console.log('EquipmentDeleteDialog: Deleting equipment', equipment.equipment_id);
+        console.log('EquipmentDeleteDialog: Archiving equipment', equipment.equipment_id);
         
         router.delete(route('admin.equipment.destroy', equipment.equipment_id), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
-                console.log('EquipmentDeleteDialog: Delete successful, calling onSuccess');
+                console.log('EquipmentDeleteDialog: Archive successful, calling onSuccess');
                 onOpenChange(false);
+                toast.success('Equipment archived successfully');
                 onSuccess();
             },
             onError: (errors) => {
-                console.error('Error deleting equipment:', errors);
+                console.error('Error archiving equipment:', errors);
+
+                // Handle validation errors
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors).flat();
+                    if (errorMessages.length > 0) {
+                        toast.error(errorMessages[0] as string);
+                        return;
+                    }
+                }
+
+                // Generic fallback error
+                toast.error('Failed to archive equipment. Please try again.');
             }
         });
     };
@@ -38,9 +54,9 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Delete Equipment</DialogTitle>
+                    <DialogTitle>Archive Equipment</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to delete this equipment? This action cannot be undone.
+                        Are you sure you want to archive this equipment? The equipment will be hidden from the main list but can be restored later.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -64,7 +80,7 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
                             Cancel
                         </Button>
                         <Button variant="destructive" onClick={handleDelete}>
-                            Delete Equipment
+                            Archive Equipment
                         </Button>
                     </div>
                 </div>

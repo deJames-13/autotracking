@@ -139,6 +139,24 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('tracking/outgoing/table-data', [AdminTrackingController::class, 'trackOutgoingTableData'])->name('tracking.outgoing.table-data');
         Route::get('tracking/outgoing/filter-options', [AdminTrackingController::class, 'trackOutgoingFilterOptions'])->name('tracking.outgoing.filter-options');
         
+        // Restore routes for soft deleted records
+        Route::post('users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');
+        Route::post('departments/{id}/restore', [AdminDepartmentController::class, 'restore'])->name('departments.restore');
+        Route::post('locations/{id}/restore', [AdminLocationController::class, 'restore'])->name('locations.restore');
+        Route::post('equipment/{id}/restore', [AdminEquipmentController::class, 'restore'])->name('equipment.restore');
+        Route::post('plants/{id}/restore', [AdminPlantController::class, 'restore'])->name('plants.restore');
+        
+        // Force delete routes for permanent deletion
+        Route::delete('users/{id}/force-delete', [AdminUserController::class, 'forceDelete'])->name('users.force-delete');
+        Route::delete('plants/{id}/force-delete', [AdminPlantController::class, 'forceDelete'])->name('plants.force-delete');
+        
+        // Archived records routes
+        Route::get('users/archived', [AdminUserController::class, 'archived'])->name('users.archived');
+        Route::get('departments/archived', [AdminDepartmentController::class, 'archived'])->name('departments.archived');
+        Route::get('locations/archived', [AdminLocationController::class, 'archived'])->name('locations.archived');
+        Route::get('equipment/archived', [AdminEquipmentController::class, 'archived'])->name('equipment.archived');
+        Route::get('plants/archived', [AdminPlantController::class, 'archived'])->name('plants.archived');
+        
         Route::resource('users', AdminUserController::class)->parameters([
             'users' => 'user:employee_id'
         ]);

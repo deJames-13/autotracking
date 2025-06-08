@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import AppLayout from '@/layouts/app-layout';
 import { TrackOutgoingTable } from '@/components/admin/tracking/track-outgoing-table';

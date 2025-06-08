@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -327,17 +328,211 @@ class UserController extends Controller
 
     public function destroy(User $user, Request $request): RedirectResponse|JsonResponse
     {
-        $user->delete();
+        // Prevent deletion of current user
+        if (Auth::id() === $user->employee_id) {
+            $errorMessage = 'Cannot delete your own account.';
+
+            // For Inertia requests, throw validation exception
+            if ($request->header('X-Inertia')) {
+                throw ValidationException::withMessages([
+                    'user' => $errorMessage
+                ]);
+            }
+
+            // Return JSON only for non-Inertia AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 422);
+            }
+
+            return redirect()->route('admin.users.index')
+                ->with('error', $errorMessage);
+        }
+
+        // Prevent deletion of the last admin user
+        $user->load('role');
+        if ($user->role && $user->role->role_name === 'admin') {
+            $adminCount = User::whereHas('role', function ($query) {
+                $query->where('role_name', 'admin');
+            })->count();
+
+            if ($adminCount <= 1) {
+                $errorMessage = 'Cannot delete the last admin user. At least one admin must remain in the system.';
+
+                // For Inertia requests, throw validation exception
+                if ($request->header('X-Inertia')) {
+                    throw ValidationException::withMessages([
+                        'user' => $errorMessage
+                    ]);
+                }
+
+                // Return JSON only for non-Inertia AJAX requests
+                if ($request->ajax()) {
+                    return response()->json([
+                        'message' => $errorMessage
+                    ], 422);
+                }
+
+                return redirect()->route('admin.users.index')
+                    ->with('error', $errorMessage);
+            }
+        }
+
+        // Check for foreign key constraints before deletion
+        $equipmentCount = $user->equipments()->count();
+        $trackIncomingAsTechnicianCount = $user->trackIncomingAsTechnician()->count();
+        $trackIncomingAsEmployeeInCount = $user->trackIncomingAsEmployeeIn()->count();
+        $trackIncomingAsReceivedByCount = $user->trackIncomingAsReceivedBy()->count();
+        $trackOutgoingAsEmployeeOutCount = $user->trackOutgoingAsEmployeeOut()->count();
+
+        $totalTrackingRecords = $trackIncomingAsTechnicianCount + $trackIncomingAsEmployeeInCount + 
+                               $trackIncomingAsReceivedByCount + $trackOutgoingAsEmployeeOutCount;
+
+        if ($equipmentCount > 0 || $totalTrackingRecords > 0) {
+            $errorMessage = 'Cannot archive user. They have ';
+            $dependencies = [];
+            
+            if ($equipmentCount > 0) {
+                $dependencies[] = "{$equipmentCount} equipment item(s) assigned";
+            }
+            if ($totalTrackingRecords > 0) {
+                $dependencies[] = "{$totalTrackingRecords} tracking record(s) associated";
+            }
+            
+            $errorMessage .= implode(' and ', $dependencies) . ' with them.';
+
+            // For Inertia requests, throw validation exception
+            if ($request->header('X-Inertia')) {
+                throw ValidationException::withMessages([
+                    'user' => $errorMessage
+                ]);
+            }
+
+            // Return JSON only for non-Inertia AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 422);
+            }
+
+            return redirect()->route('admin.users.index')
+                ->with('error', $errorMessage);
+        }
+
+        $user->delete(); // This is now a soft delete due to SoftDeletes trait
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'message' => 'User deleted successfully.'
+                'message' => 'User archived successfully.'
             ]);
         }
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'User deleted successfully.');
+            ->with('success', 'User archived successfully.');
+    }
+
+    /**
+     * Restore a soft deleted user
+     */
+    public function restore($id, Request $request): RedirectResponse|JsonResponse
+    {
+        $user = User::onlyTrashed()->where('employee_id', $id)->first();
+        
+        if (!$user) {
+            $errorMessage = 'Archived user not found.';
+            
+            // For Inertia requests, throw validation exception
+            if ($request->header('X-Inertia')) {
+                throw ValidationException::withMessages([
+                    'user' => $errorMessage
+                ]);
+            }
+
+            // Return JSON only for non-Inertia AJAX requests
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 404);
+            }
+
+            return redirect()->route('admin.users.index')
+                ->with('error', $errorMessage);
+        }
+
+        $user->restore();
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'User restored successfully.'
+            ]);
+        }
+
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User restored successfully.');
+    }
+
+    /**
+     * Permanently delete a user (force delete)
+     */
+    public function forceDelete($id, Request $request): RedirectResponse|JsonResponse
+    {
+        $user = User::onlyTrashed()->where('employee_id', $id)->first();
+        
+        if (!$user) {
+            $errorMessage = 'Archived user not found.';
+            
+            if ($request->header('X-Inertia')) {
+                throw ValidationException::withMessages([
+                    'user' => $errorMessage
+                ]);
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'message' => $errorMessage
+                ], 404);
+            }
+
+            return redirect()->route('admin.users.archived')
+                ->with('error', $errorMessage);
+        }
+
+        // Permanently delete the user
+        $user->forceDelete();
+
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'User permanently deleted.'
+            ]);
+        }
+
+        return redirect()->route('admin.users.archived')
+            ->with('success', 'User permanently deleted.');
+    }
+
+    /**
+     * Get archived users for display
+     */
+    public function archived(Request $request): Response|JsonResponse
+    {
+        $users = User::onlyTrashed()
+            ->with(['role', 'department', 'plant'])
+            ->orderBy('deleted_at', 'desc')
+            ->paginate(10);
+
+        // Return JSON only for non-Inertia AJAX requests
+        if ($request->ajax() && !$request->header('X-Inertia')) {
+            return response()->json([
+                'data' => $users
+            ]);
+        }
+
+        return Inertia::render('admin/users/archived', [
+            'users' => $users,
+        ]);
     }
 
     /**

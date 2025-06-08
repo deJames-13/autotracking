@@ -28,6 +28,7 @@ return new class extends Migration
             $table->string('model')->nullable();
             $table->string('manufacturer')->nullable();
             $table->text('notes')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
         Schema::create('track_outgoing', function (Blueprint $table) {
@@ -46,6 +47,7 @@ return new class extends Migration
             $table->integer('commit_etc')->nullable();
             $table->integer('actual_etc')->nullable();
             $table->integer('overdue')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
         // Calculations for Cycle time

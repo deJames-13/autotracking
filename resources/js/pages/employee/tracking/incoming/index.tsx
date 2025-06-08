@@ -208,7 +208,7 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                                                 </Link>
                                             </Button>
 
-                                            {canEditRequest(request) && (
+                                            {/* {canEditRequest(request) && (
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -219,7 +219,7 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                                                         Edit
                                                     </Link>
                                                 </Button>
-                                            )}
+                                            )} */}
                                         </td>
                                     </tr>
                                 ))}

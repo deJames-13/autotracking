@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Download, ArrowRight } from 'lucide-react';
 import { type Equipment } from '@/types';
 import Barcode from 'react-barcode';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
 interface EquipmentViewDialogProps {
     equipment: Equipment | null;

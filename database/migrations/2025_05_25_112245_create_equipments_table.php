@@ -32,6 +32,7 @@ return new class extends Migration
             $table->text('process_req_range_start')->nullable();
             $table->text('process_req_range_end')->nullable();
             
+            $table->softDeletes();
             $table->timestamps();
         });
     }

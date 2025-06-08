@@ -9,7 +9,7 @@ import { Eye, MoreHorizontal, Pencil, Trash2, Download } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { UserForm } from './user-form';
 import Barcode from 'react-barcode';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
 interface UserTableProps {
     users: PaginationData<User>;
@@ -47,16 +47,31 @@ export function UserTable({
     };
 
     const handleDelete = (user: User) => {
-        console.log('UserTable: Deleting user', user.employee_id);
+        console.log('UserTable: Archiving user', user.employee_id);
         
         router.delete(route('admin.users.destroy', user.employee_id), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
-                console.log('UserTable: Delete success triggered');
+                console.log('UserTable: Archive success triggered');
                 setDeletingUser(null);
+                toast.success('User archived successfully');
                 router.reload({ only: ['users'] });
             },
             onError: (errors) => {
-                console.error('Error deleting user:', errors);
+                console.error('Error archiving user:', errors);
+
+                // Handle validation errors
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors).flat();
+                    if (errorMessages.length > 0) {
+                        toast.error(errorMessages[0] as string);
+                        return;
+                    }
+                }
+
+                // Generic fallback error
+                toast.error('Failed to archive user. Please try again.');
             }
         });
     };
@@ -260,7 +275,7 @@ export function UserTable({
                             className="text-destructive"
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            Archive
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -468,13 +483,13 @@ export function UserTable({
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
+            {/* Archive Confirmation Dialog */}
             <Dialog open={!!deletingUser} onOpenChange={() => setDeletingUser(null)}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Delete User</DialogTitle>
+                        <DialogTitle>Archive User</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to delete this user? This action cannot be undone.
+                            Are you sure you want to archive this user? The user will be hidden from the main list but can be restored later.
                         </DialogDescription>
                     </DialogHeader>
                     {deletingUser && (
@@ -500,7 +515,7 @@ export function UserTable({
                                     Cancel
                                 </Button>
                                 <Button variant="destructive" onClick={() => handleDelete(deletingUser)}>
-                                    Delete User
+                                    Archive User
                                 </Button>
                             </div>
                         </div>

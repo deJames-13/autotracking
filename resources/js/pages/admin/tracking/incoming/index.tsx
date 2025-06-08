@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { router } from '@inertiajs/react';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import AppLayout from '@/layouts/app-layout';
 import { TrackIncomingTable } from '@/components/admin/tracking/track-incoming-table';

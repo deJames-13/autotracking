@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { type Department } from '@/types';
 import { router } from '@inertiajs/react';
+import { toast } from 'react-hot-toast';
 
 interface DepartmentDeleteDialogProps {
     department: Department | null;
@@ -14,16 +15,31 @@ export function DepartmentDeleteDialog({ department, open, onOpenChange, onSucce
     const handleDelete = () => {
         if (!department) return;
 
-        console.log('DepartmentDeleteDialog: Deleting department', department.department_id);
+        console.log('DepartmentDeleteDialog: Archiving department', department.department_id);
         
         router.delete(route('admin.departments.destroy', department.department_id), {
+            preserveState: true,
+            preserveScroll: true,
             onSuccess: () => {
-                console.log('DepartmentDeleteDialog: Delete successful, calling onSuccess');
+                console.log('DepartmentDeleteDialog: Archive successful, calling onSuccess');
                 onOpenChange(false);
+                toast.success('Department archived successfully');
                 onSuccess();
             },
             onError: (errors) => {
-                console.error('Error deleting department:', errors);
+                console.error('Error archiving department:', errors);
+
+                // Handle validation errors
+                if (errors && typeof errors === 'object') {
+                    const errorMessages = Object.values(errors).flat();
+                    if (errorMessages.length > 0) {
+                        toast.error(errorMessages[0] as string);
+                        return;
+                    }
+                }
+
+                // Generic fallback error
+                toast.error('Failed to archive department. Please try again.');
             }
         });
     };
@@ -38,9 +54,9 @@ export function DepartmentDeleteDialog({ department, open, onOpenChange, onSucce
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Delete Department</DialogTitle>
+                    <DialogTitle>Archive Department</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to delete this department? This action cannot be undone.
+                        Are you sure you want to archive this department? The department will be hidden from the main list but can be restored later.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -59,7 +75,7 @@ export function DepartmentDeleteDialog({ department, open, onOpenChange, onSucce
                             Cancel
                         </Button>
                         <Button variant="destructive" onClick={handleDelete}>
-                            Delete Department
+                            Archive Department
                         </Button>
                     </div>
                 </div>
