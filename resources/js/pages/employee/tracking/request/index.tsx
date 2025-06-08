@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StepIndicator, type Step } from '@/components/ui/step-indicator';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRole } from '@/hooks/use-role';
 import { persistor, store } from '@/store';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -14,6 +15,7 @@ import {
     resetForm,
     setCurrentStep,
     setReceivedBy,
+    setRequestType,
     setScannedEmployee,
     setTechnician,
     updateEquipment,
@@ -437,6 +439,11 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
         }
     }, [isEditMode, editData, dispatch]);
 
+    // Handler for request type change
+    const handleRequestTypeChange = (type: 'new' | 'routine') => {
+        dispatch(setRequestType(type));
+    };
+
     // Render current step content
     const renderStepContent = () => {
         // Merge server and client errors
@@ -457,6 +464,7 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
                         technician={technician}
                         receivedBy={receivedBy}
                         hideReceivedBy={true}
+                        showRecallNumber={requestType === 'routine' || requestType === 'new'} // Show recall number for employee context
                     />
                 );
 
@@ -498,6 +506,27 @@ const EmployeeTrackingRequestContent: React.FC<EmployeeTrackingRequestIndexProps
                         {edit ? 'Modify your equipment calibration request details.' : 'Submit a new equipment calibration request.'}
                     </p>
                 </div>
+
+                {(
+                    <Tabs defaultValue="new" value={requestType} onValueChange={handleRequestTypeChange} className="w-full mb-8">
+                        <TabsList className="bg-muted grid w-full grid-cols-2">
+                            <TabsTrigger
+                                value="new"
+                                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                                disabled={currentStep === 'summary'}
+                            >
+                                New Equipment
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="routine"
+                                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                                disabled={currentStep === 'summary'}
+                            >
+                                Routine Calibration
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                )}
 
                 {/* Step Indicator */}
                 <div className="mb-8">

@@ -28,6 +28,7 @@ interface DetailTabProps {
     technician?: User | null;
     receivedBy?: User | null;
     hideReceivedBy?: boolean; // Added to hide receivedBy field for employee context
+    showRecallNumber?: boolean; // Show recall number section for employee context
 }
 
 const DetailTab: React.FC<DetailTabProps> = ({
@@ -39,6 +40,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
     technician,
     receivedBy,
     hideReceivedBy = false,
+    showRecallNumber = false, // default false
 }) => {
     const { auth } = usePage<SharedData>().props;
     const currentUser = auth.user;
