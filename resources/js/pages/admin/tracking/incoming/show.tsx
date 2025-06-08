@@ -156,34 +156,36 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
                         Back to Incoming Requests
                     </Link>
                 </Button>
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div>
-                            <h1 className="text-3xl font-bold tracking-tight">Request: {trackIncoming.recall_number}</h1>
-                            <p className="text-muted-foreground">Incoming calibration request details</p>
-                        </div>
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight break-words max-w-full">
+                            Request: {trackIncoming.recall_number}
+                        </h1>
+                        <p className="text-muted-foreground text-sm md:text-base">Incoming calibration request details</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {getStatusBadge(trackIncoming.status)}
-                        {isOverdue && <Badge variant="destructive">Overdue</Badge>}
-                        {trackIncoming.status === 'for_confirmation' && (
-                            <Button onClick={() => handleEditRequest(true)} size="sm" className="ml-2">
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Confirm Request
-                            </Button>
-                        )}
-                        {trackIncoming.status === 'pending_calibration' && (
-                            <Button onClick={() => handleEditRequest(false)} variant="outline" size="sm" className="ml-2">
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit Request
-                            </Button>
-                        )}
-                        {trackIncoming.status === 'pending_calibration' && !trackIncoming.trackOutgoing && (
-                            <Button onClick={() => setShowCalibrationModal(true)} size="sm" className="ml-2">
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Complete Calibration
-                            </Button>
-                        )}
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
+                        <div className="flex flex-row flex-wrap gap-2 md:gap-2 md:flex-nowrap">
+                            {getStatusBadge(trackIncoming.status)}
+                            {isOverdue && <Badge variant="destructive">Overdue</Badge>}
+                            {trackIncoming.status === 'for_confirmation' && (
+                                <Button onClick={() => handleEditRequest(true)} size="sm" className="ml-0 md:ml-2 w-full md:w-auto">
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Confirm Request
+                                </Button>
+                            )}
+                            {trackIncoming.status === 'pending_calibration' && (
+                                <Button onClick={() => handleEditRequest(false)} variant="outline" size="sm" className="ml-0 md:ml-2 w-full md:w-auto">
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit Request
+                                </Button>
+                            )}
+                            {trackIncoming.status === 'pending_calibration' && !trackIncoming.trackOutgoing && (
+                                <Button onClick={() => setShowCalibrationModal(true)} size="sm" className="ml-0 md:ml-2 w-full md:w-auto">
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Complete Calibration
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
 

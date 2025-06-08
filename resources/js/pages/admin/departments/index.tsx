@@ -76,10 +76,12 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
             <Head title="Department Management" />
 
             <div className="space-y-6 p-2">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Department Management</h1>
-                        <p className="text-muted-foreground">Manage system departments and organizational structure</p>
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight break-words max-w-full">
+                            Department Management
+                        </h1>
+                        <p className="text-muted-foreground text-sm md:text-base">Manage system departments and organizational structure</p>
                     </div>
 
                     <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

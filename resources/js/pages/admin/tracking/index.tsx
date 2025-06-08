@@ -61,12 +61,12 @@ const TrackingIndex: React.FC<TrackingIndexProps> = ({ filters = {}, requests = 
             <Head title="Tracking Management" />
 
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Tracking Management</h1>
-                        <p className="text-muted-foreground">Monitor and manage equipment tracking across the system</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="min-w-0">
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight break-words max-w-full">Tracking Management</h1>
+                        <p className="text-sm md:text-base text-muted-foreground break-words max-w-full">Monitor and manage equipment tracking across the system</p>
                     </div>
-                    <Button onClick={() => router.visit(route('admin.tracking.request.index'))}>
+                    <Button onClick={() => router.visit(route('admin.tracking.request.index'))} className="w-full sm:w-auto">
                         <Plus className="mr-2 h-4 w-4" />
                         New Request
                     </Button>

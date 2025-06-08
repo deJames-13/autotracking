@@ -96,13 +96,13 @@ export default function TrackIncomingIndex(props: TrackIncomingIndexProps) {
             <Head title="Track Incoming Equipment" />
 
             <div className="flex flex-col space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Track Incoming Equipment</h1>
-                        <p className="text-muted-foreground">Manage and track incoming equipment calibration requests</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-bold tracking-tight break-words max-w-full">Track Incoming Equipment</h1>
+                        <p className="text-muted-foreground break-words max-w-full">Manage and track incoming equipment calibration requests</p>
                     </div>
 
-                    <Button onClick={() => router.visit(route('admin.tracking.request.index'))} size="sm">
+                    <Button onClick={() => router.visit(route('admin.tracking.request.index'))} size="sm" className="w-full sm:w-auto">
                         <Plus className="mr-2 h-4 w-4" />
                         New Request
                     </Button>

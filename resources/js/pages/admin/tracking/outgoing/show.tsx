@@ -346,29 +346,29 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                     </Link>
                 </Button>
 
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div>
-                            <h1 className="text-3xl font-bold tracking-tight">Completion: {trackOutgoing.track_incoming?.recall_number}</h1>
-                            <p className="text-muted-foreground">Calibration completion details</p>
-                        </div>
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight break-words max-w-full">
+                            Outgoing: {trackOutgoing.recall_number}
+                        </h1>
+                        <p className="text-muted-foreground text-sm md:text-base">Outgoing calibration details</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {getStatusBadge()}
-                        {(trackOutgoing.status === 'for_pickup' || (trackOutgoing.status === 'completed' && isAdmin())) && (
-                            <Button variant="outline" size="sm" asChild>
-                                <Link href={route('admin.tracking.outgoing.edit', trackOutgoing.id)}>
-                                    <Edit className="mr-1 h-3 w-3" />
-                                    Edit
-                                </Link>
-                            </Button>
-                        )}
-                        {trackOutgoing.status === 'for_pickup' && (
-                            <Button size="sm" onClick={() => setShowPickupForm(!showPickupForm)} variant={showPickupForm ? 'outline' : 'default'}>
-                                <CheckCircle className="mr-1 h-3 w-3" />
-                                {showPickupForm ? 'Cancel Pickup' : 'Confirm Pickup'}
-                            </Button>
-                        )}
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
+                        <div className="flex flex-row flex-wrap gap-2 md:gap-2 md:flex-nowrap">
+                            {getStatusBadge(trackOutgoing.status)}
+                            {trackOutgoing.status === 'for_return' && (
+                                <Button onClick={handleReturn} size="sm" className="ml-0 md:ml-2 w-full md:w-auto">
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Mark as Returned
+                                </Button>
+                            )}
+                            {trackOutgoing.status === 'for_receipt' && (
+                                <Button onClick={handleReceive} size="sm" className="ml-0 md:ml-2 w-full md:w-auto">
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Mark as Received
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
 

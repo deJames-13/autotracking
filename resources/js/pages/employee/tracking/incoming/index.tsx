@@ -87,12 +87,16 @@ const EmployeeTrackingIncomingIndex: React.FC<EmployeeTrackingIncomingIndexProps
                     </Link>
                 </Button>
 
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">My Calibration Requests</h1>
-                        <p className="text-muted-foreground">View and manage your submitted calibration requests</p>
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight break-words max-w-full">
+                            My Calibration Requests
+                        </h1>
+                        <p className="text-muted-foreground text-sm md:text-base">
+                            View and manage your submitted calibration requests
+                        </p>
                     </div>
-                    <Button onClick={() => router.visit(route('employee.tracking.request.index'))}>
+                    <Button onClick={() => router.visit(route('employee.tracking.request.index'))} className="w-full md:w-auto">
                         <Plus className="mr-2 h-4 w-4" />
                         New Request
                     </Button>

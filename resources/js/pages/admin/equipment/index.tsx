@@ -146,21 +146,21 @@ export default function EquipmentIndex({ users, plants, departments }: Equipment
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Equipment Management" />
 
-            <div className="space-y-6 p-2">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Equipment Management</h1>
-                        <p className="text-muted-foreground">Manage equipment inventory and assignments</p>
+            <div className="space-y-6 p-2 md:p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="min-w-0">
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight break-words max-w-full">Equipment Management</h1>
+                        <p className="text-sm md:text-base text-muted-foreground break-words max-w-full">Manage equipment inventory and assignments</p>
                     </div>
 
                     <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button>
+                            <Button className="w-full sm:w-auto">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Equipment
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="flex max-h-[85vh] w-full max-w-[90vw] flex-col overflow-hidden lg:max-w-[80vw] xl:max-w-[72rem]">
+                        <DialogContent className="flex max-h-[85vh] w-full max-w-[98vw] flex-col overflow-hidden lg:max-w-[80vw] xl:max-w-[72rem]">
                             <DialogHeader className="flex-shrink-0">
                                 <DialogTitle>Add New Equipment</DialogTitle>
                                 <DialogDescription>Create a new equipment record. All fields marked with * are required.</DialogDescription>
@@ -180,24 +180,26 @@ export default function EquipmentIndex({ users, plants, departments }: Equipment
                 </div>
 
                 {/* Equipment Table */}
-                <EquipmentTable
-                    equipment={{
-                        data: equipment,
-                        current_page: pagination.current_page,
-                        last_page: pagination.last_page,
-                        per_page: pagination.per_page,
-                        total: pagination.total,
-                    }}
-                    loading={loading}
-                    users={users}
-                    plants={plants}
-                    departments={departments}
-                    onRefresh={refreshEquipment}
-                    onSearch={handleSearch}
-                    onFilter={handleFilter}
-                    onPageChange={handlePageChange}
-                    onPerPageChange={handlePerPageChange}
-                />
+                <div className="overflow-x-auto rounded-lg bg-white dark:bg-[#18181b] shadow p-2 md:p-4">
+                    <EquipmentTable
+                        equipment={{
+                            data: equipment,
+                            current_page: pagination.current_page,
+                            last_page: pagination.last_page,
+                            per_page: pagination.per_page,
+                            total: pagination.total,
+                        }}
+                        loading={loading}
+                        users={users}
+                        plants={plants}
+                        departments={departments}
+                        onRefresh={refreshEquipment}
+                        onSearch={handleSearch}
+                        onFilter={handleFilter}
+                        onPageChange={handlePageChange}
+                        onPerPageChange={handlePerPageChange}
+                    />
+                </div>
             </div>
         </AppLayout>
     );

@@ -8,6 +8,7 @@ import { Department, User } from '@/types';
 import axios from 'axios';
 import { Info } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface TechnicianTabProps {
     data: User | null;
@@ -217,7 +218,10 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
 
                     {/* Show technician selection table for non-technician users */}
                     {!isTechnician() && (
-                        <div className={`${hasError ? 'border-destructive rounded-md border p-4' : ''}`}>
+                        <div className={cn(
+                            hasError ? 'border-destructive rounded-md border p-4' : '',
+                            'overflow-x-auto bg-white dark:bg-[#18181b] rounded-md'
+                        )}>
                             <RadioGroup
                                 value={data?.employee_id?.toString() ?? ''}
                                 onValueChange={(value) => {
@@ -225,22 +229,24 @@ const TechnicianTab: React.FC<TechnicianTabProps> = ({ data, onChange, errors = 
                                     onChange(selectedTech || null);
                                 }}
                             >
-                                <DataTable
-                                    data={technicians}
-                                    columns={columns}
-                                    loading={loading}
-                                    pagination={pagination}
-                                    filters={filters}
-                                    onSearch={handleSearch}
-                                    onFilter={handleFilter}
-                                    onPageChange={handlePageChange}
-                                    onPerPageChange={handlePerPageChange}
-                                    searchable={true}
-                                    filterable={true}
-                                    emptyMessage="No technicians found matching your criteria."
-                                    searchDebounceMs={500}
-                                    rowKey="employee_id"
-                                />
+                                <div className="min-w-[400px] md:min-w-0">
+                                    <DataTable
+                                        data={technicians}
+                                        columns={columns}
+                                        loading={loading}
+                                        pagination={pagination}
+                                        filters={filters}
+                                        onSearch={handleSearch}
+                                        onFilter={handleFilter}
+                                        onPageChange={handlePageChange}
+                                        onPerPageChange={handlePerPageChange}
+                                        searchable={true}
+                                        filterable={true}
+                                        emptyMessage="No technicians found matching your criteria."
+                                        searchDebounceMs={500}
+                                        rowKey="employee_id"
+                                    />
+                                </div>
                             </RadioGroup>
                         </div>
                     )}

@@ -305,7 +305,7 @@ export function DataTable<T = any>({
     return (
         <div className={cn("space-y-4", className)}>
             {/* Toolbar */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="flex items-center space-x-2 flex-1">
                     {searchable && (
                         <div className="relative max-w-sm">
@@ -450,7 +450,7 @@ export function DataTable<T = any>({
             )}
 
             {/* Table */}
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto bg-white dark:bg-[#18181b]">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -513,7 +513,68 @@ export function DataTable<T = any>({
             </div>
 
             {/* Pagination */}
-            {renderPagination()}
+            {pagination && !loading && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-2 py-4">
+                    <div className="flex items-center space-x-2">
+                        <p className="text-sm text-muted-foreground">
+                            Showing {Math.max(1, (pagination.current_page - 1) * (pagination.per_page || 10) + 1)}-
+                            {Math.min(pagination.current_page * (pagination.per_page || 10), pagination.total)} of {pagination.total} results
+                        </p>
+                        <Select
+                            value={(pagination.per_page || 10).toString()}
+                            onValueChange={(value) => onPerPageChange?.(parseInt(value))}
+                        >
+                            <SelectTrigger className="w-20">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="10">10</SelectItem>
+                                <SelectItem value="25">25</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
+                                <SelectItem value="100">100</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <span className="text-sm text-muted-foreground">per page</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onPageChange?.(1)}
+                            disabled={pagination.current_page === 1}
+                        >
+                            <ChevronsLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onPageChange?.(pagination.current_page - 1)}
+                            disabled={pagination.current_page === 1}
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                            Page {pagination.current_page} of {pagination.last_page}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onPageChange?.(pagination.current_page + 1)}
+                            disabled={pagination.current_page === pagination.last_page}
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onPageChange?.(pagination.last_page)}
+                            disabled={pagination.current_page === pagination.last_page}
+                        >
+                            <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
