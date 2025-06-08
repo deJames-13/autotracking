@@ -44,6 +44,12 @@
         - [x] Can only see theyre own incoming and outgoing
 
 -- TODO
+
+- [ ] Scan in ougoing show not working
+- [ ] Scan not working on equipment
+- [ ] Barcode format on employee, equipment, recall show incoming - outgoing
+
+
 - [ ] Latest modified on top
 - [ ] Update email notification
 - [ ] Refresh error on crud pages

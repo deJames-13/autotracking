@@ -1,6 +1,7 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { OutgoingStatusBadge } from '@/components/ui/status-badge';
@@ -8,6 +9,7 @@ import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackOutgoing } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
+import { Scanner } from '@yudiel/react-qr-scanner';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { ArrowLeft, Calendar, CheckCircle, Clock, Download, Edit, Info, Package, Scan, Search, User } from 'lucide-react';
@@ -39,6 +41,9 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
         isValid: boolean;
         message: string;
     }>({ isValid: true, message: '' });
+
+    // Scanner state
+    const [showScanner, setShowScanner] = useState(false);
 
     // Ref for barcode canvas to enable download
     const barcodeRef = useRef<HTMLCanvasElement>(null);
@@ -128,43 +133,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
 
     // Handle employee search when button is clicked
     const handleEmployeeSearch = async () => {
-        if (!employeeId.trim()) {
-            setEmployeeError('Please enter an employee ID');
-            return;
-        }
-
-        setLoadingEmployee(true);
-        setEmployeeError('');
-        setEmployeeName('');
-        setEmployeeOut(null);
-        setDepartmentValidation({ isValid: true, message: '' });
-
-        try {
-            const response = await axios.get(route('api.users.search'), {
-                params: { employee_id: employeeId.trim() },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            });
-
-            if (response.data && response.data.length > 0) {
-                const employee = response.data[0];
-                setEmployeeName(`${employee.first_name} ${employee.last_name}`);
-                setEmployeeOut(employee);
-                setEmployeeError('');
-
-                // Validate department match
-                validateDepartment(employee);
-            } else {
-                setEmployeeName('');
-                setEmployeeOut(null);
-                setEmployeeError('Employee not found with this ID');
-            }
-        } catch (error) {
-            setEmployeeName('');
-            setEmployeeOut(null);
-            setEmployeeError('Error searching for employee');
-        } finally {
-            setLoadingEmployee(false);
-        }
+        handleEmployeeSearchWithId(employeeId);
     };
 
     // Handle pickup confirmation
@@ -228,13 +197,66 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
         }
     };
 
-    // Handle barcode scanning (simplified version)
+    // Handle barcode scanning
     const handleScanBarcode = () => {
-        // In a real implementation, you'd integrate with a barcode scanner
-        // For now, just focus the input field
-        const input = document.getElementById('employee_id_input') as HTMLInputElement;
-        if (input) {
-            input.focus();
+        setShowScanner(true);
+    };
+
+    // Handle barcode scan
+    const handleScan = (detectedCodes: any[]) => {
+        if (detectedCodes && detectedCodes.length > 0) {
+            const scannedText = detectedCodes[0].rawValue;
+            setEmployeeId(scannedText);
+            setShowScanner(false);
+            // Trigger employee search after scan
+            handleEmployeeSearchWithId(scannedText);
+        }
+    };
+
+    // Handle scan error
+    const handleScanError = (error: any) => {
+        console.error('Scan error:', error);
+        toast.error('Error scanning barcode');
+    };
+
+    // Helper function to search employee with specific ID
+    const handleEmployeeSearchWithId = async (id: string) => {
+        if (!id.trim()) {
+            setEmployeeError('Please enter an employee ID');
+            return;
+        }
+
+        setLoadingEmployee(true);
+        setEmployeeError('');
+        setEmployeeName('');
+        setEmployeeOut(null);
+        setDepartmentValidation({ isValid: true, message: '' });
+
+        try {
+            const response = await axios.get(route('api.users.search'), {
+                params: { employee_id: id.trim() },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+
+            if (response.data && response.data.length > 0) {
+                const employee = response.data[0];
+                setEmployeeName(`${employee.first_name} ${employee.last_name}`);
+                setEmployeeOut(employee);
+                setEmployeeError('');
+
+                // Validate department match
+                validateDepartment(employee);
+            } else {
+                setEmployeeName('');
+                setEmployeeOut(null);
+                setEmployeeError('Employee not found');
+            }
+        } catch (error) {
+            setEmployeeName('');
+            setEmployeeOut(null);
+            setEmployeeError('Error searching for employee');
+        } finally {
+            setLoadingEmployee(false);
         }
     };
 
@@ -781,6 +803,36 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                     </Card>
                 )}
             </div>
+
+            {/* Scanner Dialog */}
+            <Dialog open={showScanner} onOpenChange={setShowScanner}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Scan Employee Barcode</DialogTitle>
+                        <DialogDescription>Position the barcode within the camera frame to scan</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex items-center justify-center p-4">
+                        <div className="w-full max-w-sm">
+                            <Scanner
+                                onScan={handleScan}
+                                onError={handleScanError}
+                                constraints={{
+                                    video: {
+                                        facingMode: 'environment',
+                                    },
+                                }}
+                                allowMultiple={false}
+                                scanDelay={500}
+                                components={{
+                                    finder: true,
+                                    torch: true,
+                                    zoom: false,
+                                }}
+                            />
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 };
