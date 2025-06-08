@@ -603,6 +603,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                                 <div className="mb-4 flex flex-col items-center">
                                     <div className="barcode-container mb-2">
                                         <Barcode
+                                            format='CODE128'
                                             value={trackOutgoing.track_incoming?.recall_number}
                                             width={2}
                                             height={60}
