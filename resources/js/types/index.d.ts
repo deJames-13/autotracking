@@ -177,6 +177,10 @@ export interface TrackOutgoing {
     released_by_id?: number | null;
     certificate_number?: string | null;
     cycle_time?: number | null;
+    ct_reqd?: number | null;
+    commit_etc?: number | null;
+    actual_etc?: number | null;
+    overdue?: number | null; // 0 = No, 1 = Yes
     status: 'for_pickup' | 'completed';
     notes?: string | null;
     created_at: string;

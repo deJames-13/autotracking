@@ -6,7 +6,7 @@
         </tr>
         <tr>
             <th colspan="18" align="center" style="text-transform: uppercase;">
-                {{ now()->format('F j, Y g:i A') }}
+                {{ now()->setTimezone('Asia/Manila')->format('F j, Y g:i A') }}
             </th>
         </tr>
         <tr>
@@ -90,13 +90,42 @@
                     @endif
                 </td>
                 
-                <!-- CYCLE TIME Section (all empty for now) -->
-                <td style="vertical-align: center; text-align: center;"></td> <!-- Queuing Time -->
-                <td style="vertical-align: center; text-align: center;"></td> <!-- CT Required -->
-                <td style="vertical-align: center; text-align: center;"></td> <!-- Commit ETC -->
-                <td style="vertical-align: center; text-align: center;"></td> <!-- Actual ETC -->
-                <td style="vertical-align: center; text-align: center;"></td> <!-- Actual # of CT -->
-                <td style="vertical-align: center; text-align: center;"></td> <!-- Overdue ETC -->
+                <!-- CYCLE TIME Section -->
+                <td style="vertical-align: center; text-align: center;">
+                    @if($report->trackOutgoing && $report->date_in && $report->trackOutgoing->date_out)
+                        @php
+                            $dateIn = \Carbon\Carbon::parse($report->date_in);
+                            $dateOut = \Carbon\Carbon::parse($report->trackOutgoing->date_out);
+                            $queueingTime = (int) $dateIn->diffInDays($dateOut);
+                        @endphp
+                        {{ $queueingTime }}
+                    @endif
+                </td> <!-- Queuing Time -->
+                <td style="vertical-align: center; text-align: center;">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->ct_reqd }}
+                    @endif
+                </td> <!-- CT Required -->
+                <td style="vertical-align: center; text-align: center;">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->commit_etc }}
+                    @endif
+                </td> <!-- Commit ETC -->
+                <td style="vertical-align: center; text-align: center;">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->actual_etc }}
+                    @endif
+                </td> <!-- Actual ETC -->
+                <td style="vertical-align: center; text-align: center;">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->cycle_time }}
+                    @endif
+                </td> <!-- Actual # of CT -->
+                <td style="vertical-align: center; text-align: center;">
+                    @if($report->trackOutgoing)
+                        {{ $report->trackOutgoing->overdue == 1 ? 'Yes' : 'No' }}
+                    @endif
+                </td> <!-- Overdue ETC -->
             </tr>
         @empty
             <tr>

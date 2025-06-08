@@ -579,7 +579,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                             <div>
                                 <Label className="text-sm font-medium">Overdue</Label>
                                 <p className="text-sm text-muted-foreground">
-                                    {trackOutgoing.overdue ?? 0} days
+                                    {trackOutgoing.overdue === 1 ? 'Yes' : 'No'}
                                 </p>
                             </div>
                             <div>

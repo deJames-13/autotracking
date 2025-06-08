@@ -8,6 +8,7 @@ use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\BeforeSheet;
+use Maatwebsite\Excel\Events\AfterSheet;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 
@@ -56,7 +57,8 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
             'sample_data' => $incomingRecords->take(2)->toArray()
         ]);
 
-        return view('exports.report-template', [
+        // Use the Excel-specific template for Excel exports only
+        return view('exports.report-template-xlsx', [
             'reports' => $incomingRecords
         ]);
     }
@@ -174,13 +176,37 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
     {
         return [
             BeforeSheet::class => function (BeforeSheet $event) {
-                $event->sheet
-                    ->getPageSetup()
+                $sheet = $event->sheet->getDelegate();
+                
+                // Set page setup
+                $sheet->getPageSetup()
                     ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE)
                     ->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_LEGAL)
                     ->setFitToPage(true)
                     ->setFitToWidth(1)
-                    ->setFitToHeight(0); 
+                    ->setFitToHeight(0);
+
+                // Set Arial font as default for the workbook
+                $sheet->getParent()->getDefaultStyle()->getFont()->setName('Arial')->setSize(8);
+            },
+            
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                
+                // Get the highest row and column with data
+                $highestRow = $sheet->getHighestRow();
+                $highestColumn = $sheet->getHighestColumn();
+                
+                // Apply Arial font to all cells with data
+                $sheet->getStyle('A1:' . $highestColumn . $highestRow)
+                    ->getFont()
+                    ->setName('Arial')
+                    ->setSize(8);
+                    
+                // Make headers bold (assuming first 4 rows are headers)
+                $sheet->getStyle('A1:' . $highestColumn . '4')
+                    ->getFont()
+                    ->setBold(true);
             },
         ];
     }

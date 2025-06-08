@@ -296,7 +296,7 @@ class ReportTableController extends Controller
             'print_all' => $printAll
         ]);
         
-        // Get the data to verify it's not empty before creating export
+        // Get the data directly using same logic as export
         $query = TrackIncoming::with([
             'equipment', 
             'technician', 
@@ -304,34 +304,37 @@ class ReportTableController extends Controller
             'employeeIn',
             'trackOutgoing.employeeOut'
         ]);
-        
-        // Apply same filters as in export (unless print all mode)
+
+        // Apply role-based filtering first
+        $this->applyRoleBasedFiltering($query);
+
+        // Only apply additional filters if not in "print all" mode
         if (!$printAll) {
             $this->applyFilters($query, $filters);
         }
-        $testData = $query->get();
+
+        $reports = $query->orderBy('date_in', 'desc')->get();
         
         \Log::info('PDF Export - Data count before export:', [
-            'count' => $testData->count(),
+            'count' => $reports->count(),
             'mode' => $printAll ? 'print_all' : 'filtered'
         ]);
         
-        // Use Laravel Excel with DOMPDF for PDF generation
-        $export = new TrackingReportExport($filters, 'pdf', $printAll);
+        // Use pure DOMPDF for PDF generation
+        $pdf = Pdf::loadView('pdf.tracking-reports', [
+            'reports' => $reports
+        ]);
         
-        // Generate the PDF content
-        $pdf = Excel::raw($export, \Maatwebsite\Excel\Excel::DOMPDF);
+        // Configure PDF options
+        $pdf->setPaper('legal', 'landscape')
+            ->setOption('defaultFont', 'Arial')
+            ->setOption('fontHeightRatio', 1.0)
+            ->setOption('enable_font_subsetting', false);
         
         $filename = $printAll ? 'tracking_reports_all_' . date('Y_m_d') . '.pdf' : 'tracking_reports_' . date('Y_m_d') . '.pdf';
         
         // Stream the PDF for inline viewing (preview mode)
-        return response($pdf, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . $filename . '"',
-            'Cache-Control' => 'no-cache, no-store, must-revalidate',
-            'Pragma' => 'no-cache',
-            'Expires' => '0'
-        ]);
+        return $pdf->stream($filename);
     }
 
     /**
@@ -431,5 +434,56 @@ class ReportTableController extends Controller
         $pdf = Pdf::loadView('pdf.tracking-record', ['trackingRecord' => $trackIncoming]);
         
         return $pdf->download("tracking-record-{$trackIncoming->recall_number}.pdf");
+    }
+
+    /**
+     * Apply role-based filtering to the query based on current user's role
+     */
+    private function applyRoleBasedFiltering($query)
+    {
+        $user = Auth::user();
+        
+        if (!$user || !$user->role) {
+            \Log::warning('ReportTableController - User or role not found, restricting access');
+            // If no user or role, restrict to empty results for security
+            $query->whereRaw('1 = 0');
+            return;
+        }
+
+        $roleName = $user->role->role_name;
+        
+        \Log::info('ReportTableController - Applying role-based filtering', [
+            'user_id' => $user->id,
+            'employee_id' => $user->employee_id,
+            'role' => $roleName
+        ]);
+        
+        switch ($roleName) {
+            case 'technician':
+                // Technicians can only see records they are assigned to (as technician or received_by)
+                $query->where(function($q) use ($user) {
+                    $q->where('technician_id', $user->employee_id)
+                      ->orWhere('received_by_id', $user->employee_id);
+                });
+                \Log::info('ReportTableController - Applied technician filtering for employee_id: ' . $user->employee_id);
+                break;
+                
+            case 'employee':
+                // Employees can only see their own submitted records
+                $query->where('employee_id_in', $user->employee_id);
+                \Log::info('ReportTableController - Applied employee filtering for employee_id: ' . $user->employee_id);
+                break;
+                
+            case 'admin':
+                // Admins can see all records (no additional filtering)
+                \Log::info('ReportTableController - No additional filtering applied for role: ' . $roleName);
+                break;
+                
+            default:
+                // Unknown roles get no access for security
+                \Log::warning('ReportTableController - Unknown role detected, restricting access: ' . $roleName);
+                $query->whereRaw('1 = 0');
+                break;
+        }
     }
 }

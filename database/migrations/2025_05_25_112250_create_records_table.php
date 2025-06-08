@@ -41,7 +41,6 @@ return new class extends Migration
             $table->foreignId('released_by_id')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
             $table->dateTime('date_out')->nullable();
 
-            
             $table->integer('cycle_time')->nullable();
             $table->integer('ct_reqd')->nullable();
             $table->integer('commit_etc')->nullable();

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Search } from 'lucide-react';
@@ -31,7 +32,7 @@ interface OutgoingFormData {
     ct_reqd: number | null;
     commit_etc: number | null;
     actual_etc: number | null;
-    overdue: number | null;
+    overdue: string; // Changed to string for "yes"/"no"
     confirmation_pin: string;
 }
 
@@ -67,7 +68,7 @@ export function OutgoingCalibrationModal({
         ct_reqd: null,
         commit_etc: null,
         actual_etc: null,
-        overdue: null,
+        overdue: 'no',
         confirmation_pin: ''
     });
 
@@ -101,7 +102,7 @@ export function OutgoingCalibrationModal({
                 ct_reqd: null,
                 commit_etc: null,
                 actual_etc: null,
-                overdue: null,
+                overdue: 'no',
                 confirmation_pin: ''
             });
         }
@@ -124,6 +125,14 @@ export function OutgoingCalibrationModal({
             setData('cycle_time', cycleTime);
         }
     }, [dateOut, incomingRecord]);
+
+    // Calculate overdue status automatically
+    useEffect(() => {
+        if (data.ct_reqd !== null && data.cycle_time > 0) {
+            const isOverdue = data.cycle_time > data.ct_reqd;
+            setData('overdue', isOverdue ? 'yes' : 'no');
+        }
+    }, [data.ct_reqd, data.cycle_time]);
 
     // Re-validate department when incoming record changes or employee data becomes available
     useEffect(() => {
@@ -281,13 +290,6 @@ export function OutgoingCalibrationModal({
 
             setDateOut(date);
             setData('date_out', format(date, 'yyyy-MM-dd HH:mm:ss'));
-
-            // Auto-calculate overdue if commit_etc is set
-            if (commitEtc && date > commitEtc) {
-                const timeDiff = date.getTime() - commitEtc.getTime();
-                const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                setData('overdue', days);
-            }
         }
     };
 
@@ -295,15 +297,6 @@ export function OutgoingCalibrationModal({
         if (date) {
             setCommitEtc(date);
             setData('commit_etc', format(date, 'yyyy-MM-dd'));
-
-            // Auto-calculate overdue if date_out is set
-            if (dateOut && dateOut > date) {
-                const timeDiff = dateOut.getTime() - date.getTime();
-                const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                setData('overdue', days);
-            } else {
-                setData('overdue', 0);
-            }
         }
     };
 
@@ -587,9 +580,9 @@ export function OutgoingCalibrationModal({
                                 onChange={e => setData('actual_etc', e.target.value ? parseInt(e.target.value) : null)}
                             />
                         </div>
-                        {/* Cycle Time (editable) */}
+                        {/* Actual No. of Cycle Time (editable) */}
                         <div className="space-y-2">
-                            <Label htmlFor="cycle_time">Cycle Time (Days)</Label>
+                            <Label htmlFor="cycle_time">Actual No. of Actual No. of Cycle Time (Days)</Label>
                             <Input
                                 id="cycle_time"
                                 type="number"
@@ -609,14 +602,16 @@ export function OutgoingCalibrationModal({
                         </div>
                         {/* Overdue (auto/manual) */}
                         <div className="space-y-2">
-                            <Label htmlFor="overdue">Overdue (days)</Label>
-                            <Input
-                                id="overdue"
-                                type="number"
-                                value={data.overdue ?? 0}
-                                min={0}
-                                onChange={e => setData('overdue', e.target.value ? parseInt(e.target.value) : 0)}
-                            />
+                            <Label htmlFor="overdue">Overdue</Label>
+                            <Select value={data.overdue} onValueChange={(value) => setData('overdue', value)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select overdue status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="no">No</SelectItem>
+                                    <SelectItem value="yes">Yes</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 

@@ -2,13 +2,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type TrackOutgoing, type User } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save, Calendar, User as UserIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
@@ -43,7 +44,29 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
         cal_due_date: format(new Date(trackOutgoing.cal_due_date), 'yyyy-MM-dd'),
         date_out: format(new Date(trackOutgoing.date_out), 'yyyy-MM-dd\'T\'HH:mm'),
         cycle_time: trackOutgoing.cycle_time?.toString() || '',
+        ct_reqd: trackOutgoing.ct_reqd,
+        commit_etc: trackOutgoing.commit_etc,
+        actual_etc: trackOutgoing.actual_etc,
+        overdue: trackOutgoing.overdue === 1 ? 'yes' : 'no',
+        overdue_manual_override: false, // Track if user manually set the overdue value
     });
+
+    // Function to calculate automated overdue based on ct_reqd vs cycle_time
+    const calculateAutomatedOverdue = () => {
+        const ctReqd = parseInt(data.ct_reqd) || 0;
+        const cycleTime = parseInt(data.cycle_time) || 0;
+        return ctReqd < cycleTime ? 'yes' : 'no';
+    };
+
+    // Effect to automatically update overdue when ct_reqd or cycle_time changes
+    useEffect(() => {
+        if (!data.overdue_manual_override) {
+            const automatedOverdue = calculateAutomatedOverdue();
+            if (data.overdue !== automatedOverdue) {
+                setData('overdue', automatedOverdue);
+            }
+        }
+    }, [data.ct_reqd, data.cycle_time, data.overdue_manual_override]);
 
     if (!canManageRequestIncoming()) {
         return null;
@@ -90,7 +113,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                 ct_reqd: data.ct_reqd ? parseInt(data.ct_reqd) : null,
                 commit_etc: data.commit_etc ? parseInt(data.commit_etc) : null,
                 actual_etc: data.actual_etc ? parseInt(data.actual_etc) : null,
-                overdue: data.overdue ? parseInt(data.overdue) : 0
+                overdue: data.overdue === 'yes' ? 1 : 0
             }, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
@@ -98,7 +121,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
             if (response.data) {
                 toast.success('Outgoing completion updated successfully!');
                 // Redirect back to show page
-                window.location.href = `/admin/tracking/outgoing/${trackOutgoing.id}`;
+                // window.location.href = `/admin/tracking/outgoing/${trackOutgoing.id}`;
             }
         } catch (error: any) {
             console.error('Error updating outgoing completion:', error);
@@ -114,6 +137,8 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
             }
         }
     };
+
+    console.log(trackOutgoing)
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -200,7 +225,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
 
                                 <div>
                                     <Label htmlFor="cycle_time" className="text-sm font-medium">
-                                        Cycle Time (days)
+                                        Actual No. of Cycle Time (days)
                                     </Label>
                                     <Input
                                         id="cycle_time"
@@ -260,18 +285,66 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
                                 </div>
                                 <div>
                                     <Label htmlFor="overdue" className="text-sm font-medium">
-                                        Overdue (days)
+                                        Overdue
+                                        {!data.overdue_manual_override && (
+                                            <span className="text-xs text-muted-foreground ml-2">
+                                                (Auto: {calculateAutomatedOverdue()})
+                                            </span>
+                                        )}
                                     </Label>
-                                    <Input
-                                        id="overdue"
-                                        type="number"
-                                        value={data.overdue || 0}
-                                        min={0}
-                                        onChange={e => setData('overdue', e.target.value)}
-                                    />
+                                    <Select
+                                        value={data.overdue}
+                                        onValueChange={(value) => {
+                                            setData('overdue', value);
+                                            setData('overdue_manual_override', true);
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select overdue status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="no">No</SelectItem>
+                                            <SelectItem value="yes">Yes</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {data.overdue_manual_override && (
+                                        <p className="text-xs text-orange-600 mt-1">
+                                            Manual override active.
+                                            <button
+                                                type="button"
+                                                className="text-blue-600 hover:underline ml-1"
+                                                onClick={() => {
+                                                    setData('overdue_manual_override', false);
+                                                    setData('overdue', calculateAutomatedOverdue());
+                                                }}
+                                            >
+                                                Reset to auto
+                                            </button>
+                                        </p>
+                                    )}
                                     {errors.overdue && (
                                         <p className="text-sm text-destructive">{errors.overdue}</p>
                                     )}
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="queueing_time" className="text-sm font-medium">
+                                        Queueing Time (days)
+                                    </Label>
+                                    <Input
+                                        id="queueing_time"
+                                        type="number"
+                                        value={(() => {
+                                            if (!trackOutgoing.track_incoming?.date_in || !data.date_out) return 0;
+                                            const dateIn = new Date(trackOutgoing.track_incoming.date_in);
+                                            const dateOut = new Date(data.date_out);
+                                            const timeDiff = dateOut.getTime() - dateIn.getTime();
+                                            const days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                                            return Math.max(0, days);
+                                        })()}
+                                        disabled
+                                        className="bg-muted"
+                                    />
                                 </div>
                             </CardContent>
                         </Card>

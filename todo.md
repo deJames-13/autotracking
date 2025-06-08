@@ -45,6 +45,8 @@
 
 -- TODO
 - [ ] Latest modified on top
+- [ ] Update email notification
+- [ ] Refresh error on crud pages
 
 
 - [ ] Imports

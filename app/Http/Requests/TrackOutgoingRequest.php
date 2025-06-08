@@ -24,7 +24,17 @@ class TrackOutgoingRequest extends FormRequest
             'ct_reqd' => ['nullable', 'integer', 'min:0'],
             'commit_etc' => ['nullable', 'integer', 'min:0'],
             'actual_etc' => ['nullable', 'integer', 'min:0'],
-            'overdue' => ['nullable', 'integer', 'min:0'],
+            'overdue' => ['nullable', function ($attribute, $value, $fail) {
+                // Accept integer values (0/1) for database compatibility
+                if (is_int($value) && in_array($value, [0, 1])) {
+                    return;
+                }
+                // Accept string values (yes/no) from frontend
+                if (is_string($value) && in_array(strtolower($value), ['yes', 'no'])) {
+                    return;
+                }
+                $fail('The ' . $attribute . ' field must be 0, 1, "yes", or "no".');
+            }],
         ];
     }
 }
