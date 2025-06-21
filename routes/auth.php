@@ -32,6 +32,10 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    // Cookie revoking endpoint for deployment updates
+    Route::post('revoke-cookies', [AuthenticatedSessionController::class, 'revokeCookies'])
+        ->name('auth.revoke-cookies');
 });
 
 Route::middleware('auth')->group(function () {

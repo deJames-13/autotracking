@@ -5,6 +5,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { toast, Toaster } from 'react-hot-toast';
 import { initializeTheme } from './hooks/use-appearance';
+import { CookieManager } from './utils/cookie-manager';
 
 const appName = import.meta.env.VITE_APP_NAME || 'AmkorTracking';
 
@@ -47,3 +48,6 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+// Initialize cookie management for app updates
+CookieManager.initialize();

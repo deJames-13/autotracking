@@ -42,6 +42,7 @@ class Kernel extends HttpKernel
         'password.confirm' => \Illuminate\Auth\Middleware\EnsurePasswordIsConfirmed::class,
         'signed' => \App\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        'revoke.cookies' => \App\Http\Middleware\RevokeCookiesOnUpdate::class,
     ];
 
     /**
@@ -58,6 +59,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
+            \App\Http\Middleware\RevokeCookiesOnUpdate::class,
         ],
 
         'api' => [
