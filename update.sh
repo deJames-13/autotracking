@@ -3,7 +3,7 @@ echo "Pulling latest changes from GitHub..."
 git pull origin main
 
 echo "Installing Composer dependencies..."
-composer install --optimize-autoloader --no-dev
+composer install --optimize-autoloader
 
 echo "Installing npm dependencies and building assets..."
 npm install
