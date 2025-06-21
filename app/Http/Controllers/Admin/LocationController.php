@@ -216,15 +216,36 @@ class LocationController extends Controller
      */
     public function archived(Request $request): Response|JsonResponse
     {
-        $locations = Location::onlyTrashed()
-            ->with(['department'])
-            ->orderBy('deleted_at', 'desc')
-            ->paginate(10);
+        $query = Location::onlyTrashed()
+            ->with(['department']);
+
+        // Add search functionality
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('location_name', 'like', "%{$search}%")
+                  ->orWhere('location_id', 'like', "%{$search}%")
+                  ->orWhereHas('department', function ($dq) use ($search) {
+                      $dq->where('department_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $locations = $query->orderBy('deleted_at', 'desc')
+                          ->paginate($request->get('per_page', 10));
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'data' => $locations
+                'data' => [
+                    'data' => $locations->items(),
+                    'current_page' => $locations->currentPage(),
+                    'last_page' => $locations->lastPage(),
+                    'per_page' => $locations->perPage(),
+                    'total' => $locations->total(),
+                    'from' => $locations->firstItem(),
+                    'to' => $locations->lastItem(),
+                ]
             ]);
         }
 

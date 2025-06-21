@@ -68,18 +68,23 @@ Route::middleware(['auth', 'web'])->prefix('v1')->group(function () {
         Route::get('{department}/locations', [DepartmentController::class, 'locations'])->name('departments.locations');
     });
     
-    // New tracking system routes
-    Route::apiResource('track-incoming', \App\Http\Controllers\Api\TrackIncomingController::class);
-    Route::apiResource('track-outgoing', \App\Http\Controllers\Api\TrackOutgoingController::class);
-    
+    // New tracking system routes - Custom routes must come BEFORE apiResource
     Route::prefix('track-incoming')->group(function () {
         Route::get('pending', [\App\Http\Controllers\Api\TrackIncomingController::class, 'pending'])->name('track-incoming.pending');
         Route::get('overdue', [\App\Http\Controllers\Api\TrackIncomingController::class, 'overdue'])->name('track-incoming.overdue');
+        Route::get('archived', [\App\Http\Controllers\Api\TrackIncomingController::class, 'archived'])->name('track-incoming.archived');
+        Route::post('{id}/restore', [\App\Http\Controllers\Api\TrackIncomingController::class, 'restore'])->name('track-incoming.restore');
     });
     
     Route::prefix('track-outgoing')->group(function () {
         Route::get('due-soon', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'dueSoon'])->name('track-outgoing.due-soon');
+        Route::get('archived', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'archived'])->name('track-outgoing.archived');
+        Route::post('{id}/restore', [\App\Http\Controllers\Api\TrackOutgoingController::class, 'restore'])->name('track-outgoing.restore');
     });
+    
+    // API Resource routes come after custom routes to avoid conflicts
+    Route::apiResource('track-incoming', \App\Http\Controllers\Api\TrackIncomingController::class);
+    Route::apiResource('track-outgoing', \App\Http\Controllers\Api\TrackOutgoingController::class);
 });
 
 // Add this at the top for testing

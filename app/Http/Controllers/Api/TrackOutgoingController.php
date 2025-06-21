@@ -157,10 +157,48 @@ class TrackOutgoingController extends Controller
         return new TrackOutgoingResource($trackOutgoing);
     }
 
-    public function destroy(TrackOutgoing $trackOutgoing): JsonResponse
+    public function destroy(TrackOutgoing $trackOutgoing, Request $request): JsonResponse
     {
-        $trackOutgoing->delete();
-        return response()->json(['message' => 'Track outgoing record deleted successfully']);
+        // Only allow admin users to delete records
+        $user = Auth::user();
+        if ($user->role->role_name !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized. Only admin users can delete tracking records.'
+            ], 403);
+        }
+
+        $forceDelete = $request->boolean('force', false);
+
+        // For outgoing records, we can safely delete them as they don't have dependent records
+        // But we still provide force delete option for consistency
+        if ($forceDelete) {
+            $trackOutgoing->forceDelete();
+            $message = 'Outgoing record permanently deleted.';
+        } else {
+            $trackOutgoing->delete(); // Soft delete
+            $message = 'Outgoing record archived successfully.';
+        }
+
+        return response()->json(['message' => $message]);
+    }
+
+    /**
+     * Restore a soft deleted outgoing record
+     */
+    public function restore($id, Request $request): JsonResponse
+    {
+        // Only allow admin users to restore records
+        $user = Auth::user();
+        if ($user->role->role_name !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized. Only admin users can restore tracking records.'
+            ], 403);
+        }
+
+        $trackOutgoing = TrackOutgoing::onlyTrashed()->findOrFail($id);
+        $trackOutgoing->restore();
+
+        return response()->json(['message' => 'Outgoing record restored successfully.']);
     }
     
     public function dueSoon(Request $request): AnonymousResourceCollection
@@ -293,5 +331,35 @@ class TrackOutgoingController extends Controller
                 'message' => 'An error occurred while confirming pickup. Please try again.'
             ], 500);
         }
+    }
+
+    /**
+     * Get archived outgoing records (admin only)
+     */
+    public function archived(Request $request): AnonymousResourceCollection|JsonResponse
+    {
+        // Only allow admin users to view archived records
+        $user = Auth::user();
+        if ($user->role->role_name !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized. Only admin users can view archived tracking records.'
+            ], 403);
+        }
+
+        $query = TrackOutgoing::onlyTrashed()
+            ->with(['trackIncoming', 'employeeOut', 'releasedBy', 'equipment', 'technician']);
+
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->whereHas('trackIncoming', function($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhere('recall_number', 'like', "%{$search}%");
+            });
+        }
+
+        $records = $query->orderBy('deleted_at', 'desc')
+                        ->paginate($request->get('per_page', 15));
+
+        return TrackOutgoingResource::collection($records);
     }
 }

@@ -5,8 +5,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useRole } from '@/hooks/use-role';
 import { type PaginationData, type TrackOutgoing } from '@/types';
 import { router } from '@inertiajs/react';
-import { Eye, MoreHorizontal, Pencil } from 'lucide-react';
-import { useCallback } from 'react';
+import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { TrackOutgoingDeleteDialog } from './track-outgoing-delete-dialog';
 
 interface TrackOutgoingTableProps {
     trackOutgoing: PaginationData<TrackOutgoing>;
@@ -35,6 +36,8 @@ export function TrackOutgoingTable({
     onPerPageChange,
 }: TrackOutgoingTableProps) {
     const { isAdmin } = useRole();
+    const [deleteRecord, setDeleteRecord] = useState<TrackOutgoing | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     const getStatusBadge = (status: string) => {
         const statusConfig = {
@@ -208,6 +211,18 @@ export function TrackOutgoingTable({
                                 Edit
                             </DropdownMenuItem>
                         )}
+                        {isAdmin() && (
+                            <DropdownMenuItem
+                                onClick={() => {
+                                    setDeleteRecord(row);
+                                    setDeleteDialogOpen(true);
+                                }}
+                                className="text-red-600 focus:text-red-600"
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete/Archive
+                            </DropdownMenuItem>
+                        )}
                         {/* {row.track_incoming?.recall_number && (
                             <DropdownMenuItem onClick={() => router.visit(route('admin.tracking.outgoing.certificate', row.id))}>
                                 <FileText className="mr-2 h-4 w-4" />
@@ -297,22 +312,34 @@ export function TrackOutgoingTable({
     );
 
     return (
-        <DataTable
-            data={trackOutgoing.data}
-            columns={columns}
-            filters={filters}
-            loading={loading}
-            pagination={{
-                current_page: trackOutgoing.current_page,
-                last_page: trackOutgoing.last_page,
-                per_page: trackOutgoing.per_page,
-                total: trackOutgoing.total,
-            }}
-            onSearch={handleSearch}
-            onFilter={handleFilter}
-            onPageChange={handlePageChange}
-            onPerPageChange={handlePerPageChange}
-            searchPlaceholder="Search by recall number, equipment, serial number..."
-        />
+        <>
+            <DataTable
+                data={trackOutgoing.data}
+                columns={columns}
+                filters={filters}
+                loading={loading}
+                pagination={{
+                    current_page: trackOutgoing.current_page,
+                    last_page: trackOutgoing.last_page,
+                    per_page: trackOutgoing.per_page,
+                    total: trackOutgoing.total,
+                }}
+                onSearch={handleSearch}
+                onFilter={handleFilter}
+                onPageChange={handlePageChange}
+                onPerPageChange={handlePerPageChange}
+                searchPlaceholder="Search by recall number, equipment, serial number..."
+            />
+
+            <TrackOutgoingDeleteDialog
+                record={deleteRecord}
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                onSuccess={() => {
+                    setDeleteRecord(null);
+                    if (onRefresh) onRefresh();
+                }}
+            />
+        </>
     );
 }

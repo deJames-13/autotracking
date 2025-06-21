@@ -1,62 +1,61 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { type Equipment } from '@/types';
-import { router } from '@inertiajs/react';
+import { type TrackIncoming } from '@/types';
+import axios from 'axios';
 import { AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 
-interface EquipmentDeleteDialogProps {
-    equipment: Equipment | null;
+interface TrackIncomingDeleteDialogProps {
+    record: TrackIncoming | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess: () => void;
 }
 
-export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess }: EquipmentDeleteDialogProps) {
+export function TrackIncomingDeleteDialog({ record, open, onOpenChange, onSuccess }: TrackIncomingDeleteDialogProps) {
     const [forceDelete, setForceDelete] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const hasRelatedRecords = equipment && (equipment.track_incoming?.length || 0) > 0;
+    const hasRelatedRecords = record && record.track_outgoing;
 
-    const handleDelete = () => {
-        if (!equipment) return;
+    const handleDelete = async () => {
+        if (!record) return;
 
         setIsDeleting(true);
-        console.log('EquipmentDeleteDialog: Deleting equipment', equipment.equipment_id, 'force:', forceDelete);
 
-        const data = forceDelete ? { force: true } : {};
+        try {
+            const response = await axios.delete(`/api/v1/track-incoming/${record.id}`, {
+                data: forceDelete ? { force: true } : {},
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json',
+                },
+            });
 
-        router.delete(route('admin.equipment.destroy', equipment.equipment_id), {
-            data,
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                console.log('EquipmentDeleteDialog: Delete successful, calling onSuccess');
-                onOpenChange(false);
-                setForceDelete(false);
-                setIsDeleting(false);
-                toast.success(forceDelete ? 'Equipment and all tracking records permanently deleted' : 'Equipment archived successfully');
-                onSuccess();
-            },
-            onError: (errors) => {
-                console.error('Error deleting equipment:', errors);
-                setIsDeleting(false);
+            onOpenChange(false);
+            setForceDelete(false);
+            setIsDeleting(false);
 
-                // Handle validation errors
-                if (errors && typeof errors === 'object') {
-                    const errorMessages = Object.values(errors).flat();
-                    if (errorMessages.length > 0) {
-                        toast.error(errorMessages[0] as string);
-                        return;
-                    }
-                }
+            const message = forceDelete
+                ? 'Incoming record and all related outgoing records permanently deleted.'
+                : 'Incoming record archived successfully.';
 
-                // Generic fallback error
-                toast.error('Failed to delete equipment. Please try again.');
-            },
-        });
+            toast.success(message);
+            onSuccess();
+        } catch (error: any) {
+            console.error('Error deleting incoming record:', error);
+            setIsDeleting(false);
+
+            if (error.response?.status === 403) {
+                toast.error('Unauthorized. Only admin users can delete tracking records.');
+            } else if (error.response?.status === 422) {
+                toast.error(error.response.data.message || 'Cannot archive record with related outgoing records.');
+            } else {
+                toast.error('Failed to delete incoming record. Please try again.');
+            }
+        }
     };
 
     const handleCancel = () => {
@@ -64,36 +63,31 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
         setForceDelete(false);
     };
 
-    if (!equipment) return null;
+    if (!record) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {forceDelete ? 'Force Delete Equipment' : 'Archive Equipment'}
+                        {forceDelete ? 'Force Delete Incoming Record' : 'Archive Incoming Record'}
                     </DialogTitle>
                     <DialogDescription>
                         {forceDelete
-                            ? 'Are you sure you want to permanently delete this equipment and all its tracking records? This action cannot be undone.'
-                            : 'Are you sure you want to archive this equipment? The equipment will be hidden from the main list but can be restored later.'
+                            ? 'Are you sure you want to permanently delete this incoming record and all its related outgoing records? This action cannot be undone.'
+                            : 'Are you sure you want to archive this incoming record? The record will be hidden from the main list but can be restored later.'
                         }
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                     <div className="bg-muted/50 rounded-lg border p-4">
-                        <div className="font-medium">Recall #: {equipment.recall_number}</div>
+                        <div className="font-medium">Recall #: {record.recall_number}</div>
                         <div className="text-muted-foreground mt-1 text-sm">
-                            <div>ID: {equipment.equipment_id}</div>
-                            <div>Serial #: {equipment.serial_number || 'N/A'}</div>
-                            <div>Manufacturer: {equipment.manufacturer}</div>
-                            <div>
-                                Assigned to:{' '}
-                                {equipment.user
-                                    ? equipment.user.full_name || `${equipment.user.first_name} ${equipment.user.last_name}`
-                                    : 'Unassigned'}
-                            </div>
-                            <div>Records: {equipment.track_incoming?.length || 0}</div>
+                            <div>ID: {record.id}</div>
+                            <div>Equipment: {record.equipment?.description || 'N/A'}</div>
+                            <div>Technician: {record.technician ? `${record.technician.first_name} ${record.technician.last_name}` : 'Not assigned'}</div>
+                            <div>Status: {record.status}</div>
+                            <div>Outgoing Records: {hasRelatedRecords ? 1 : 0}</div>
                         </div>
                     </div>
 
@@ -105,7 +99,7 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
                                     <span className="text-sm font-medium">Related Records Found</span>
                                 </div>
                                 <p className="text-yellow-700 mt-1 text-sm">
-                                    This equipment has tracking records. Normal archiving will fail.
+                                    This incoming record has related outgoing records. Normal archiving will fail.
                                 </p>
                             </div>
 
@@ -119,7 +113,7 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
                                     htmlFor="force-delete"
                                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                 >
-                                    Force delete (permanently delete equipment and all tracking records)
+                                    Force delete (permanently delete incoming record and all related outgoing records)
                                 </label>
                             </div>
 
@@ -133,9 +127,8 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
                                         This will permanently delete:
                                     </p>
                                     <ul className="text-red-700 mt-1 text-sm list-disc list-inside ml-2">
-                                        <li>{equipment.track_incoming?.length || 0} tracking record(s) and all their data</li>
-                                        <li>All related outgoing tracking records</li>
-                                        <li>The equipment record itself</li>
+                                        <li>The incoming record and all its data</li>
+                                        <li>All related outgoing records</li>
                                     </ul>
                                 </div>
                             )}
@@ -155,7 +148,7 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
                                 ? 'Processing...'
                                 : forceDelete
                                     ? 'Permanently Delete'
-                                    : 'Archive Equipment'
+                                    : 'Archive Record'
                             }
                         </Button>
                     </div>

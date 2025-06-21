@@ -84,6 +84,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
     });
 
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Define the steps - exclude confirmation step in confirm mode
     const steps: Step[] = isConfirmMode
@@ -388,16 +389,21 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
     };
     // Handle form submission
     const handleSubmit = async () => {
-        if (!validateCurrentStep()) return;
+        if (!validateCurrentStep() || isSubmitting) return;
 
-        // First confirm PIN before proceeding with submission (skip in confirm mode or if not needed)
-        const isPinConfirmed = isConfirmMode || currentStep !== 'confirmation' || (await handleConfirmPin());
-        if (!isPinConfirmed) return;
-
-        // Get current Redux state for submission
-        const currentState = store.getState().trackingRequest;
+        setIsSubmitting(true);
 
         try {
+            // First confirm PIN before proceeding with submission (skip in confirm mode or if not needed)
+            const isPinConfirmed = isConfirmMode || currentStep !== 'confirmation' || (await handleConfirmPin());
+            if (!isPinConfirmed) {
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Get current Redux state for submission
+            const currentState = store.getState().trackingRequest;
+
             // For confirm mode, we need to send a specific flag
             const endpoint = isConfirmMode ? route('api.tracking.incoming.confirm-employee-request', edit) : route('api.tracking.request.store');
 
@@ -443,6 +449,10 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                     onSuccess: () => {
                         // Additional success handling if needed
                         console.log('Successfully navigated to incoming index');
+                        setIsSubmitting(false);
+                    },
+                    onError: () => {
+                        setIsSubmitting(false);
                     },
                 });
             } else {
@@ -454,6 +464,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                         : response.data.message || 'Failed to create tracking request';
 
                 toast.error(errorMessage);
+                setIsSubmitting(false);
             }
         } catch (error) {
             console.error('Error submitting form:', error);
@@ -492,6 +503,8 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                 // Handle network or other errors
                 toast.error('An error occurred while submitting the request. Please try again.');
             }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -728,23 +741,23 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                     {/* Navigation Buttons */}
                     <div className="mt-8 flex justify-between">
                         {currentStep !== 'technician' && (
-                            <Button variant="outline" onClick={handleBack} disabled={processing}>
+                            <Button variant="outline" onClick={handleBack} disabled={processing || isSubmitting}>
                                 Back
                             </Button>
                         )}
 
                         <div className="ml-auto">
                             {isConfirmMode && currentStep === 'details' ? (
-                                <Button onClick={handleSubmit} disabled={processing}>
-                                    Confirm Request
+                                <Button onClick={handleSubmit} disabled={processing || isSubmitting}>
+                                    {isSubmitting ? 'Confirming...' : 'Confirm Request'}
                                 </Button>
                             ) : currentStep !== 'confirmation' ? (
-                                <Button onClick={handleNext} disabled={processing}>
+                                    <Button onClick={handleNext} disabled={processing || isSubmitting}>
                                     Next
                                 </Button>
                             ) : (
-                                <Button onClick={handleSubmit} disabled={processing}>
-                                    Submit Request
+                                        <Button onClick={handleSubmit} disabled={processing || isSubmitting}>
+                                            {isSubmitting ? 'Submitting...' : 'Submit Request'}
                                 </Button>
                             )}
                         </div>

@@ -204,10 +204,10 @@ class EquipmentController extends Controller
                 ->with('error', $errorMessage);
         }
 
-        // If force delete is enabled, nullify related records
+        // If force delete is enabled, delete equipment and all related tracking records
         if ($forceDelete) {
             $this->forceDeleteEquipmentWithRelations($equipment);
-            $message = 'Equipment deleted and all references set to null successfully.';
+            $message = 'Equipment and all related tracking records permanently deleted.';
         } else {
             $equipment->delete(); // This is now a soft delete due to SoftDeletes trait
             $message = 'Equipment archived successfully.';
@@ -335,15 +335,35 @@ class EquipmentController extends Controller
      */
     public function archived(Request $request): Response|JsonResponse
     {
-        $equipment = Equipment::onlyTrashed()
-            ->with(['department', 'location', 'user'])
-            ->orderBy('deleted_at', 'desc')
-            ->paginate(10);
+        $query = Equipment::onlyTrashed()
+            ->with(['department', 'location', 'user']);
+
+        // Add search functionality
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('recall_number', 'like', "%{$search}%")
+                  ->orWhere('serial_number', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('manufacturer', 'like', "%{$search}%");
+            });
+        }
+
+        $equipment = $query->orderBy('deleted_at', 'desc')
+                          ->paginate($request->get('per_page', 10));
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'data' => $equipment
+                'data' => [
+                    'data' => $equipment->items(),
+                    'current_page' => $equipment->currentPage(),
+                    'last_page' => $equipment->lastPage(),
+                    'per_page' => $equipment->perPage(),
+                    'total' => $equipment->total(),
+                    'from' => $equipment->firstItem(),
+                    'to' => $equipment->lastItem(),
+                ]
             ]);
         }
 
@@ -353,17 +373,29 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Force delete equipment and set related foreign keys to null
+     * Force delete equipment and delete all related tracking records
      */
     private function forceDeleteEquipmentWithRelations(Equipment $equipment): void
     {
         \DB::transaction(function () use ($equipment) {
-            // 1. Set equipment_id to null in track_incoming records
+            // 1. Get all track_incoming records for this equipment
+            $trackIncomingIds = \DB::table('track_incoming')
+                ->where('equipment_id', $equipment->equipment_id)
+                ->pluck('id');
+
+            // 2. Delete track_outgoing records that reference these track_incoming records
+            if ($trackIncomingIds->isNotEmpty()) {
+                \DB::table('track_outgoing')
+                    ->whereIn('incoming_id', $trackIncomingIds)
+                    ->delete();
+            }
+
+            // 3. Delete track_incoming records for this equipment
             \DB::table('track_incoming')
                 ->where('equipment_id', $equipment->equipment_id)
-                ->update(['equipment_id' => null]);
+                ->delete();
 
-            // 2. Finally, force delete the equipment itself
+            // 4. Finally, force delete the equipment itself
             $equipment->forceDelete();
         });
     }

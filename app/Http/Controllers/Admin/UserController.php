@@ -526,15 +526,35 @@ class UserController extends Controller
      */
     public function archived(Request $request): Response|JsonResponse
     {
-        $users = User::onlyTrashed()
-            ->with(['role', 'department', 'plant'])
-            ->orderBy('deleted_at', 'desc')
-            ->paginate(10);
+        $query = User::onlyTrashed()
+            ->with(['role', 'department', 'plant']);
+
+        // Add search functionality
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('employee_id', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->orderBy('deleted_at', 'desc')
+                      ->paginate($request->get('per_page', 10));
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'data' => $users
+                'data' => [
+                    'data' => $users->items(),
+                    'current_page' => $users->currentPage(),
+                    'last_page' => $users->lastPage(),
+                    'per_page' => $users->perPage(),
+                    'total' => $users->total(),
+                    'from' => $users->firstItem(),
+                    'to' => $users->lastItem(),
+                ]
             ]);
         }
 

@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 
@@ -525,10 +526,72 @@ class TrackIncomingController extends Controller
         return new TrackIncomingResource($trackIncoming);
     }
 
-    public function destroy(TrackIncoming $trackIncoming): JsonResponse
+    public function destroy(TrackIncoming $trackIncoming, Request $request): JsonResponse
     {
-        $trackIncoming->delete();
-        return response()->json(['message' => 'Track incoming record deleted successfully']);
+        // Only allow admin users to delete records
+        $user = Auth::user();
+        if ($user->role->role_name !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized. Only admin users can delete tracking records.'
+            ], 403);
+        }
+
+        $forceDelete = $request->boolean('force', false);
+        
+        // Check for related outgoing records before deletion
+        $outgoingCount = $trackIncoming->trackOutgoing()->count();
+
+        if ($outgoingCount > 0 && !$forceDelete) {
+            return response()->json([
+                'message' => "Cannot archive incoming record. It has {$outgoingCount} outgoing record(s) associated with it.",
+                'requires_force' => true,
+                'related_records' => $outgoingCount
+            ], 422);
+        }
+
+        // If force delete is enabled, delete related records first
+        if ($forceDelete) {
+            $this->forceDeleteIncomingWithRelations($trackIncoming);
+            $message = 'Incoming record and all related outgoing records permanently deleted.';
+        } else {
+            $trackIncoming->delete(); // Soft delete
+            $message = 'Incoming record archived successfully.';
+        }
+
+        return response()->json(['message' => $message]);
+    }
+
+    /**
+     * Force delete incoming record and all related outgoing records
+     */
+    private function forceDeleteIncomingWithRelations(TrackIncoming $trackIncoming): void
+    {
+        \DB::transaction(function () use ($trackIncoming) {
+            // 1. Force delete all related outgoing records
+            $trackIncoming->trackOutgoing()->forceDelete();
+
+            // 2. Force delete the incoming record itself
+            $trackIncoming->forceDelete();
+        });
+    }
+
+    /**
+     * Restore a soft deleted incoming record
+     */
+    public function restore($id, Request $request): JsonResponse
+    {
+        // Only allow admin users to restore records
+        $user = Auth::user();
+        if ($user->role->role_name !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized. Only admin users can restore tracking records.'
+            ], 403);
+        }
+
+        $trackIncoming = TrackIncoming::onlyTrashed()->findOrFail($id);
+        $trackIncoming->restore();
+
+        return response()->json(['message' => 'Incoming record restored successfully.']);
     }
     
     public function pending(Request $request): AnonymousResourceCollection
@@ -837,5 +900,35 @@ class TrackIncomingController extends Controller
             'start' => $start,
             'end' => $end
         ];
+    }
+
+    /**
+     * Get archived incoming records (admin only)
+     */
+    public function archived(Request $request): AnonymousResourceCollection|JsonResponse
+    {
+        // Only allow admin users to view archived records
+        $user = Auth::user();
+        if ($user->role->role_name !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized. Only admin users can view archived tracking records.'
+            ], 403);
+        }
+
+        $query = TrackIncoming::onlyTrashed()
+            ->with(['equipment', 'technician', 'location', 'employeeIn', 'trackOutgoing']);
+
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhere('recall_number', 'like', "%{$search}%");
+            });
+        }
+
+        $records = $query->orderBy('deleted_at', 'desc')
+                        ->paginate($request->get('per_page', 15));
+
+        return TrackIncomingResource::collection($records);
     }
 }

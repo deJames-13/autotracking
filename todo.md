@@ -1,12 +1,11 @@
 -- TESTING
 - [x] fix Equipment crud 
-- [ ] fix delete/archiving
+- [x] fix delete/archiving
 - [x] enable manual input for recall number for requests (admin/employee) ✅ COMPLETED
 
 -- TODO
-- [ ] fix Equipment crud 
-- [ ] fix delete/archiving
-- [ ] enable equipment crud for employee
+- [x] fix Equipment crud 
+- [x] fix delete/archiving
 - [x] enable manual input for recall number for requests (admin/employee) ✅ COMPLETED
 
 - [ ] Scan in ougoing show not working

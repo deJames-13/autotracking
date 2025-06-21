@@ -1,8 +1,11 @@
 import { TrackOutgoingTable } from '@/components/admin/tracking/track-outgoing-table';
+import { Button } from '@/components/ui/button';
+import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type PaginationData, type TrackOutgoing } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import axios from 'axios';
+import { Archive } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
@@ -18,6 +21,7 @@ interface FilterOptions {
 }
 
 export default function TrackOutgoingIndex(props: TrackOutgoingIndexProps) {
+    const { isAdmin } = useRole();
     const [trackOutgoing, setTrackOutgoing] = useState<PaginationData<TrackOutgoing> | null>(null);
     const [loading, setLoading] = useState(true);
     const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
@@ -100,17 +104,16 @@ export default function TrackOutgoingIndex(props: TrackOutgoingIndexProps) {
                         <p className="text-muted-foreground">Manage and track outgoing equipment calibration completions</p>
                     </div>
 
-                    {/* <Button
-                        onClick={() => {
-                            // Export functionality can be added here
-                            toast.success('Export feature coming soon');
-                        }}
-                        size="sm"
-                        variant="outline"
-                    >
-                        <Download className="mr-2 h-4 w-4" />
-                        Export
-                    </Button> */}
+                    {isAdmin() && (
+                        <Button
+                            variant="outline" 
+                            onClick={() => router.visit('/admin/tracking/outgoing/archived')}
+                            size="sm"
+                        >
+                            <Archive className="mr-2 h-4 w-4" />
+                            View Archived
+                        </Button>
+                    )}
                 </div>
 
                 {trackOutgoing && (

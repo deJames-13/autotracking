@@ -240,14 +240,32 @@ class PlantController extends Controller
      */
     public function archived(Request $request): Response|JsonResponse
     {
-        $plants = Plant::onlyTrashed()
-            ->orderBy('deleted_at', 'desc')
-            ->paginate(10);
+        $query = Plant::onlyTrashed();
+
+        // Add search functionality
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('plant_name', 'like', "%{$search}%")
+                  ->orWhere('plant_id', 'like', "%{$search}%");
+            });
+        }
+
+        $plants = $query->orderBy('deleted_at', 'desc')
+                       ->paginate($request->get('per_page', 10));
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'data' => $plants
+                'data' => [
+                    'data' => $plants->items(),
+                    'current_page' => $plants->currentPage(),
+                    'last_page' => $plants->lastPage(),
+                    'per_page' => $plants->perPage(),
+                    'total' => $plants->total(),
+                    'from' => $plants->firstItem(),
+                    'to' => $plants->lastItem(),
+                ]
             ]);
         }
 

@@ -1,10 +1,11 @@
 import { TrackIncomingTable } from '@/components/admin/tracking/track-incoming-table';
 import { Button } from '@/components/ui/button';
+import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type Location, type PaginationData, type TrackIncoming, type User } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import axios from 'axios';
-import { Plus } from 'lucide-react';
+import { Plus, Archive } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
@@ -20,6 +21,7 @@ interface FilterOptions {
 }
 
 export default function TrackIncomingIndex(props: TrackIncomingIndexProps) {
+    const { isAdmin } = useRole();
     const [trackIncoming, setTrackIncoming] = useState<PaginationData<TrackIncoming> | null>(null);
     const [loading, setLoading] = useState(true);
     const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
@@ -102,10 +104,23 @@ export default function TrackIncomingIndex(props: TrackIncomingIndexProps) {
                         <p className="text-muted-foreground break-words max-w-full">Manage and track incoming equipment calibration requests</p>
                     </div>
 
-                    <Button onClick={() => router.visit(route('admin.tracking.request.index'))} size="sm" className="w-full sm:w-auto">
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Request
-                    </Button>
+                    <div className="flex gap-2">
+                        {isAdmin() && (
+                            <Button
+                                variant="outline"
+                                onClick={() => router.visit('/admin/tracking/incoming/archived')}
+                                size="sm"
+                                className="w-full sm:w-auto"
+                            >
+                                <Archive className="mr-2 h-4 w-4" />
+                                View Archived
+                            </Button>
+                        )}
+                        <Button onClick={() => router.visit(route('admin.tracking.request.index'))} size="sm" className="w-full sm:w-auto">
+                            <Plus className="mr-2 h-4 w-4" />
+                            New Request
+                        </Button>
+                    </div>
                 </div>
 
                 {trackIncoming && (

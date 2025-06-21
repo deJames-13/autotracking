@@ -192,9 +192,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('tracking/request/{id}', [AdminTrackingController::class, 'requestShow'])->name('tracking.request.show');
 
         Route::get('tracking/incoming', [AdminTrackingController::class, 'trackIncomingIndex'])->name('tracking.incoming.index');
+        Route::get('tracking/incoming/archived', function () {
+            return \Inertia\Inertia::render('admin/tracking/incoming/archived');
+        })->name('tracking.incoming.archived');
         Route::get('tracking/incoming/{trackIncoming}', [AdminTrackingController::class, 'trackIncomingShow'])->name('tracking.incoming.show');
 
         Route::get('tracking/outgoing', [AdminTrackingController::class, 'trackOutgoingIndex'])->name('tracking.outgoing.index');
+        Route::get('tracking/outgoing/archived', function () {
+            return \Inertia\Inertia::render('admin/tracking/outgoing/archived');
+        })->name('tracking.outgoing.archived');
         Route::get('tracking/outgoing/{trackOutgoing}', [AdminTrackingController::class, 'trackOutgoingShow'])->name('tracking.outgoing.show');
         Route::get('tracking/outgoing/{trackOutgoing}/edit', [AdminTrackingController::class, 'trackOutgoingEdit'])->name('tracking.outgoing.edit');
         Route::get('tracking/outgoing/{trackOutgoing}/certificate', [AdminTrackingController::class, 'viewCertificate'])->name('tracking.outgoing.certificate');

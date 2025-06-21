@@ -311,14 +311,32 @@ class DepartmentController extends Controller
      */
     public function archived(Request $request): Response|JsonResponse
     {
-        $departments = Department::onlyTrashed()
-            ->orderBy('deleted_at', 'desc')
-            ->paginate(10);
+        $query = Department::onlyTrashed();
+
+        // Add search functionality
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('department_name', 'like', "%{$search}%")
+                  ->orWhere('department_id', 'like', "%{$search}%");
+            });
+        }
+
+        $departments = $query->orderBy('deleted_at', 'desc')
+                            ->paginate($request->get('per_page', 10));
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'data' => $departments
+                'data' => [
+                    'data' => $departments->items(),
+                    'current_page' => $departments->currentPage(),
+                    'last_page' => $departments->lastPage(),
+                    'per_page' => $departments->perPage(),
+                    'total' => $departments->total(),
+                    'from' => $departments->firstItem(),
+                    'to' => $departments->lastItem(),
+                ]
             ]);
         }
 

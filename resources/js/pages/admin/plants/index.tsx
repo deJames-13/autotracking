@@ -7,7 +7,7 @@ import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type PaginationData, type Plant } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Plus, Search } from 'lucide-react';
+import { Archive, Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -84,29 +84,39 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
                         <p className="text-muted-foreground text-sm md:text-base">Manage plant locations and facilities</p>
                     </div>
 
-                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Plant
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="flex max-h-[85vh] max-w-md flex-col overflow-hidden">
-                            <DialogHeader className="flex-shrink-0">
-                                <DialogTitle>Add New Plant</DialogTitle>
-                                <DialogDescription>Create a new plant. All fields marked with * are required.</DialogDescription>
-                            </DialogHeader>
-                            <div className="flex-1 overflow-y-auto px-1">
-                                <PlantForm
-                                    onSuccess={() => {
-                                        setIsAddDialogOpen(false);
-                                        refreshPlants();
-                                    }}
-                                    onCancel={() => setIsAddDialogOpen(false)}
-                                />
-                            </div>
-                        </DialogContent>
-                    </Dialog>
+                    <div className="flex flex-col md:flex-row gap-2">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => router.visit(route('admin.plants.archived'))}
+                        >
+                            <Archive className="mr-2 h-4 w-4" />
+                            View Archived
+                        </Button>
+                        
+                        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button>
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Plant
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="flex max-h-[85vh] max-w-md flex-col overflow-hidden">
+                                <DialogHeader className="flex-shrink-0">
+                                    <DialogTitle>Add New Plant</DialogTitle>
+                                    <DialogDescription>Create a new plant. All fields marked with * are required.</DialogDescription>
+                                </DialogHeader>
+                                <div className="flex-1 overflow-y-auto px-1">
+                                    <PlantForm
+                                        onSuccess={() => {
+                                            setIsAddDialogOpen(false);
+                                            refreshPlants();
+                                        }}
+                                        onCancel={() => setIsAddDialogOpen(false)}
+                                    />
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
 
                 {/* Filters */}

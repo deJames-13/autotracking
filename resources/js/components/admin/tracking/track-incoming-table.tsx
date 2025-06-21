@@ -2,10 +2,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useRole } from '@/hooks/use-role';
 import { type Location, type PaginationData, type TrackIncoming, type User } from '@/types';
 import { router } from '@inertiajs/react';
-import { Eye, MoreHorizontal } from 'lucide-react';
-import { useCallback } from 'react';
+import { Eye, MoreHorizontal, Trash2 } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { TrackIncomingDeleteDialog } from './track-incoming-delete-dialog';
 
 interface TrackIncomingTableProps {
     trackIncoming: PaginationData<TrackIncoming>;
@@ -33,6 +35,10 @@ export function TrackIncomingTable({
     onPageChange,
     onPerPageChange,
 }: TrackIncomingTableProps) {
+    const { isAdmin } = useRole();
+    const [deleteRecord, setDeleteRecord] = useState<TrackIncoming | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
     const getStatusBadge = (status: string) => {
         const statusConfig = {
             pending: { variant: 'secondary' as const, label: 'Pending' },
@@ -164,6 +170,18 @@ export function TrackIncomingTable({
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                         </DropdownMenuItem>
+                        {isAdmin() && (
+                            <DropdownMenuItem
+                                onClick={() => {
+                                    setDeleteRecord(row);
+                                    setDeleteDialogOpen(true);
+                                }}
+                                className="text-red-600 focus:text-red-600"
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete/Archive
+                            </DropdownMenuItem>
+                        )}
                         {/* <DropdownMenuItem onClick={() => console.log('Edit', row.id)}>
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
@@ -252,22 +270,34 @@ export function TrackIncomingTable({
     );
 
     return (
-        <DataTable
-            data={trackIncoming.data}
-            columns={columns}
-            filters={filters}
-            loading={loading}
-            pagination={{
-                current_page: trackIncoming.current_page,
-                last_page: trackIncoming.last_page,
-                per_page: trackIncoming.per_page,
-                total: trackIncoming.total,
-            }}
-            onSearch={handleSearch}
-            onFilter={handleFilter}
-            onPageChange={handlePageChange}
-            onPerPageChange={handlePerPageChange}
-            searchPlaceholder="Search by recall number, equipment, serial number..."
-        />
+        <>
+            <DataTable
+                data={trackIncoming.data}
+                columns={columns}
+                filters={filters}
+                loading={loading}
+                pagination={{
+                    current_page: trackIncoming.current_page,
+                    last_page: trackIncoming.last_page,
+                    per_page: trackIncoming.per_page,
+                    total: trackIncoming.total,
+                }}
+                onSearch={handleSearch}
+                onFilter={handleFilter}
+                onPageChange={handlePageChange}
+                onPerPageChange={handlePerPageChange}
+                searchPlaceholder="Search by recall number, equipment, serial number..."
+            />
+
+            <TrackIncomingDeleteDialog
+                record={deleteRecord}
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                onSuccess={() => {
+                    setDeleteRecord(null);
+                    if (onRefresh) onRefresh();
+                }}
+            />
+        </>
     );
 }

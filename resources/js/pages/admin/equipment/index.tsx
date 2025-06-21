@@ -7,7 +7,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Department, type Equipment, type Plant, type User } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import axios from 'axios';
-import { Plus } from 'lucide-react';
+import { Plus, Archive } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -153,30 +153,41 @@ export default function EquipmentIndex({ users, plants, departments }: Equipment
                         <p className="text-sm md:text-base text-muted-foreground break-words max-w-full">Manage equipment inventory and assignments</p>
                     </div>
 
-                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="w-full sm:w-auto">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Equipment
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="flex max-h-[85vh] w-full max-w-[98vw] flex-col overflow-hidden lg:max-w-[80vw] xl:max-w-[72rem]">
-                            <DialogHeader className="flex-shrink-0">
-                                <DialogTitle>Add New Equipment</DialogTitle>
-                                <DialogDescription>Create a new equipment record. All fields marked with * are required.</DialogDescription>
-                            </DialogHeader>
-                            <div className="flex-1 overflow-y-auto px-1 py-4">
-                                <EquipmentForm
-                                    users={users}
-                                    onSuccess={() => {
-                                        setIsAddDialogOpen(false);
-                                        refreshEquipment();
-                                    }}
-                                    onCancel={() => setIsAddDialogOpen(false)}
-                                />
-                            </div>
-                        </DialogContent>
-                    </Dialog>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => router.visit(route('admin.equipment.archived'))}
+                            className="w-full sm:w-auto"
+                        >
+                            <Archive className="mr-2 h-4 w-4" />
+                            View Archived
+                        </Button>
+
+                        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button className="w-full sm:w-auto">
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add Equipment
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="flex max-h-[85vh] w-full max-w-[98vw] flex-col overflow-hidden lg:max-w-[80vw] xl:max-w-[72rem]">
+                                <DialogHeader className="flex-shrink-0">
+                                    <DialogTitle>Add New Equipment</DialogTitle>
+                                    <DialogDescription>Create a new equipment record. All fields marked with * are required.</DialogDescription>
+                                </DialogHeader>
+                                <div className="flex-1 overflow-y-auto px-1 py-4">
+                                    <EquipmentForm
+                                        users={users}
+                                        onSuccess={() => {
+                                            setIsAddDialogOpen(false);
+                                            refreshEquipment();
+                                        }}
+                                        onCancel={() => setIsAddDialogOpen(false)}
+                                    />
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
 
                 {/* Equipment Table */}
