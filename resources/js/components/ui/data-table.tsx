@@ -388,7 +388,6 @@ export function DataTable<T = any>({
                                         <SelectValue placeholder={filter.placeholder} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
                                         {filter.options?.map((option, optionIndex) => (
                                             <SelectItem key={`${filter.key}-option-${option.value}-${optionIndex}`} value={option.value}>
                                                 {option.label}

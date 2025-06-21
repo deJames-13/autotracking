@@ -106,6 +106,7 @@ export interface Equipment {
     next_calibration_due?: string | null;
     process_req_range_start?: string | null;
     process_req_range_end?: string | null;
+    process_req_range?: string | null; // New combined field
     created_at: string;
     updated_at: string;
     user?: User;

@@ -123,11 +123,13 @@ class LocationController extends Controller
 
     public function destroy(Location $location, Request $request): RedirectResponse|JsonResponse
     {
+        $forceDelete = $request->boolean('force', false);
+        
         // Check if location has related tracking records
         $trackIncomingCount = $location->trackIncoming()->count();
         $trackOutgoingCount = $location->trackOutgoing()->count();
         
-        if ($trackIncomingCount > 0 || $trackOutgoingCount > 0) {
+        if (($trackIncomingCount > 0 || $trackOutgoingCount > 0) && !$forceDelete) {
             $errorMessage = "Cannot archive location '{$location->location_name}' because it has {$trackIncomingCount} incoming tracking record(s) and {$trackOutgoingCount} outgoing tracking record(s). Please reassign or remove these records first.";
             
             // For Inertia requests, we need to throw a validation exception
@@ -148,18 +150,24 @@ class LocationController extends Controller
                 ->with('error', $errorMessage);
         }
 
-        // Proceed with soft deletion if no related records
-        $location->delete(); // This is now a soft delete due to SoftDeletes trait
+        // If force delete is enabled, nullify related records
+        if ($forceDelete) {
+            $this->forceDeleteLocationWithRelations($location);
+            $message = 'Location deleted and all references set to null successfully.';
+        } else {
+            $location->delete(); // This is now a soft delete due to SoftDeletes trait
+            $message = 'Location archived successfully.';
+        }
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'message' => 'Location archived successfully.'
+                'message' => $message
             ]);
         }
 
         return redirect()->route('admin.locations.index')
-            ->with('success', 'Location archived successfully.');
+            ->with('success', $message);
     }
 
     /**
@@ -256,5 +264,95 @@ class LocationController extends Controller
             });
             
         return response()->json($locations);
+    }
+
+    /**
+     * Create a new location on-the-fly
+     */
+    public function createLocation(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'name' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    function ($attribute, $value, $fail) {
+                        // Custom validation - check if name contains valid characters
+                        if (!preg_match('/^[a-zA-Z0-9\s\-_]+$/', $value)) {
+                            $fail('Location name can only contain letters, numbers, spaces, hyphens, and underscores.');
+                        }
+                    }
+                ],
+                'department_id' => 'nullable|exists:departments,department_id'
+            ]);
+            
+            // Check if location already exists (optionally within the same department)
+            $query = Location::where('location_name', $validated['name']);
+            if (isset($validated['department_id'])) {
+                $query->where('department_id', $validated['department_id']);
+            }
+            $existingLocation = $query->first();
+            
+            if ($existingLocation) {
+                // Load the department relationship for display
+                $existingLocation->load('department');
+                
+                // Return existing location with correct label and numeric ID
+                return response()->json([
+                    'label' => $existingLocation->location_name . 
+                        ($existingLocation->department ? " ({$existingLocation->department->department_name})" : ''),
+                    'value' => (int)$existingLocation->location_id // Numeric ID for backend
+                ]);
+            }
+            
+            // Create new location
+            $location = Location::create([
+                'location_name' => $validated['name'],
+                'department_id' => $validated['department_id'] ?? null
+            ]);
+            
+            // Load the department relationship for display
+            $location->load('department');
+            
+            // Return the new location with correct label and numeric ID
+            return response()->json([
+                'label' => $location->location_name . 
+                    ($location->department ? " ({$location->department->department_name})" : ''),
+                'value' => (int)$location->location_id // Numeric ID for backend
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Return validation errors in a standardized format
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create location: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Force delete location and set related foreign keys to null
+     */
+    private function forceDeleteLocationWithRelations(Location $location): void
+    {
+        \DB::transaction(function () use ($location) {
+            // 1. Set location_id to null in track_incoming records
+            \DB::table('track_incoming')
+                ->where('location_id', $location->location_id)
+                ->update(['location_id' => null]);
+
+            // 2. Set location_id to null in equipments table
+            \DB::table('equipments')
+                ->where('location_id', $location->location_id)
+                ->update(['location_id' => null]);
+
+            // 3. Finally, force delete the location itself
+            $location->forceDelete();
+        });
     }
 }

@@ -31,6 +31,8 @@ return new class extends Migration
             $table->date('next_calibration_due')->nullable();
             $table->text('process_req_range_start')->nullable();
             $table->text('process_req_range_end')->nullable();
+            // Combined process requirement range column (replaces start/end fields)
+            $table->text('process_req_range')->nullable();
             
             $table->softDeletes();
             $table->timestamps();

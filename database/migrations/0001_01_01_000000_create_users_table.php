@@ -56,6 +56,7 @@ return new class extends Migration
             $table->id('location_id');
             $table->string('location_name');
             $table->foreignId('department_id')->nullable()->constrained('departments', 'department_id')->onDelete('set null');
+            $table->softDeletes();
             $table->timestamps();
         });
 

@@ -172,6 +172,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         
         // Equipment management
         Route::get('equipment/table-data', [AdminEquipmentController::class, 'tableData'])->name('equipment.table-data');
+        Route::get('equipment/plants/search', [AdminEquipmentController::class, 'searchPlants'])->name('equipment.plants.search');
+        Route::get('equipment/departments/search', [AdminEquipmentController::class, 'searchDepartments'])->name('equipment.departments.search');
+        Route::get('equipment/locations/search', [AdminEquipmentController::class, 'searchLocations'])->name('equipment.locations.search');
+        Route::post('equipment/plants/create', [AdminPlantController::class, 'createPlant'])->name('equipment.plants.create');
+        Route::post('equipment/departments/create', [AdminDepartmentController::class, 'createDepartment'])->name('equipment.departments.create');
+        Route::post('equipment/locations/create', [AdminLocationController::class, 'createLocation'])->name('equipment.locations.create');
         Route::resource('equipment', AdminEquipmentController::class)->parameters([
             'equipment' => 'equipment:equipment_id'
         ]);
@@ -199,6 +205,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('search/plants', [AdminPlantController::class, 'searchPlants'])->name('plants.search-plants');
         Route::post('plants/create', [AdminPlantController::class, 'createPlant'])->name('plants.create-plant');
         Route::get('search/locations', [AdminLocationController::class, 'searchLocations'])->name('locations.search-locations');
+        Route::post('locations/create', [AdminLocationController::class, 'createLocation'])->name('locations.create-location');
     });
 });
 

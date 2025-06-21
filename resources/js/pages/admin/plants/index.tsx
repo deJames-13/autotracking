@@ -77,7 +77,7 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
 
             <div className="space-y-6 p-2">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                    <div className="flex flex-col gap-2 md:gap-4">
                         <h1 className="text-2xl md:text-3xl font-bold tracking-tight break-words max-w-full">
                             Plant Management
                         </h1>

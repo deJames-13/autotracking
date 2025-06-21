@@ -87,7 +87,7 @@ export default function LocationsIndex({ locations: initialLocations, department
 
             <div className="space-y-6 p-2">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                    <div className="flex flex-col gap-2 md:gap-4">
                         <h1 className="text-2xl md:text-3xl font-bold tracking-tight break-words max-w-full">
                             Location Management
                         </h1>
@@ -141,7 +141,6 @@ export default function LocationsIndex({ locations: initialLocations, department
                                 <SelectValue placeholder="Filter by department" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Departments</SelectItem>
                                 {departments.map((department) => (
                                     <SelectItem key={department.department_id} value={department.department_id.toString()}>
                                         {department.department_name}

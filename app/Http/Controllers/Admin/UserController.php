@@ -380,6 +380,7 @@ class UserController extends Controller
         }
 
         // Check for foreign key constraints before deletion
+        $forceDelete = $request->boolean('force', false);
         $equipmentCount = $user->equipments()->count();
         $trackIncomingAsTechnicianCount = $user->trackIncomingAsTechnician()->count();
         $trackIncomingAsEmployeeInCount = $user->trackIncomingAsEmployeeIn()->count();
@@ -389,7 +390,7 @@ class UserController extends Controller
         $totalTrackingRecords = $trackIncomingAsTechnicianCount + $trackIncomingAsEmployeeInCount + 
                                $trackIncomingAsReceivedByCount + $trackOutgoingAsEmployeeOutCount;
 
-        if ($equipmentCount > 0 || $totalTrackingRecords > 0) {
+        if (($equipmentCount > 0 || $totalTrackingRecords > 0) && !$forceDelete) {
             $errorMessage = 'Cannot archive user. They have ';
             $dependencies = [];
             
@@ -420,17 +421,24 @@ class UserController extends Controller
                 ->with('error', $errorMessage);
         }
 
-        $user->delete(); // This is now a soft delete due to SoftDeletes trait
+        // If force delete is enabled, nullify related records
+        if ($forceDelete) {
+            $this->forceDeleteUserWithRelations($user);
+            $message = 'User deleted and all references set to null successfully.';
+        } else {
+            $user->delete(); // This is now a soft delete due to SoftDeletes trait
+            $message = 'User archived successfully.';
+        }
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'message' => 'User archived successfully.'
+                'message' => $message
             ]);
         }
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'User archived successfully.');
+            ->with('success', $message);
     }
 
     /**
@@ -941,5 +949,43 @@ class UserController extends Controller
             'test_result' => $testResult,
             'timestamp' => now()->toISOString()
         ]);
+    }
+
+    /**
+     * Force delete user and set related foreign keys to null
+     */
+    private function forceDeleteUserWithRelations(User $user): void
+    {
+        \DB::transaction(function () use ($user) {
+            // 1. Set employee_id to null in equipments table
+            \DB::table('equipments')
+                ->where('employee_id', $user->employee_id)
+                ->update(['employee_id' => null]);
+
+            // 2. Set user foreign keys to null in track_incoming
+            \DB::table('track_incoming')
+                ->where('technician_id', $user->employee_id)
+                ->update(['technician_id' => null]);
+
+            \DB::table('track_incoming')
+                ->where('employee_id_in', $user->employee_id)
+                ->update(['employee_id_in' => null]);
+
+            \DB::table('track_incoming')
+                ->where('received_by_id', $user->employee_id)
+                ->update(['received_by_id' => null]);
+
+            // 3. Set user foreign keys to null in track_outgoing
+            \DB::table('track_outgoing')
+                ->where('employee_id_out', $user->employee_id)
+                ->update(['employee_id_out' => null]);
+
+            \DB::table('track_outgoing')
+                ->where('released_by_id', $user->employee_id)
+                ->update(['released_by_id' => null]);
+
+            // 4. Finally, force delete the user itself
+            $user->forceDelete();
+        });
     }
 }

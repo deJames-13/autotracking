@@ -25,13 +25,15 @@ export function DepartmentEditDialog({ department, open, onOpenChange, onSuccess
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Edit Department</DialogTitle>
-                    <DialogDescription>Update department information.</DialogDescription>
+            <DialogContent className="w-[95vw] max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[90vh] sm:max-h-[85vh] mx-4 sm:mx-auto overflow-scroll">
+                <DialogHeader className="pb-4">
+                    <DialogTitle className="text-lg sm:text-xl">Edit Department</DialogTitle>
+                    <DialogDescription className="text-sm sm:text-base">Update department information.</DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[70vh] pr-4">
-                    <DepartmentForm department={department} onSuccess={handleSuccess} onCancel={handleCancel} />
+                <ScrollArea className="max-h-[60vh] sm:max-h-[65vh] md:max-h-[70vh] pr-2 sm:pr-4">
+                    <div className="px-1 sm:px-0">
+                        <DepartmentForm department={department} onSuccess={handleSuccess} onCancel={handleCancel} />
+                    </div>
                 </ScrollArea>
             </DialogContent>
         </Dialog>

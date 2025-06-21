@@ -46,6 +46,29 @@ const DetailTab: React.FC<DetailTabProps> = ({
     const currentUser = auth.user;
     const dispatch = useAppDispatch();
     const { requestType = '' } = useAppSelector((state) => state.trackingRequest);
+
+    // Helper function to combine process range fields for backward compatibility
+    const getCombinedProcessRange = (equipment?: any): string => {
+        // Priority 1: Use new combined field if available
+        if (equipment?.process_req_range) {
+            return equipment.process_req_range;
+        }
+
+        // Priority 2: Combine old fields if they exist
+        const start = equipment?.process_req_range_start;
+        const end = equipment?.process_req_range_end;
+
+        if (start && end) {
+            return `${start} - ${end}`;
+        } else if (start) {
+            return start;
+        } else if (end) {
+            return end;
+        }
+
+        return '';
+    };
+
     const [recallNumber, setRecallNumber] = useState<string>(data.recallNumber || '');
     const [recallBarcode, setRecallBarcode] = useState('');
     const [recallBarcodeError, setRecallBarcodeError] = useState('');
@@ -145,17 +168,15 @@ const DetailTab: React.FC<DetailTabProps> = ({
                         ...response.data.equipment,
                         recallNumber: recall,
                         serialNumber: response.data.equipment.serial_number || '',
-                        processReqRangeStart: response.data.equipment.process_req_range_start || '',
-                        processReqRangeEnd: response.data.equipment.process_req_range_end || '',
+                        process_req_range: getCombinedProcessRange(response.data.equipment),
                         existing: true,
                         equipment_id: response.data.equipment.equipment_id,
                     }),
                 );
-                // Auto-fill form fields including new process requirement range fields
+                // Auto-fill form fields including new process requirement range field
                 onChange({
                     serialNumber: response.data.equipment.serial_number || '',
-                    processReqRangeStart: response.data.equipment.process_req_range_start || '',
-                    processReqRangeEnd: response.data.equipment.process_req_range_end || '',
+                    process_req_range: getCombinedProcessRange(response.data.equipment),
                 });
             } else {
                 dispatch(
@@ -335,6 +356,27 @@ const DetailTab: React.FC<DetailTabProps> = ({
         // Special handling for dueDate to maintain local state
         if (field === 'dueDate') {
             setLocalDueDate(value as string);
+        }
+
+        // Special handling for process_req_range field to parse and update old fields
+        if (field === 'process_req_range' && typeof value === 'string') {
+            // Parse and update old fields for backward compatibility
+            const rangeMatch = value.match(/^([^-\s]+)\s*(?:-|to)\s*([^-\s]+)$/i);
+            const updatedData: any = { [field]: value };
+
+            if (rangeMatch) {
+                updatedData.processReqRangeStart = rangeMatch[1].trim();
+                updatedData.processReqRangeEnd = rangeMatch[2].trim();
+            } else if (value.trim()) {
+                updatedData.processReqRangeStart = value.trim();
+                updatedData.processReqRangeEnd = '';
+            } else {
+                updatedData.processReqRangeStart = '';
+                updatedData.processReqRangeEnd = '';
+            }
+
+            onChange(updatedData);
+            return;
         }
 
         // If changing department, we might need to update locations
@@ -582,23 +624,36 @@ const DetailTab: React.FC<DetailTabProps> = ({
                     <CardTitle>Details</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {/* Recall Number Section - Only show for routine requests */}
-                    {requestType === 'routine' && (
+                    {/* Recall Number Section - Show for both routine and new requests with different UI */}
+                    {(requestType === 'routine' || requestType === 'new') && (
                         <div className="bg-muted/20 mb-6 rounded-lg border p-4">
-                            <label className="mb-2 block w-full font-semibold">Recall Number</label>
+                            <label className="mb-2 block w-full font-semibold">
+                                Recall Number
+                                {requestType === 'new' && <span className="text-muted-foreground ml-1 text-xs font-normal">(for new equipment)</span>}
+                            </label>
                             <div className="flex w-full items-center gap-2">
                                 <div className="w-full">
-                                    <InertiaSmartSelect
-                                        name="recallNumber"
-                                        value={recallNumber}
-                                        onChange={handleRecallNumberChange}
-                                        loadOptions={loadRecallOptions}
-                                        placeholder="Search or enter recall number"
-                                        isDisabled={recallLoading}
-                                        error={errors.recallNumber}
-                                        minSearchLength={1}
-                                        required
-                                    />
+                                    {requestType === 'routine' ? (
+                                        <InertiaSmartSelect
+                                            name="recallNumber"
+                                            value={recallNumber}
+                                            onChange={handleRecallNumberChange}
+                                            loadOptions={loadRecallOptions}
+                                            placeholder="Search or enter recall number"
+                                            isDisabled={recallLoading}
+                                            error={errors.recallNumber}
+                                            minSearchLength={1}
+                                            required
+                                        />
+                                    ) : (
+                                        <Input
+                                            id="recallNumber"
+                                            value={recallNumber}
+                                            onChange={(e) => handleRecallNumberChange(e.target.value)}
+                                            placeholder="Enter recall number for new equipment"
+                                            className={errors.recallNumber ? 'border-destructive' : ''}
+                                        />
+                                    )}
                                 </div>
                                 {/* Barcode scanner button for recall number */}
                                 <div>
@@ -640,6 +695,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 </div>
                             </div>
                             {recallBarcodeError && <div className="mt-1 text-xs text-red-500">{recallBarcodeError}</div>}
+                            {errors.recallNumber && <div className="mt-1 text-xs text-red-500">{errors.recallNumber}</div>}
                         </div>
                     )}
                     {/* Employee Barcode Section */}
@@ -856,33 +912,22 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 {errors.manufacturer && <p className="text-destructive mt-1 text-sm">{errors.manufacturer}</p>}
                             </div>
 
-                            {/* Process Requirement Range fields */}
-                            <div>
-                                <Label htmlFor="processReqRangeStart" className={errors.processReqRangeStart ? 'text-destructive' : ''}>
-                                    Process Req Range Start
+                            {/* Process Requirement Range field */}
+                            <div className="md:col-span-2">
+                                <Label htmlFor="process_req_range" className={errors.process_req_range ? 'text-destructive' : ''}>
+                                    Process Requirement Range
                                 </Label>
                                 <Input
-                                    id="processReqRangeStart"
-                                    value={data.processReqRangeStart || data.process_req_range_start || ''}
-                                    onChange={(e) => handleChange('processReqRangeStart', e.target.value)}
-                                    placeholder="Enter process requirement range start"
-                                    className={errors.processReqRangeStart ? 'border-destructive' : ''}
+                                    id="process_req_range"
+                                    value={data.process_req_range || getCombinedProcessRange(data) || ''}
+                                    onChange={(e) => handleChange('process_req_range', e.target.value)}
+                                    placeholder="Enter range (e.g., 100 - 200, 50 to 100, 75)"
+                                    className={errors.process_req_range ? 'border-destructive' : ''}
                                 />
-                                {errors.processReqRangeStart && <p className="text-destructive mt-1 text-sm">{errors.processReqRangeStart}</p>}
-                            </div>
-
-                            <div>
-                                <Label htmlFor="processReqRangeEnd" className={errors.processReqRangeEnd ? 'text-destructive' : ''}>
-                                    Process Req Range End
-                                </Label>
-                                <Input
-                                    id="processReqRangeEnd"
-                                    value={data.processReqRangeEnd || data.process_req_range_end || ''}
-                                    onChange={(e) => handleChange('processReqRangeEnd', e.target.value)}
-                                    placeholder="Enter process requirement range end"
-                                    className={errors.processReqRangeEnd ? 'border-destructive' : ''}
-                                />
-                                {errors.processReqRangeEnd && <p className="text-destructive mt-1 text-sm">{errors.processReqRangeEnd}</p>}
+                                {errors.process_req_range && <p className="text-destructive mt-1 text-sm">{errors.process_req_range}</p>}
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    You can enter a single value (e.g., "100") or a range (e.g., "100 - 200", "50 to 100")
+                                </p>
                             </div>
                         </div>
                     </div>

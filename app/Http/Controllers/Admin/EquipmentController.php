@@ -178,10 +178,12 @@ class EquipmentController extends Controller
 
     public function destroy(Equipment $equipment, Request $request): RedirectResponse|JsonResponse
     {
+        $forceDelete = $request->boolean('force', false);
+        
         // Check for foreign key constraints before deletion
         $trackIncomingCount = $equipment->trackIncoming()->count();
 
-        if ($trackIncomingCount > 0) {
+        if ($trackIncomingCount > 0 && !$forceDelete) {
             $errorMessage = "Cannot archive equipment. It has {$trackIncomingCount} tracking record(s) associated with it.";
 
             // For Inertia requests, throw validation exception
@@ -202,17 +204,24 @@ class EquipmentController extends Controller
                 ->with('error', $errorMessage);
         }
 
-        $equipment->delete(); // This is now a soft delete due to SoftDeletes trait
+        // If force delete is enabled, nullify related records
+        if ($forceDelete) {
+            $this->forceDeleteEquipmentWithRelations($equipment);
+            $message = 'Equipment deleted and all references set to null successfully.';
+        } else {
+            $equipment->delete(); // This is now a soft delete due to SoftDeletes trait
+            $message = 'Equipment archived successfully.';
+        }
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'message' => 'Equipment archived successfully.'
+                'message' => $message
             ]);
         }
 
         return redirect()->route('admin.equipment.index')
-            ->with('success', 'Equipment archived successfully.');
+            ->with('success', $message);
     }
 
     /**
@@ -257,6 +266,71 @@ class EquipmentController extends Controller
     }
 
     /**
+     * Search plants for smart select
+     */
+    public function searchPlants(Request $request): JsonResponse
+    {
+        $search = $request->get('search', '');
+        $limit = $request->get('limit', 10);
+
+        $plants = Plant::when($search, function ($query, $search) {
+                return $query->where('plant_name', 'like', "%{$search}%");
+            })
+            ->orderBy('plant_name')
+            ->limit($limit)
+            ->get(['plant_id', 'plant_name']);
+
+        return response()->json([
+            'data' => $plants
+        ]);
+    }
+
+    /**
+     * Search departments for smart select
+     */
+    public function searchDepartments(Request $request): JsonResponse
+    {
+        $search = $request->get('search', '');
+        $limit = $request->get('limit', 10);
+
+        $departments = Department::when($search, function ($query, $search) {
+                return $query->where('department_name', 'like', "%{$search}%");
+            })
+            ->orderBy('department_name')
+            ->limit($limit)
+            ->get(['department_id', 'department_name']);
+
+        return response()->json([
+            'data' => $departments
+        ]);
+    }
+
+    /**
+     * Search locations for smart select
+     */
+    public function searchLocations(Request $request): JsonResponse
+    {
+        $search = $request->get('search', '');
+        $departmentId = $request->get('department_id');
+        $limit = $request->get('limit', 10);
+
+        $locations = Location::with('department')
+            ->when($search, function ($query, $search) {
+                return $query->where('location_name', 'like', "%{$search}%");
+            })
+            ->when($departmentId, function ($query, $departmentId) {
+                return $query->where('department_id', $departmentId);
+            })
+            ->orderBy('location_name')
+            ->limit($limit)
+            ->get(['location_id', 'location_name', 'department_id']);
+
+        return response()->json([
+            'data' => $locations
+        ]);
+    }
+
+    /**
      * Get archived equipment for display
      */
     public function archived(Request $request): Response|JsonResponse
@@ -276,5 +350,21 @@ class EquipmentController extends Controller
         return Inertia::render('admin/equipment/archived', [
             'equipment' => $equipment,
         ]);
+    }
+
+    /**
+     * Force delete equipment and set related foreign keys to null
+     */
+    private function forceDeleteEquipmentWithRelations(Equipment $equipment): void
+    {
+        \DB::transaction(function () use ($equipment) {
+            // 1. Set equipment_id to null in track_incoming records
+            \DB::table('track_incoming')
+                ->where('equipment_id', $equipment->equipment_id)
+                ->update(['equipment_id' => null]);
+
+            // 2. Finally, force delete the equipment itself
+            $equipment->forceDelete();
+        });
     }
 }

@@ -32,6 +32,7 @@ export const equipmentSchema = z.object({
     requestType: z.enum(['new', 'routine']).optional(),
     processReqRangeStart: z.string().optional().default(''),
     processReqRangeEnd: z.string().optional().default(''),
+    process_req_range: z.string().max(500, 'Process requirement range must be less than 500 characters').optional().default(''),
 });
 
 // Dynamic equipment schema that validates recall number based on request type

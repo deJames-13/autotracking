@@ -98,12 +98,15 @@ class DepartmentController extends Controller
 
     public function destroy(Department $department, Request $request): RedirectResponse|JsonResponse
     {
+        $forceDelete = $request->boolean('force', false);
+        
         // Check for foreign key constraints before deletion
         $usersCount = $department->users()->count();
         $equipmentCount = $department->equipment()->count();
         $locationsCount = $department->locations()->count();
+        $trackingRecordsCount = $this->getTrackingRecordsCount($department);
 
-        if ($usersCount > 0 || $equipmentCount > 0 || $locationsCount > 0) {
+        if (($usersCount > 0 || $equipmentCount > 0 || $locationsCount > 0 || $trackingRecordsCount > 0) && !$forceDelete) {
             $errorMessage = 'Cannot archive department. It has ';
             $dependencies = [];
             
@@ -115,6 +118,9 @@ class DepartmentController extends Controller
             }
             if ($locationsCount > 0) {
                 $dependencies[] = "{$locationsCount} location(s)";
+            }
+            if ($trackingRecordsCount > 0) {
+                $dependencies[] = "{$trackingRecordsCount} tracking record(s)";
             }
             
             $errorMessage .= implode(', ', $dependencies) . ' assigned to it.';
@@ -137,18 +143,127 @@ class DepartmentController extends Controller
                 ->with('error', $errorMessage);
         }
 
-        $department->delete(); // This is now a soft delete due to SoftDeletes trait
+        // If force delete is enabled, cascade delete related records
+        if ($forceDelete) {
+            $this->forceDeleteDepartmentWithRelations($department);
+            $message = 'Department deleted and all references set to null successfully.';
+        } else {
+            $department->delete(); // This is now a soft delete due to SoftDeletes trait
+            $message = 'Department archived successfully.';
+        }
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'message' => 'Department archived successfully.'
+                'message' => $message
             ]);
         }
 
         return redirect()->route('admin.departments.index')
-            ->with('success', 'Department archived successfully.');
+            ->with('success', $message);
     }
+
+    /**
+     * Get count of tracking records related to this department
+     */
+    private function getTrackingRecordsCount(Department $department): int
+    {
+        // Count tracking records where equipment belongs to this department
+        $trackingIncomingCount = \DB::table('track_incoming')
+            ->join('equipments', 'track_incoming.equipment_id', '=', 'equipments.equipment_id')
+            ->where('equipments.department_id', $department->department_id)
+            ->whereNull('track_incoming.deleted_at')
+            ->count();
+
+        // Count tracking records where users belong to this department
+        $trackingByUsersCount = \DB::table('track_incoming')
+            ->join('users', function($join) {
+                $join->on('track_incoming.technician_id', '=', 'users.employee_id')
+                     ->orOn('track_incoming.employee_id_in', '=', 'users.employee_id')
+                     ->orOn('track_incoming.received_by_id', '=', 'users.employee_id');
+            })
+            ->where('users.department_id', $department->department_id)
+            ->whereNull('track_incoming.deleted_at')
+            ->count();
+
+        return max($trackingIncomingCount, $trackingByUsersCount);
+    }
+
+    /**
+     * Force delete department and set related foreign keys to null
+     */
+    private function forceDeleteDepartmentWithRelations(Department $department): void
+    {
+        \DB::transaction(function () use ($department) {
+            // 1. Set department_id to null in users table
+            \DB::table('users')
+                ->where('department_id', $department->department_id)
+                ->update(['department_id' => null]);
+
+            // 2. Set department_id to null in equipments table
+            \DB::table('equipments')
+                ->where('department_id', $department->department_id)
+                ->update(['department_id' => null]);
+
+            // 3. Set department_id to null in locations table (soft delete them)
+            \DB::table('locations')
+                ->where('department_id', $department->department_id)
+                ->update([
+                    'department_id' => null,
+                    'deleted_at' => now()
+                ]);
+
+            // 4. Set foreign keys to null in tracking records for users from this department
+            // Update track_incoming where technician belongs to this department
+            \DB::table('track_incoming')
+                ->whereIn('technician_id', function($query) use ($department) {
+                    $query->select('employee_id')
+                          ->from('users')
+                          ->where('department_id', $department->department_id);
+                })
+                ->update(['technician_id' => null]);
+
+            // Update track_incoming where employee_id_in belongs to this department
+            \DB::table('track_incoming')
+                ->whereIn('employee_id_in', function($query) use ($department) {
+                    $query->select('employee_id')
+                          ->from('users')
+                          ->where('department_id', $department->department_id);
+                })
+                ->update(['employee_id_in' => null]);
+
+            // Update track_incoming where received_by_id belongs to this department
+            \DB::table('track_incoming')
+                ->whereIn('received_by_id', function($query) use ($department) {
+                    $query->select('employee_id')
+                          ->from('users')
+                          ->where('department_id', $department->department_id);
+                })
+                ->update(['received_by_id' => null]);
+
+            // 5. Set foreign keys to null in track_incoming for equipment from this department
+            \DB::table('track_incoming')
+                ->whereIn('equipment_id', function($query) use ($department) {
+                    $query->select('equipment_id')
+                          ->from('equipments')
+                          ->where('department_id', $department->department_id);
+                })
+                ->update(['equipment_id' => null]);
+
+            // 6. Set foreign keys to null in track_incoming for locations from this department
+            \DB::table('track_incoming')
+                ->whereIn('location_id', function($query) use ($department) {
+                    $query->select('location_id')
+                          ->from('locations')
+                          ->where('department_id', $department->department_id);
+                })
+                ->update(['location_id' => null]);
+
+            // 7. Finally, force delete the department itself
+            $department->forceDelete();
+        });
+    }
+    
 
     /**
      * Restore a soft deleted department

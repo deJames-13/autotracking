@@ -334,6 +334,45 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
             toast.error('Failed to download barcode');
         }
     };
+
+    // Handle mark as returned
+    const handleReturn = async () => {
+        try {
+            const response = await axios.post(route('api.track-outgoing.mark-returned', trackOutgoing.id));
+            if (response.data.success) {
+                toast.success('Equipment marked as returned successfully');
+                router.reload();
+            } else {
+                toast.error(response.data.message || 'Failed to mark as returned');
+            }
+        } catch (error: any) {
+            if (axios.isAxiosError(error) && error.response) {
+                toast.error(error.response.data.message || 'Failed to mark as returned');
+            } else {
+                toast.error('An unexpected error occurred');
+            }
+        }
+    };
+
+    // Handle mark as received
+    const handleReceive = async () => {
+        try {
+            const response = await axios.post(route('api.track-outgoing.mark-received', trackOutgoing.id));
+            if (response.data.success) {
+                toast.success('Equipment marked as received successfully');
+                router.reload();
+            } else {
+                toast.error(response.data.message || 'Failed to mark as received');
+            }
+        } catch (error: any) {
+            if (axios.isAxiosError(error) && error.response) {
+                toast.error(error.response.data.message || 'Failed to mark as received');
+            } else {
+                toast.error('An unexpected error occurred');
+            }
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Outgoing Completion: ${trackOutgoing.track_incoming?.recall_number}`} />
@@ -356,6 +395,12 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
                         <div className="flex flex-row flex-wrap gap-2 md:gap-2 md:flex-nowrap">
                             {getStatusBadge(trackOutgoing.status)}
+                            {trackOutgoing.status === 'for_pickup' && (
+                                <Button onClick={() => setShowPickupForm(true)} size="sm" className="ml-0 md:ml-2 w-full md:w-auto">
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Confirm Pickup
+                                </Button>
+                            )}
                             {trackOutgoing.status === 'for_return' && (
                                 <Button onClick={handleReturn} size="sm" className="ml-0 md:ml-2 w-full md:w-auto">
                                     <CheckCircle className="mr-2 h-4 w-4" />

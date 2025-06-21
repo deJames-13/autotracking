@@ -42,13 +42,13 @@ export function EquipmentTable({
     const handleEditSuccess = () => {
         console.log('EquipmentTable: Edit success triggered');
         setEditingEquipment(null);
-        router.reload({ only: ['equipment'] });
+        onRefresh?.();
     };
 
     const handleDeleteSuccess = () => {
         console.log('EquipmentTable: Delete success triggered');
         setDeletingEquipment(null);
-        router.reload({ only: ['equipment'] });
+        onRefresh?.();
     };
 
     const getStatusBadgeVariant = (status: string) => {

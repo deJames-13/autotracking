@@ -1,10 +1,13 @@
+-- TESTING
+- [x] fix Equipment crud 
+- [ ] fix delete/archiving
+- [x] enable manual input for recall number for requests (admin/employee) ✅ COMPLETED
 
 -- TODO
-
 - [ ] fix Equipment crud 
 - [ ] fix delete/archiving
 - [ ] enable equipment crud for employee
-- [ ] enable manual input for recall number for requests (admin/employee)
+- [x] enable manual input for recall number for requests (admin/employee) ✅ COMPLETED
 
 - [ ] Scan in ougoing show not working
 - [ ] Scan not working on equipment
@@ -27,8 +30,8 @@
     - [x] user
     - [x] equipment
 
-    - [ ] incoming
-    - [ ] outgoing
+    - [x] incoming
+    - [x] outgoing
         - [x] remove export button
 -- Creds
 100001 - admin

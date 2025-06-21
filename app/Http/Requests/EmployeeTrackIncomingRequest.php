@@ -33,6 +33,7 @@ class EmployeeTrackIncomingRequest extends FormRequest
             'data.equipment.manufacturer' => ['nullable', 'string', 'max:100'],
             'data.equipment.processReqRangeStart' => ['nullable', 'string', 'max:255'],
             'data.equipment.processReqRangeEnd' => ['nullable', 'string', 'max:255'],
+            'data.equipment.process_req_range' => ['nullable', 'string', 'max:500'],
             'data.equipment.dueDate' => ['required', 'date'],
             
             // Received by validation - automatically filled for employees
@@ -74,6 +75,7 @@ class EmployeeTrackIncomingRequest extends FormRequest
             $result['manufacturer'] = $equipment['manufacturer'] ?? null;
             $result['process_req_range_start'] = $equipment['processReqRangeStart'] ?? null;
             $result['process_req_range_end'] = $equipment['processReqRangeEnd'] ?? null;
+            $result['process_req_range'] = $equipment['process_req_range'] ?? null;
             $result['due_date'] = $equipment['dueDate'] ?? null;
             $result['plant_id'] = $equipment['plant'] ?? null;
             $result['department_id'] = $equipment['department'] ?? null;

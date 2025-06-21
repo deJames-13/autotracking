@@ -43,7 +43,13 @@ export function UserTable({
     const handleEditSuccess = () => {
         console.log('UserTable: Edit success triggered');
         setEditingUser(null);
-        router.reload({ only: ['users'] });
+
+        // Use onRefresh callback if available, otherwise reload page
+        if (onRefresh) {
+            onRefresh();
+        } else {
+            router.reload({ only: ['users'] });
+        }
     };
 
     const handleDelete = (user: User) => {
@@ -56,7 +62,13 @@ export function UserTable({
                 console.log('UserTable: Archive success triggered');
                 setDeletingUser(null);
                 toast.success('User archived successfully');
-                router.reload({ only: ['users'] });
+
+                // Use onRefresh callback if available, otherwise reload page
+                if (onRefresh) {
+                    onRefresh();
+                } else {
+                    router.reload({ only: ['users'] });
+                }
             },
             onError: (errors) => {
                 console.error('Error archiving user:', errors);

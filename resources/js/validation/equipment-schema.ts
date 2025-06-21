@@ -15,16 +15,17 @@ export const equipmentSchema = z
         status: z.enum(['active', 'inactive', 'pending_calibration', 'in_calibration', 'retired']).optional().default('active'),
         last_calibration_date: z
             .string()
-            .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format')
+            .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD required)')
             .optional()
             .or(z.literal('')),
         next_calibration_due: z
             .string()
-            .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format')
+            .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD required)')
             .optional()
             .or(z.literal('')),
         process_req_range_start: z.string().optional().default(''),
         process_req_range_end: z.string().optional().default(''),
+        process_req_range: z.string().max(500, 'Process requirement range must be less than 500 characters').optional().default(''),
     })
     .refine(
         (data) => {
@@ -57,6 +58,7 @@ export const equipmentFormSchema = z
         next_calibration_due: z.string().optional().default(''),
         process_req_range_start: z.string().optional().default(''),
         process_req_range_end: z.string().optional().default(''),
+        process_req_range: z.string().max(500, 'Process requirement range must be less than 500 characters').optional().default(''),
     })
     .refine(
         (data) => {

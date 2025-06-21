@@ -23,13 +23,25 @@ export function LocationTable({ locations, departments, onRefresh }: LocationTab
     const handleEditSuccess = () => {
         console.log('LocationTable: Edit success triggered');
         setEditingLocation(null);
-        router.reload({ only: ['locations'] });
+
+        // Use onRefresh callback if available, otherwise reload page
+        if (onRefresh) {
+            onRefresh();
+        } else {
+            router.reload({ only: ['locations'] });
+        }
     };
 
     const handleDeleteSuccess = () => {
         console.log('LocationTable: Delete success triggered');
         setDeletingLocation(null);
-        router.reload({ only: ['locations'] });
+
+        // Use onRefresh callback if available, otherwise reload page
+        if (onRefresh) {
+            onRefresh();
+        } else {
+            router.reload({ only: ['locations'] });
+        }
     };
 
     return (

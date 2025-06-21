@@ -1,50 +1,53 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { type Plant } from '@/types';
+import { type User } from '@/types';
 import { router } from '@inertiajs/react';
 import { AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 
-interface PlantDeleteDialogProps {
-    plant: Plant | null;
+interface UserDeleteDialogProps {
+    user: User | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess: () => void;
 }
 
-export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: PlantDeleteDialogProps) {
+export function UserDeleteDialog({ user, open, onOpenChange, onSuccess }: UserDeleteDialogProps) {
     const [forceDelete, setForceDelete] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const hasRelatedRecords = plant && (
-        (plant.users?.length || 0) > 0 ||
-        (plant.equipments?.length || 0) > 0
+    const hasRelatedRecords = user && (
+        (user.equipments?.length || 0) > 0 ||
+        (user.track_incoming_as_technician?.length || 0) > 0 ||
+        (user.track_incoming_as_employee_in?.length || 0) > 0 ||
+        (user.track_incoming_as_received_by?.length || 0) > 0 ||
+        (user.track_outgoing_as_employee_out?.length || 0) > 0
     );
 
     const handleDelete = () => {
-        if (!plant) return;
+        if (!user) return;
 
         setIsDeleting(true);
-        console.log('PlantDeleteDialog: Deleting plant', plant.plant_id, 'force:', forceDelete);
+        console.log('UserDeleteDialog: Deleting user', user.employee_id, 'force:', forceDelete);
 
         const data = forceDelete ? { force: true } : {};
 
-        router.delete(route('admin.plants.destroy', plant.plant_id), {
+        router.delete(route('admin.users.destroy', user.employee_id), {
             data,
             preserveState: true,
             preserveScroll: true,
             onSuccess: () => {
-                console.log('PlantDeleteDialog: Delete successful, calling onSuccess');
+                console.log('UserDeleteDialog: Delete successful, calling onSuccess');
                 onOpenChange(false);
                 setForceDelete(false);
                 setIsDeleting(false);
-                toast.success(forceDelete ? 'Plant deleted and references nullified successfully' : 'Plant archived successfully');
+                toast.success(forceDelete ? 'User deleted and all references nullified successfully' : 'User archived successfully');
                 onSuccess();
             },
             onError: (errors) => {
-                console.error('Error deleting plant:', errors);
+                console.error('Error deleting user:', errors);
                 setIsDeleting(false);
 
                 // Handle validation errors
@@ -57,7 +60,7 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
                 }
 
                 // Generic fallback error
-                toast.error('Failed to delete plant. Please try again.');
+                toast.error('Failed to delete user. Please try again.');
             },
         });
     };
@@ -67,31 +70,38 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
         setForceDelete(false);
     };
 
-    if (!plant) return null;
+    if (!user) return null;
+
+    const equipmentCount = user.equipments?.length || 0;
+    const trackingRecordsCount = (user.track_incoming_as_technician?.length || 0) +
+                                (user.track_incoming_as_employee_in?.length || 0) +
+                                (user.track_incoming_as_received_by?.length || 0) +
+                                (user.track_outgoing_as_employee_out?.length || 0);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="w-[95vw] max-w-md sm:max-w-lg mx-4 sm:mx-auto">
                 <DialogHeader>
                     <DialogTitle>
-                        {forceDelete ? 'Force Delete Plant' : 'Archive Plant'}
+                        {forceDelete ? 'Force Delete User' : 'Archive User'}
                     </DialogTitle>
                     <DialogDescription>
-                        {forceDelete
-                            ? 'Are you sure you want to permanently delete this plant? All related records will have their plant references set to null, but the records themselves will be preserved.'
-                            : 'Are you sure you want to archive this plant? The plant will be hidden from the main list but can be restored later.'
+                        {forceDelete 
+                            ? 'Are you sure you want to permanently delete this user? All related records will have their user references set to null, but the records themselves will be preserved.'
+                            : 'Are you sure you want to archive this user? The user will be hidden from the main list but can be restored later.'
                         }
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                     <div className="bg-muted/50 rounded-lg border p-4">
-                        <div className="font-medium">{plant.plant_name}</div>
+                        <div className="font-medium">{user.first_name} {user.last_name}</div>
                         <div className="text-muted-foreground mt-1 text-sm">
-                            <div>ID: {plant.plant_id}</div>
-                            {plant.address && <div>Address: {plant.address}</div>}
-                            {plant.telephone && <div>Telephone: {plant.telephone}</div>}
-                            <div>Users: {plant.users?.length || 0}</div>
-                            <div>Equipment: {plant.equipments?.length || 0}</div>
+                            <div>ID: {user.employee_id}</div>
+                            <div>Email: {user.email || 'N/A'}</div>
+                            <div>Role: {user.role?.role_name || 'N/A'}</div>
+                            <div>Department: {user.department?.department_name || 'N/A'}</div>
+                            <div>Equipment: {equipmentCount}</div>
+                            <div>Tracking Records: {trackingRecordsCount}</div>
                         </div>
                     </div>
 
@@ -103,7 +113,7 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
                                     <span className="text-sm font-medium">Related Records Found</span>
                                 </div>
                                 <p className="text-yellow-700 mt-1 text-sm">
-                                    This plant has related records. Normal archiving will fail.
+                                    This user has related records. Normal archiving will fail.
                                 </p>
                             </div>
 
@@ -117,7 +127,7 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
                                     htmlFor="force-delete"
                                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                 >
-                                    Force delete (remove plant references without deleting records)
+                                    Force delete (remove user references without deleting records)
                                 </label>
                             </div>
 
@@ -125,17 +135,17 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                                     <div className="flex items-center gap-2 text-red-800">
                                         <AlertTriangle className="h-4 w-4" />
-                                        <span className="text-sm font-medium">Warning: Plant Reference Removal</span>
+                                        <span className="text-sm font-medium">Warning: User Reference Removal</span>
                                     </div>
                                     <p className="text-red-700 mt-1 text-sm">
-                                        This will set plant references to null for:
+                                        This will set user references to null for:
                                     </p>
                                     <ul className="text-red-700 mt-1 text-sm list-disc list-inside ml-2">
-                                        {(plant.users?.length || 0) > 0 && (
-                                            <li>{plant.users?.length} user(s) - remove plant assignment</li>
+                                        {equipmentCount > 0 && (
+                                            <li>{equipmentCount} equipment item(s) - remove user assignment</li>
                                         )}
-                                        {(plant.equipments?.length || 0) > 0 && (
-                                            <li>{plant.equipments?.length} equipment item(s) - remove plant link</li>
+                                        {trackingRecordsCount > 0 && (
+                                            <li>{trackingRecordsCount} tracking record(s) - nullify user references</li>
                                         )}
                                     </ul>
                                 </div>
@@ -143,20 +153,26 @@ export function PlantDeleteDialog({ plant, open, onOpenChange, onSuccess }: Plan
                         </div>
                     )}
 
-                    <div className="flex justify-end gap-3">
-                        <Button variant="outline" onClick={handleCancel} disabled={isDeleting}>
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+                        <Button 
+                            variant="outline" 
+                            onClick={handleCancel} 
+                            disabled={isDeleting}
+                            className="w-full sm:w-auto"
+                        >
                             Cancel
                         </Button>
-                        <Button
-                            variant={forceDelete ? "destructive" : "default"}
+                        <Button 
+                            variant={forceDelete ? "destructive" : "default"} 
                             onClick={handleDelete}
                             disabled={isDeleting}
+                            className="w-full sm:w-auto"
                         >
-                            {isDeleting
-                                ? 'Processing...'
-                                : forceDelete
-                                    ? 'Permanently Delete'
-                                    : 'Archive Plant'
+                            {isDeleting 
+                                ? 'Processing...' 
+                                : forceDelete 
+                                    ? 'Permanently Delete' 
+                                    : 'Archive User'
                             }
                         </Button>
                     </div>

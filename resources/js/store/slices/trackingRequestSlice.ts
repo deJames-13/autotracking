@@ -33,8 +33,9 @@ export interface EquipmentState {
     location_name?: string; // Optional field for location name display
     equipment_id?: number | null; // Optional field for existing equipment
     existing?: boolean; // Flag to indicate if equipment already exists
-    processReqRangeStart?: string; // Process requirement range start
-    processReqRangeEnd?: string; // Process requirement range end
+    processReqRangeStart?: string; // Process requirement range start (backward compatibility)
+    processReqRangeEnd?: string; // Process requirement range end (backward compatibility)
+    processReqRange?: string; // New combined process requirement range
 }
 
 export interface CalibrationState {
@@ -75,6 +76,7 @@ const initialState: TrackingRequestState = {
         existing: false,
         processReqRangeStart: '',
         processReqRangeEnd: '',
+        processReqRange: '', // New combined field
     },
     calibration: {
         calibrationDate: '',

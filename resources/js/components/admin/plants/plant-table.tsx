@@ -32,15 +32,13 @@ export function PlantTable({ plants, onRefresh }: PlantTableProps) {
     const handleEditSuccess = () => {
         console.log('PlantTable: Edit success triggered');
         setEditingPlant(null);
-        // Use Inertia reload to refresh the page data
-        router.reload({ only: ['plants'] });
+        handleRefresh();
     };
 
     const handleDeleteSuccess = () => {
         console.log('PlantTable: Delete success triggered');
         setDeletingPlant(null);
-        // Use Inertia reload to refresh the page data
-        router.reload({ only: ['plants'] });
+        handleRefresh();
     };
 
     return (

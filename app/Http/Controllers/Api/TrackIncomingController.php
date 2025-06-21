@@ -197,6 +197,8 @@ class TrackIncomingController extends Controller
             
             if (!$equipment) {
                 // Create new equipment record (for new requests)
+                $processRange = $this->processRangeData($data['equipment']);
+                
                 $equipment = Equipment::create([
                     'employee_id' => $data['technician']['employee_id'],
                     'recall_number' => $recallNumber, // This can be null for new requests
@@ -209,15 +211,21 @@ class TrackIncomingController extends Controller
                     'location_id' => $data['equipment']['location'],
                     'status' => 'active',
                     'next_calibration_due' => $data['equipment']['dueDate'],
-                    'process_req_range_start' => $data['equipment']['processReqRangeStart'] ?? null,
-                    'process_req_range_end' => $data['equipment']['processReqRangeEnd'] ?? null,
+                    // New combined field with backward compatibility
+                    'process_req_range' => $processRange['combined'],
+                    'process_req_range_start' => $processRange['start'],
+                    'process_req_range_end' => $processRange['end'],
                 ]);
             } else {
                 // Update existing equipment with new calibration due date if needed
+                $processRange = $this->processRangeData($data['equipment']);
+                
                 $equipment->update([
                     'next_calibration_due' => $data['equipment']['dueDate'],
-                    'process_req_range_start' => $data['equipment']['processReqRangeStart'] ?? $equipment->process_req_range_start,
-                    'process_req_range_end' => $data['equipment']['processReqRangeEnd'] ?? $equipment->process_req_range_end,
+                    // New combined field with backward compatibility
+                    'process_req_range' => $processRange['combined'],
+                    'process_req_range_start' => $processRange['start'],
+                    'process_req_range_end' => $processRange['end'],
                 ]);
             }
             
@@ -783,5 +791,51 @@ class TrackIncomingController extends Controller
             return response()->json(['success' => true, 'equipment' => $equipment]);
         }
         return response()->json(['success' => false, 'equipment' => null]);
+    }
+
+    /**
+     * Process range data with backward compatibility
+     * Handles both the new combined field and old separate fields
+     */
+    private function processRangeData(array $equipmentData): array
+    {
+        $combined = null;
+        $start = null;
+        $end = null;
+        
+        // Priority 1: Use the new combined field if provided
+        if (!empty($equipmentData['processReqRange'])) {
+            $combined = trim($equipmentData['processReqRange']);
+            
+            // Try to parse the combined field into start/end for backward compatibility
+            if (preg_match('/^([^-\s]+)\s*(?:-|to)\s*([^-\s]+)$/i', $combined, $matches)) {
+                $start = trim($matches[1]);
+                $end = trim($matches[2]);
+            } else {
+                // If no separator found, treat as start value only
+                $start = $combined;
+                $end = null;
+            }
+        }
+        // Priority 2: Use old separate fields if new field is not provided
+        elseif (!empty($equipmentData['processReqRangeStart']) || !empty($equipmentData['processReqRangeEnd'])) {
+            $start = $equipmentData['processReqRangeStart'] ?? null;
+            $end = $equipmentData['processReqRangeEnd'] ?? null;
+            
+            // Combine them for the new field
+            if ($start && $end) {
+                $combined = trim($start) . ' - ' . trim($end);
+            } elseif ($start) {
+                $combined = $start;
+            } elseif ($end) {
+                $combined = $end;
+            }
+        }
+        
+        return [
+            'combined' => $combined,
+            'start' => $start,
+            'end' => $end
+        ];
     }
 }

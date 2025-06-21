@@ -22,18 +22,30 @@ export function DepartmentTable({ departments, onRefresh }: DepartmentTableProps
     const handleEditSuccess = () => {
         console.log('DepartmentTable: Edit success triggered');
         setEditingDepartment(null);
-        router.reload({ only: ['departments'] });
+
+        // Use onRefresh callback if available, otherwise reload page
+        if (onRefresh) {
+            onRefresh();
+        } else {
+            router.reload({ only: ['departments'] });
+        }
     };
 
     const handleDeleteSuccess = () => {
         console.log('DepartmentTable: Delete success triggered');
         setDeletingDepartment(null);
-        router.reload({ only: ['departments'] });
+
+        // Use onRefresh callback if available, otherwise reload page
+        if (onRefresh) {
+            onRefresh();
+        } else {
+            router.reload({ only: ['departments'] });
+        }
     };
 
     return (
         <>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-scroll">
                 <Table>
                     <TableHeader>
                         <TableRow>

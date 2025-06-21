@@ -19,6 +19,52 @@ use Illuminate\Validation\ValidationException;
 class TrackIncomingController extends Controller
 {
     /**
+     * Helper function to handle process requirement range fields
+     * Supports both new and old field formats for backward compatibility
+     */
+    private function handleProcessRangeFields(array $equipmentData): array
+    {
+        $start = null;
+        $end = null;
+        $combined = null;
+
+        // Priority 1: Check for new combined field
+        if (!empty($equipmentData['process_req_range'])) {
+            $combined = trim($equipmentData['process_req_range']);
+            
+            // Try to parse range from combined field
+            if (preg_match('/^([^-\s]+)\s*(?:-|to)\s*([^-\s]+)$/i', $combined, $matches)) {
+                $start = trim($matches[1]);
+                $end = trim($matches[2]);
+            } else {
+                // Single value
+                $start = $combined;
+                $end = null;
+            }
+        }
+        // Priority 2: Use old separate fields
+        elseif (!empty($equipmentData['processReqRangeStart']) || !empty($equipmentData['processReqRangeEnd'])) {
+            $start = $equipmentData['processReqRangeStart'] ?? null;
+            $end = $equipmentData['processReqRangeEnd'] ?? null;
+            
+            // Construct combined field from separate values
+            if ($start && $end) {
+                $combined = "{$start} - {$end}";
+            } elseif ($start) {
+                $combined = $start;
+            } elseif ($end) {
+                $combined = $end;
+            }
+        }
+
+        return [
+            'combined' => $combined,
+            'start' => $start,
+            'end' => $end,
+        ];
+    }
+
+    /**
      * Get incoming tracking records for the authenticated employee.
      */
     public function index(Request $request): AnonymousResourceCollection
@@ -136,14 +182,17 @@ class TrackIncomingController extends Controller
                 if ($trackIncoming->equipment_id) {
                     $equipment = Equipment::find($trackIncoming->equipment_id);
                     if ($equipment) {
+                        // Handle process requirement range fields with helper
+                        $processRange = $this->handleProcessRangeFields($requestData['equipment']);
                         $equipment->update([
                             'next_calibration_due' => $requestData['equipment']['dueDate'] ?? $equipment->next_calibration_due,
                             'serial_number' => $requestData['equipment']['serialNumber'] ?? $equipment->serial_number,
                             'description' => $requestData['equipment']['description'] ?? $equipment->description,
                             'model' => $requestData['equipment']['model'] ?? $equipment->model,
                             'manufacturer' => $requestData['equipment']['manufacturer'] ?? $equipment->manufacturer,
-                            'process_req_range_start' => $requestData['equipment']['processReqRangeStart'] ?? $equipment->process_req_range_start,
-                            'process_req_range_end' => $requestData['equipment']['processReqRangeEnd'] ?? $equipment->process_req_range_end,
+                            'process_req_range' => $processRange['combined'],
+                            'process_req_range_start' => $processRange['start'],
+                            'process_req_range_end' => $processRange['end'],
                         ]);
                     }
                 }
@@ -164,6 +213,9 @@ class TrackIncomingController extends Controller
             $equipment = Equipment::where('recall_number', $recallNumber)->first();
                     
             if (!$equipment) {
+                // Handle process requirement range fields with helper
+                $processRange = $this->handleProcessRangeFields($requestData['equipment']);
+                
                 // Create new equipment record
                 $equipment = Equipment::create([
                     'employee_id' => $requestData['technician']['employee_id'],
@@ -177,15 +229,20 @@ class TrackIncomingController extends Controller
                     'location_id' => $requestData['equipment']['location'],
                     'status' => 'active',
                     'next_calibration_due' => $requestData['equipment']['dueDate'],
-                    'process_req_range_start' => $requestData['equipment']['processReqRangeStart'] ?? null,
-                    'process_req_range_end' => $requestData['equipment']['processReqRangeEnd'] ?? null,
+                    'process_req_range' => $processRange['combined'],
+                    'process_req_range_start' => $processRange['start'],
+                    'process_req_range_end' => $processRange['end'],
                 ]);
             } else {
+                // Handle process requirement range fields with helper
+                $processRange = $this->handleProcessRangeFields($requestData['equipment']);
+                
                 // Update existing equipment with new calibration due date if needed
                 $equipment->update([
                     'next_calibration_due' => $requestData['equipment']['dueDate'],
-                    'process_req_range_start' => $requestData['equipment']['processReqRangeStart'] ?? $equipment->process_req_range_start,
-                    'process_req_range_end' => $requestData['equipment']['processReqRangeEnd'] ?? $equipment->process_req_range_end,
+                    'process_req_range' => $processRange['combined'],
+                    'process_req_range_start' => $processRange['start'],
+                    'process_req_range_end' => $processRange['end'],
                 ]);
             }
             

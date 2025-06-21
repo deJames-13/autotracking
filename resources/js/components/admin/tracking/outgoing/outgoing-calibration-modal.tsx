@@ -434,7 +434,7 @@ export function OutgoingCalibrationModal({ incomingRecord, open, onOpenChange, o
                                     required
                                 />
                                 {errors.recall_number && <p className="text-destructive mt-1 text-sm">{errors.recall_number}</p>}
-                                <p className="text-destructive mt-1 text-xs italic">Auto generated, please change this.</p>
+                                {/* <p className="text-destructive mt-1 text-xs italic">Auto generated, please change this.</p> */}
                             </div>
                             <div>
                                 <span className="font-medium">Description:</span>

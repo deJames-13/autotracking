@@ -81,6 +81,11 @@ class EquipmentRequest extends FormRequest
                 'string',
                 'max:255'
             ],
+            'process_req_range' => [
+                'nullable',
+                'string',
+                'max:500'
+            ],
         ];
     }
 

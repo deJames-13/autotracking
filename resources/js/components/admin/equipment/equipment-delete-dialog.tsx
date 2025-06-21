@@ -1,7 +1,10 @@
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { type Equipment } from '@/types';
 import { router } from '@inertiajs/react';
+import { AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 interface EquipmentDeleteDialogProps {
@@ -12,22 +15,34 @@ interface EquipmentDeleteDialogProps {
 }
 
 export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess }: EquipmentDeleteDialogProps) {
+    const [forceDelete, setForceDelete] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const hasRelatedRecords = equipment && (equipment.track_incoming?.length || 0) > 0;
+
     const handleDelete = () => {
         if (!equipment) return;
 
-        console.log('EquipmentDeleteDialog: Archiving equipment', equipment.equipment_id);
+        setIsDeleting(true);
+        console.log('EquipmentDeleteDialog: Deleting equipment', equipment.equipment_id, 'force:', forceDelete);
+
+        const data = forceDelete ? { force: true } : {};
 
         router.delete(route('admin.equipment.destroy', equipment.equipment_id), {
+            data,
             preserveState: true,
             preserveScroll: true,
             onSuccess: () => {
-                console.log('EquipmentDeleteDialog: Archive successful, calling onSuccess');
+                console.log('EquipmentDeleteDialog: Delete successful, calling onSuccess');
                 onOpenChange(false);
-                toast.success('Equipment archived successfully');
+                setForceDelete(false);
+                setIsDeleting(false);
+                toast.success(forceDelete ? 'Equipment deleted and references nullified successfully' : 'Equipment archived successfully');
                 onSuccess();
             },
             onError: (errors) => {
-                console.error('Error archiving equipment:', errors);
+                console.error('Error deleting equipment:', errors);
+                setIsDeleting(false);
 
                 // Handle validation errors
                 if (errors && typeof errors === 'object') {
@@ -39,13 +54,14 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
                 }
 
                 // Generic fallback error
-                toast.error('Failed to archive equipment. Please try again.');
+                toast.error('Failed to delete equipment. Please try again.');
             },
         });
     };
 
     const handleCancel = () => {
         onOpenChange(false);
+        setForceDelete(false);
     };
 
     if (!equipment) return null;
@@ -54,9 +70,14 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Archive Equipment</DialogTitle>
+                    <DialogTitle>
+                        {forceDelete ? 'Force Delete Equipment' : 'Archive Equipment'}
+                    </DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to archive this equipment? The equipment will be hidden from the main list but can be restored later.
+                        {forceDelete
+                            ? 'Are you sure you want to permanently delete this equipment? All related records will have their equipment references set to null, but the records themselves will be preserved.'
+                            : 'Are you sure you want to archive this equipment? The equipment will be hidden from the main list but can be restored later.'
+                        }
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -75,12 +96,65 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
                             <div>Records: {equipment.track_incoming?.length || 0}</div>
                         </div>
                     </div>
+
+                    {hasRelatedRecords && (
+                        <div className="space-y-3">
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                <div className="flex items-center gap-2 text-yellow-800">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    <span className="text-sm font-medium">Related Records Found</span>
+                                </div>
+                                <p className="text-yellow-700 mt-1 text-sm">
+                                    This equipment has tracking records. Normal archiving will fail.
+                                </p>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="force-delete"
+                                    checked={forceDelete}
+                                    onCheckedChange={setForceDelete}
+                                />
+                                <label
+                                    htmlFor="force-delete"
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                    Force delete (remove equipment references without deleting records)
+                                </label>
+                            </div>
+
+                            {forceDelete && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                    <div className="flex items-center gap-2 text-red-800">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <span className="text-sm font-medium">Warning: Equipment Reference Removal</span>
+                                    </div>
+                                    <p className="text-red-700 mt-1 text-sm">
+                                        This will set equipment references to null for:
+                                    </p>
+                                    <ul className="text-red-700 mt-1 text-sm list-disc list-inside ml-2">
+                                        <li>{equipment.track_incoming?.length || 0} tracking record(s) - nullify equipment reference</li>
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div className="flex justify-end gap-3">
-                        <Button variant="outline" onClick={handleCancel}>
+                        <Button variant="outline" onClick={handleCancel} disabled={isDeleting}>
                             Cancel
                         </Button>
-                        <Button variant="destructive" onClick={handleDelete}>
-                            Archive Equipment
+                        <Button
+                            variant={forceDelete ? "destructive" : "default"}
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting
+                                ? 'Processing...'
+                                : forceDelete
+                                    ? 'Permanently Delete'
+                                    : 'Archive Equipment'
+                            }
                         </Button>
                     </div>
                 </div>

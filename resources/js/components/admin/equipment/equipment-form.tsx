@@ -27,6 +27,7 @@ interface EquipmentFormData {
     next_calibration_due: string;
     process_req_range_start: string;
     process_req_range_end: string;
+    process_req_range: string; // New combined field
     [key: string]: any;
 }
 
@@ -45,6 +46,58 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
 
+    const getCombinedProcessRange = (equipment?: Equipment): string => {
+        // Priority 1: Use new combined field if available
+        if ((equipment as any)?.process_req_range) {
+            return (equipment as any).process_req_range;
+        }
+
+        // Priority 2: Combine old fields if they exist
+        const start = equipment?.process_req_range_start;
+        const end = equipment?.process_req_range_end;
+
+        if (start && end) {
+            return `${start} - ${end}`;
+        } else if (start) {
+            return start;
+        } else if (end) {
+            return end;
+        }
+
+        return '';
+    };
+
+    // Helper function to format dates for input fields (YYYY-MM-DD)
+    const formatDateForInput = (dateString?: string | null): string => {
+        if (!dateString) return '';
+
+        try {
+            // If it's already in YYYY-MM-DD format, return as is
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                return dateString;
+            }
+
+            // Handle MM/DD/YYYY format (common in some locales)
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+                const [month, day, year] = dateString.split('/');
+                return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+
+            // Try to parse various date formats using Date constructor
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                console.warn('Invalid date format:', dateString);
+                return '';
+            }
+
+            // Format as YYYY-MM-DD for HTML date input
+            return date.toISOString().split('T')[0];
+        } catch (error) {
+            console.warn('Error formatting date:', dateString, error);
+            return '';
+        }
+    };
+
     const { data, setData, post, put, processing, errors, reset } = useForm<EquipmentFormData>({
         employee_id: equipment?.employee_id?.toString() || '',
         recall_number: equipment?.recall_number || '',
@@ -56,10 +109,11 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
         department_id: equipment?.department_id?.toString() || '',
         location_id: equipment?.location_id?.toString() || '',
         status: equipment?.status || 'active',
-        last_calibration_date: equipment?.last_calibration_date || '',
-        next_calibration_due: equipment?.next_calibration_due || '',
+        last_calibration_date: formatDateForInput(equipment?.last_calibration_date),
+        next_calibration_due: formatDateForInput(equipment?.next_calibration_due),
         process_req_range_start: equipment?.process_req_range_start || '',
         process_req_range_end: equipment?.process_req_range_end || '',
+        process_req_range: getCombinedProcessRange(equipment),
     });
 
     // Load user options for SmartSelect
@@ -93,7 +147,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     const loadPlantOptions = useCallback(
         async (inputValue: string): Promise<SelectOption[]> => {
             try {
-                const response = await axios.get('/admin/plants/search', {
+                const response = await axios.get('/admin/equipment/plants/search', {
                     params: {
                         search: inputValue,
                         limit: 10,
@@ -120,7 +174,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     const loadDepartmentOptions = useCallback(
         async (inputValue: string): Promise<SelectOption[]> => {
             try {
-                const response = await axios.get('/admin/departments/search', {
+                const response = await axios.get('/admin/equipment/departments/search', {
                     params: {
                         search: inputValue,
                         limit: 10,
@@ -147,7 +201,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     const loadLocationOptions = useCallback(
         async (inputValue: string): Promise<SelectOption[]> => {
             try {
-                const response = await axios.get('/admin/locations/search', {
+                const response = await axios.get('/admin/equipment/locations/search', {
                     params: {
                         search: inputValue,
                         department_id: data.department_id || undefined,
@@ -169,6 +223,73 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
             }
         },
         [locations, data.department_id],
+    );
+
+    // Handle create option for plants
+    const handleCreatePlant = useCallback(
+        async (inputValue: string): Promise<SelectOption> => {
+            try {
+                const response = await axios.post('/admin/equipment/plants/create', {
+                    name: inputValue,
+                }, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+
+                return {
+                    label: response.data.label,
+                    value: response.data.value,
+                };
+            } catch (error) {
+                console.error('Error creating plant:', error);
+                throw new Error('Failed to create plant');
+            }
+        },
+        [],
+    );
+
+    // Handle create option for departments
+    const handleCreateDepartment = useCallback(
+        async (inputValue: string): Promise<SelectOption> => {
+            try {
+                const response = await axios.post('/admin/equipment/departments/create', {
+                    name: inputValue,
+                }, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+
+                return {
+                    label: response.data.label,
+                    value: response.data.value,
+                };
+            } catch (error) {
+                console.error('Error creating department:', error);
+                throw new Error('Failed to create department');
+            }
+        },
+        [],
+    );
+
+    // Handle create option for locations
+    const handleCreateLocation = useCallback(
+        async (inputValue: string): Promise<SelectOption> => {
+            try {
+                const response = await axios.post('/admin/equipment/locations/create', {
+                    name: inputValue,
+                    department_id: data.department_id || null,
+                }, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+
+                return {
+                    label: response.data.label,
+                    value: response.data.value,
+                };
+            } catch (error) {
+                console.error('Error creating location:', error);
+                throw new Error('Failed to create location');
+            }
+        },
+        [data.department_id],
     );
 
     // Client-side validation function
@@ -209,6 +330,14 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     // Handle regular select changes
     const handleSelectChange = (field: keyof EquipmentFormData, value: string | number | null) => {
         setData(field, value ? value.toString() : '');
+    };
+
+    // Handle date input changes with validation
+    const handleDateChange = (field: 'last_calibration_date' | 'next_calibration_due', value: string) => {
+        // Only allow YYYY-MM-DD format
+        if (value === '' || /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+            setData(field, value);
+        }
     };
 
     const submit: FormEventHandler = (e) => {
@@ -302,7 +431,8 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                             value={data.plant_id || null}
                             onChange={(value) => handleSmartSelectChange('plant_id', value)}
                             loadOptions={loadPlantOptions}
-                            placeholder="Search for a plant"
+                            onCreateOption={handleCreatePlant}
+                            placeholder="Search for a plant or create new"
                             error={errors.plant_id}
                             customNoneLabel="No plant"
                             cacheOptions={true}
@@ -319,7 +449,8 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                             value={data.department_id || null}
                             onChange={(value) => handleSmartSelectChange('department_id', value)}
                             loadOptions={loadDepartmentOptions}
-                            placeholder="Search for a department"
+                            onCreateOption={handleCreateDepartment}
+                            placeholder="Search for a department or create new"
                             error={errors.department_id}
                             customNoneLabel="No department"
                             cacheOptions={true}
@@ -356,7 +487,8 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                             value={data.location_id || null}
                             onChange={(value) => handleSmartSelectChange('location_id', value)}
                             loadOptions={loadLocationOptions}
-                            placeholder="Search for a location"
+                            onCreateOption={handleCreateLocation}
+                            placeholder="Search for a location or create new"
                             error={errors.location_id}
                             customNoneLabel="No location"
                             cacheOptions={true}
@@ -389,7 +521,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                             id="last_calibration_date"
                             type="date"
                             value={data.last_calibration_date}
-                            onChange={(e) => setData('last_calibration_date', e.target.value)}
+                            onChange={(e) => handleDateChange('last_calibration_date', e.target.value)}
                             className={getCombinedErrors('last_calibration_date') ? 'border-destructive' : ''}
                         />
                         <InputError message={getCombinedErrors('last_calibration_date')} />
@@ -401,34 +533,41 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                             id="next_calibration_due"
                             type="date"
                             value={data.next_calibration_due}
-                            onChange={(e) => setData('next_calibration_due', e.target.value)}
+                            onChange={(e) => handleDateChange('next_calibration_due', e.target.value)}
                             className={getCombinedErrors('next_calibration_due') ? 'border-destructive' : ''}
                         />
                         <InputError message={getCombinedErrors('next_calibration_due')} />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="process_req_range_start">Process Req Range Start</Label>
+                        <Label htmlFor="process_req_range">Process Requirement Range</Label>
                         <Input
-                            id="process_req_range_start"
-                            value={data.process_req_range_start}
-                            onChange={(e) => setData('process_req_range_start', e.target.value)}
-                            placeholder="Enter process requirement range start"
-                            className={getCombinedErrors('process_req_range_start') ? 'border-destructive' : ''}
-                        />
-                        <InputError message={getCombinedErrors('process_req_range_start')} />
-                    </div>
+                            id="process_req_range"
+                            value={data.process_req_range}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setData('process_req_range', value);
 
-                    <div className="space-y-2">
-                        <Label htmlFor="process_req_range_end">Process Req Range End</Label>
-                        <Input
-                            id="process_req_range_end"
-                            value={data.process_req_range_end}
-                            onChange={(e) => setData('process_req_range_end', e.target.value)}
-                            placeholder="Enter process requirement range end"
-                            className={getCombinedErrors('process_req_range_end') ? 'border-destructive' : ''}
+                                // Parse and update old fields for backward compatibility
+                                const rangeMatch = value.match(/^([^-\s]+)\s*(?:-|to)\s*([^-\s]+)$/i);
+                                if (rangeMatch) {
+                                    setData('process_req_range_start', rangeMatch[1].trim());
+                                    setData('process_req_range_end', rangeMatch[2].trim());
+                                } else if (value.trim()) {
+                                    setData('process_req_range_start', value.trim());
+                                    setData('process_req_range_end', '');
+                                } else {
+                                    setData('process_req_range_start', '');
+                                    setData('process_req_range_end', '');
+                                }
+                            }}
+                            placeholder="Enter range (e.g., 100 - 200, 50 to 100, 75)"
+                            className={getCombinedErrors('process_req_range') ? 'border-destructive' : ''}
                         />
-                        <InputError message={getCombinedErrors('process_req_range_end')} />
+                        <InputError message={getCombinedErrors('process_req_range')} />
+                        <p className="text-sm text-muted-foreground">
+                            You can enter a single value (e.g., "100") or a range (e.g., "100 - 200", "50 to 100")
+                        </p>
                     </div>
 
                     <div className="space-y-2">

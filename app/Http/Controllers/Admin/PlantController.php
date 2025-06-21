@@ -99,11 +99,24 @@ class PlantController extends Controller
 
     public function destroy(Plant $plant, Request $request): RedirectResponse|JsonResponse
     {
+        $forceDelete = $request->boolean('force', false);
+        
         // Check for foreign key constraints before deletion
         $userCount = $plant->users()->count();
+        $equipmentCount = $plant->equipments()->count();
         
-        if ($userCount > 0) {
-            $errorMessage = "Cannot archive plant. It has {$userCount} user(s) assigned to it.";
+        if (($userCount > 0 || $equipmentCount > 0) && !$forceDelete) {
+            $errorMessage = 'Cannot archive plant. It has ';
+            $dependencies = [];
+            
+            if ($userCount > 0) {
+                $dependencies[] = "{$userCount} user(s)";
+            }
+            if ($equipmentCount > 0) {
+                $dependencies[] = "{$equipmentCount} equipment item(s)";
+            }
+            
+            $errorMessage .= implode(' and ', $dependencies) . ' assigned to it.';
 
             // For Inertia requests, throw validation exception
             if ($request->header('X-Inertia')) {
@@ -123,17 +136,24 @@ class PlantController extends Controller
                 ->with('error', $errorMessage);
         }
 
-        $plant->delete(); // This is now a soft delete due to SoftDeletes trait
+        // If force delete is enabled, nullify related records
+        if ($forceDelete) {
+            $this->forceDeletePlantWithRelations($plant);
+            $message = 'Plant deleted and all references set to null successfully.';
+        } else {
+            $plant->delete(); // This is now a soft delete due to SoftDeletes trait
+            $message = 'Plant archived successfully.';
+        }
 
         // Return JSON only for non-Inertia AJAX requests
         if ($request->ajax() && !$request->header('X-Inertia')) {
             return response()->json([
-                'message' => 'Plant archived successfully.'
+                'message' => $message
             ]);
         }
 
         return redirect()->route('admin.plants.index')
-            ->with('success', 'Plant archived successfully.');
+            ->with('success', $message);
     }
 
     /**
@@ -309,5 +329,26 @@ class PlantController extends Controller
                 'message' => 'Failed to create plant: ' . $e->getMessage()
             ], 422);
         }
+    }
+
+    /**
+     * Force delete plant and set related foreign keys to null
+     */
+    private function forceDeletePlantWithRelations(Plant $plant): void
+    {
+        \DB::transaction(function () use ($plant) {
+            // 1. Set plant_id to null in users table
+            \DB::table('users')
+                ->where('plant_id', $plant->plant_id)
+                ->update(['plant_id' => null]);
+
+            // 2. Set plant_id to null in equipments table
+            \DB::table('equipments')
+                ->where('plant_id', $plant->plant_id)
+                ->update(['plant_id' => null]);
+
+            // 3. Finally, force delete the plant itself
+            $plant->forceDelete();
+        });
     }
 }
