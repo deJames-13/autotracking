@@ -1,4 +1,35 @@
 
+-- TODO
+
+- [ ] fix Equipment crud 
+- [ ] fix delete/archiving
+- [ ] enable equipment crud for employee
+- [ ] enable manual input for recall number for requests (admin/employee)
+
+- [ ] Scan in ougoing show not working
+- [ ] Scan not working on equipment
+- [ ] Barcode format on employee, equipment, recall show incoming - outgoing
+
+
+- [ ] Latest modified on top
+- [ ] Update email notification
+- [ ] Refresh error on crud pages
+
+
+- [ ] Imports
+    - [ ] batch user imports
+    - [ ] batch department
+    - [ ] batch plant
+    - [ ] batch locations
+
+
+- [ ] Table paginated/filters (turn to datatable)  
+    - [x] user
+    - [x] equipment
+
+    - [ ] incoming
+    - [ ] outgoing
+        - [x] remove export button
 -- Creds
 100001 - admin
 200001 - technician
@@ -20,13 +51,6 @@
         - [x] Recall number auto generates when not specified
         - [x] allow editing of recall number
 
-- [ ] Table paginated/filters (turn to datatable)  
-    - [x] user
-    - [x] equipment
-
-    - [ ] incoming
-    - [ ] outgoing
-        - [x] remove export button
 
 - [x] Accounts
     - [x] Manual input or auto generated of id (unique)
@@ -50,23 +74,6 @@
     - [x] Employee
         - [x] Can only see theyre own incoming and outgoing
 
--- TODO
-
-- [ ] Scan in ougoing show not working
-- [ ] Scan not working on equipment
-- [ ] Barcode format on employee, equipment, recall show incoming - outgoing
-
-
-- [ ] Latest modified on top
-- [ ] Update email notification
-- [ ] Refresh error on crud pages
-
-
-- [ ] Imports
-    - [ ] batch user imports
-    - [ ] batch department
-    - [ ] batch plant
-    - [ ] batch locations
 
 - [x] Setup Routine Cal
     - [x] Recall number can not be unique to allow archiving of past records
