@@ -18,7 +18,8 @@ git pull origin main
 
 # 2. Install/update dependencies
 echo "📦 Installing dependencies..."
-composer install --no-dev --optimize-autoloader
+# composer install --no-dev --optimize-autoloader
+composer install --optimize-autoloader
 npm ci --production
 
 # 3. Update configuration cache
