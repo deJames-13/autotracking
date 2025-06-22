@@ -13,6 +13,7 @@ echo "Running Laravel migrations..."
 php artisan migrate --force
 
 echo "Clearing and caching configurations..."
+php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
