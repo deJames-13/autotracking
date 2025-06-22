@@ -1,9 +1,24 @@
+# Forgot Pin and Reset Password Implementation for Users and Employees in #file:auth frontend and #file:AuthenticatedSessionController.php #file:Controllers Auth
+
+Using the email feature that i already, can you implement properly the password reset and forgot password (pin) for employees so that they can change theyre existign account:
+
+The following should be take note:
+1. Only the email of that specific user should be used for resetting
+
 -- TESTING
 - [x] fix Equipment crud 
 - [x] fix delete/archiving
 - [x] enable manual input for recall number for requests (admin/employee) ✅ COMPLETED
 
--- TODO
+
+
+- [x] Table paginated/filters (turn to datatable)  
+    - [x] user
+    - [x] equipment
+
+    - [x] incoming
+    - [x] outgoing
+        - [x] remove export button
 
 - [ ] Imports
     - [ ] batch user imports
@@ -11,32 +26,21 @@
     - [ ] batch department imports
     - [ ] batch plant imports 
     - [ ] batch locations imports
+-- TODO
+- [ ] Employee Profile 
+    - [ ] employee reset password 
+    - [ ] and forgot password
 
-
-
-- [x] fix Equipment crud 
-- [x] fix delete/archiving
-- [x] enable manual input for recall number for requests (admin/employee) ✅ COMPLETED
 
 - [ ] Scan in ougoing show not working
 - [ ] Scan not working on equipment
 - [ ] Barcode format on employee, equipment, recall show incoming - outgoing
-
 
 - [ ] Latest modified on top
 - [ ] Update email notification
 - [ ] Refresh error on crud pages
 
 
-
-
-- [ ] Table paginated/filters (turn to datatable)  
-    - [x] user
-    - [x] equipment
-
-    - [x] incoming
-    - [x] outgoing
-        - [x] remove export button
 -- Creds
 100001 - admin
 200001 - technician
