@@ -1109,4 +1109,122 @@ class UserController extends Controller
 
         return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
+
+    /**
+     * Batch delete multiple users
+     */
+    public function batchDestroy(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:users,employee_id',
+            'force' => 'boolean'
+        ]);
+
+        $userIds = $request->input('ids');
+        $forceDelete = $request->boolean('force', false);
+        $currentUserId = Auth::id();
+
+        // Prevent deletion of current user
+        if (in_array($currentUserId, $userIds)) {
+            return response()->json([
+                'message' => 'Cannot delete your own account.',
+                'errors' => ['self_deletion' => 'Cannot delete your own account.']
+            ], 422);
+        }
+
+        $users = User::with('role')->whereIn('employee_id', $userIds)->get();
+        
+        // Check admin protection
+        $adminUsers = $users->filter(function ($user) {
+            return $user->role && $user->role->role_name === 'admin';
+        });
+
+        if ($adminUsers->count() > 0) {
+            $totalAdminCount = User::whereHas('role', function ($query) {
+                $query->where('role_name', 'admin');
+            })->count();
+
+            if ($totalAdminCount - $adminUsers->count() < 1) {
+                return response()->json([
+                    'message' => 'Cannot delete all admin users. At least one admin must remain in the system.',
+                    'errors' => ['admin_protection' => 'Cannot delete all admin users.']
+                ], 422);
+            }
+        }
+
+        $errors = [];
+        $deleted = [];
+        $failed = [];
+
+        foreach ($users as $user) {
+            try {
+                // Check for foreign key constraints
+                $equipmentCount = $user->equipments()->count();
+                $trackIncomingAsTechnicianCount = $user->trackIncomingAsTechnician()->count();
+                $trackIncomingAsEmployeeInCount = $user->trackIncomingAsEmployeeIn()->count();
+                $trackIncomingAsReceivedByCount = $user->trackIncomingAsReceivedBy()->count();
+                $trackOutgoingAsEmployeeOutCount = $user->trackOutgoingAsEmployeeOut()->count();
+
+                $totalTrackingRecords = $trackIncomingAsTechnicianCount + $trackIncomingAsEmployeeInCount + 
+                                       $trackIncomingAsReceivedByCount + $trackOutgoingAsEmployeeOutCount;
+
+                if (($equipmentCount > 0 || $totalTrackingRecords > 0) && !$forceDelete) {
+                    $dependencies = [];
+                    if ($equipmentCount > 0) {
+                        $dependencies[] = "{$equipmentCount} equipment item(s) assigned";
+                    }
+                    if ($totalTrackingRecords > 0) {
+                        $dependencies[] = "{$totalTrackingRecords} tracking record(s) associated";
+                    }
+                    
+                    $failed[] = [
+                        'id' => $user->employee_id,
+                        'name' => $user->first_name . ' ' . $user->last_name,
+                        'reason' => 'Has ' . implode(' and ', $dependencies)
+                    ];
+                    continue;
+                }
+
+                // Perform deletion
+                if ($forceDelete) {
+                    $this->forceDeleteUserWithRelations($user);
+                } else {
+                    $user->delete(); // Soft delete
+                }
+
+                $deleted[] = [
+                    'id' => $user->employee_id,
+                    'name' => $user->first_name . ' ' . $user->last_name
+                ];
+
+            } catch (\Exception $e) {
+                $failed[] = [
+                    'id' => $user->employee_id,
+                    'name' => $user->first_name . ' ' . $user->last_name,
+                    'reason' => 'Deletion failed: ' . $e->getMessage()
+                ];
+            }
+        }
+
+        $message = sprintf(
+            'Batch operation completed. %d user(s) %s successfully.',
+            count($deleted),
+            $forceDelete ? 'deleted' : 'archived'
+        );
+
+        if (count($failed) > 0) {
+            $message .= sprintf(' %d user(s) could not be processed.', count($failed));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'deleted_count' => count($deleted),
+            'failed_count' => count($failed),
+            'deleted' => $deleted,
+            'failed' => $failed,
+            'force_delete' => $forceDelete
+        ]);
+    }
 }

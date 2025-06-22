@@ -489,4 +489,97 @@ class DepartmentController extends Controller
 
         return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
+
+    /**
+     * Batch delete multiple departments
+     */
+    public function batchDestroy(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:departments,department_id',
+            'force' => 'boolean'
+        ]);
+
+        $departmentIds = $request->input('ids');
+        $forceDelete = $request->boolean('force', false);
+
+        $departments = Department::whereIn('department_id', $departmentIds)->get();
+        
+        $errors = [];
+        $deleted = [];
+        $failed = [];
+
+        foreach ($departments as $department) {
+            try {
+                // Check for foreign key constraints
+                $usersCount = $department->users()->count();
+                $equipmentCount = $department->equipment()->count();
+                $locationsCount = $department->locations()->count();
+                $trackingRecordsCount = $this->getTrackingRecordsCount($department);
+
+                if (($usersCount > 0 || $equipmentCount > 0 || $locationsCount > 0 || $trackingRecordsCount > 0) && !$forceDelete) {
+                    $dependencies = [];
+                    if ($usersCount > 0) {
+                        $dependencies[] = "{$usersCount} user(s)";
+                    }
+                    if ($equipmentCount > 0) {
+                        $dependencies[] = "{$equipmentCount} equipment item(s)";
+                    }
+                    if ($locationsCount > 0) {
+                        $dependencies[] = "{$locationsCount} location(s)";
+                    }
+                    if ($trackingRecordsCount > 0) {
+                        $dependencies[] = "{$trackingRecordsCount} tracking record(s)";
+                    }
+                    
+                    $failed[] = [
+                        'id' => $department->department_id,
+                        'name' => $department->department_name,
+                        'reason' => 'Has ' . implode(', ', $dependencies) . ' assigned'
+                    ];
+                    continue;
+                }
+
+                // Perform deletion
+                if ($forceDelete) {
+                    $this->forceDeleteDepartmentWithRelations($department);
+                } else {
+                    $department->delete(); // Soft delete
+                }
+
+                $deleted[] = [
+                    'id' => $department->department_id,
+                    'name' => $department->department_name
+                ];
+
+            } catch (\Exception $e) {
+                $failed[] = [
+                    'id' => $department->department_id,
+                    'name' => $department->department_name,
+                    'reason' => 'Deletion failed: ' . $e->getMessage()
+                ];
+            }
+        }
+
+        $message = sprintf(
+            'Batch operation completed. %d department(s) %s successfully.',
+            count($deleted),
+            $forceDelete ? 'deleted' : 'archived'
+        );
+
+        if (count($failed) > 0) {
+            $message .= sprintf(' %d department(s) could not be processed.', count($failed));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'deleted_count' => count($deleted),
+            'failed_count' => count($failed),
+            'deleted' => $deleted,
+            'failed' => $failed,
+            'force_delete' => $forceDelete
+        ]);
+    }
 }

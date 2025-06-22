@@ -130,7 +130,7 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
                 </div>
 
                 {/* Filters */}
-                <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                {/* <div className="flex flex-col gap-4 md:flex-row md:items-center">
                     <div className="relative flex-1">
                         <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                         <Input
@@ -140,7 +140,7 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
                             className="pl-10"
                         />
                     </div>
-                </div>
+                </div> */}
 
                 {/* Departments Table */}
                 <DepartmentTable departments={departments} onRefresh={refreshDepartments} />

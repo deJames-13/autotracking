@@ -526,4 +526,80 @@ class EquipmentController extends Controller
 
         return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
+
+    /**
+     * Batch delete multiple equipment
+     */
+    public function batchDestroy(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:equipments,equipment_id',
+            'force' => 'boolean'
+        ]);
+
+        $equipmentIds = $request->input('ids');
+        $forceDelete = $request->boolean('force', false);
+
+        $equipments = Equipment::whereIn('equipment_id', $equipmentIds)->get();
+        
+        $errors = [];
+        $deleted = [];
+        $failed = [];
+
+        foreach ($equipments as $equipment) {
+            try {
+                // Check for foreign key constraints
+                $trackIncomingCount = $equipment->trackIncoming()->count();
+
+                if ($trackIncomingCount > 0 && !$forceDelete) {
+                    $failed[] = [
+                        'id' => $equipment->equipment_id,
+                        'name' => $equipment->description ?? 'Equipment #' . $equipment->equipment_id,
+                        'reason' => "Has {$trackIncomingCount} tracking record(s) associated"
+                    ];
+                    continue;
+                }
+
+                // Perform deletion
+                if ($forceDelete) {
+                    $this->forceDeleteEquipmentWithRelations($equipment);
+                } else {
+                    $equipment->delete(); // Soft delete
+                }
+
+                $deleted[] = [
+                    'id' => $equipment->equipment_id,
+                    'name' => $equipment->description ?? 'Equipment #' . $equipment->equipment_id
+                ];
+
+            } catch (\Exception $e) {
+                $failed[] = [
+                    'id' => $equipment->equipment_id,
+                    'name' => $equipment->description ?? 'Equipment #' . $equipment->equipment_id,
+                    'reason' => 'Deletion failed: ' . $e->getMessage()
+                ];
+            }
+        }
+
+        $message = sprintf(
+            'Batch operation completed. %d equipment item(s) %s successfully.',
+            count($deleted),
+            $forceDelete ? 'deleted' : 'archived'
+        );
+
+        if (count($failed) > 0) {
+            $message .= sprintf(' %d equipment item(s) could not be processed.', count($failed));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'deleted_count' => count($deleted),
+            'failed_count' => count($failed),
+            'deleted' => $deleted,
+            'failed' => $failed,
+            'force_delete' => $forceDelete
+        ]);
+    }
 }

@@ -1,11 +1,13 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
+import { BatchDataTable, DataTableColumn, DataTableFilter } from '@/components/ui/batch-data-table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { type Department, type Equipment, type PaginationData, type Plant, type User } from '@/types';
 import { router } from '@inertiajs/react';
+import axios from 'axios';
 import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import { EquipmentDeleteDialog } from './equipment-delete-dialog';
 import { EquipmentEditDialog } from './equipment-edit-dialog';
 import { EquipmentViewDialog } from './equipment-view-dialog';
@@ -39,16 +41,59 @@ export function EquipmentTable({
     const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
     const [deletingEquipment, setDeletingEquipment] = useState<Equipment | null>(null);
 
+    const handleRefresh = () => {
+        console.log('EquipmentTable: Refresh triggered');
+        if (onRefresh) {
+            onRefresh();
+        } else {
+            // Fallback to Inertia reload if no onRefresh provided
+            router.reload({ only: ['equipment'] });
+        }
+    };
+
     const handleEditSuccess = () => {
         console.log('EquipmentTable: Edit success triggered');
         setEditingEquipment(null);
-        onRefresh?.();
+        handleRefresh();
     };
 
     const handleDeleteSuccess = () => {
         console.log('EquipmentTable: Delete success triggered');
         setDeletingEquipment(null);
-        onRefresh?.();
+        handleRefresh();
+    };
+
+    const handleBatchDelete = async (ids: any[], force: boolean = false): Promise<void> => {
+        try {
+            const response = await axios.delete(route('admin.equipment.batch-destroy'), {
+                data: {
+                    ids,
+                    force: force ? 1 : 0
+                }
+            });
+
+            if (response.data.success) {
+                toast.success(`Successfully deleted ${response.data.deleted_count} equipment(s)`);
+
+                // Show warnings for failed deletions if any
+                if (response.data.failed_count > 0) {
+                    toast.error(`Failed to delete ${response.data.failed_count} equipment(s) due to dependencies. Use force delete if needed.`);
+                }
+
+                // Use the same refresh logic as single delete
+                handleRefresh();
+            } else {
+                toast.error(response.data.message || 'Failed to delete equipment');
+            }
+        } catch (error: any) {
+            console.error('Error in batch delete:', error);
+
+            if (error.response?.data?.message) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error('Failed to delete equipment. Please try again.');
+            }
+        }
     };
 
     const getStatusBadgeVariant = (status: string) => {
@@ -273,11 +318,13 @@ export function EquipmentTable({
 
     return (
         <>
-            <DataTable
+            <BatchDataTable
                 data={equipment.data}
                 columns={columns}
                 filters={filters}
                 loading={loading}
+                batchDelete={true}
+                entityName="equipment"
                 pagination={{
                     current_page: equipment.current_page,
                     last_page: equipment.last_page,
@@ -288,6 +335,7 @@ export function EquipmentTable({
                 onFilter={handleFilter}
                 onPageChange={handlePageChange}
                 onPerPageChange={handlePerPageChange}
+                onBatchDelete={handleBatchDelete}
                 searchable={true}
                 filterable={true}
                 emptyMessage="No equipment found."

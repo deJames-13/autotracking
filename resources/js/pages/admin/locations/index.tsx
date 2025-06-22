@@ -142,7 +142,7 @@ export default function LocationsIndex({ locations: initialLocations, department
 
                 {/* Filters */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                    <div className="relative flex-1">
+                    {/* <div className="relative flex-1">
                         <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                         <Input
                             placeholder="Search locations by name..."
@@ -150,8 +150,8 @@ export default function LocationsIndex({ locations: initialLocations, department
                             onChange={(e) => setData('search', e.target.value)}
                             className="pl-10"
                         />
-                    </div>
-
+                    </div> */}
+                    {/*
                     <div className="flex gap-2">
                         <Select
                             value={data.department_id.toString()}
@@ -168,7 +168,7 @@ export default function LocationsIndex({ locations: initialLocations, department
                                 ))}
                             </SelectContent>
                         </Select>
-                    </div>
+                    </div> */}
                 </div>
 
                 {/* Locations Table */}

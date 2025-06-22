@@ -435,4 +435,89 @@ class PlantController extends Controller
 
         return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
+
+    /**
+     * Batch delete multiple plants
+     */
+    public function batchDestroy(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:plants,plant_id',
+            'force' => 'boolean'
+        ]);
+
+        $plantIds = $request->input('ids');
+        $forceDelete = $request->boolean('force', false);
+
+        $plants = Plant::whereIn('plant_id', $plantIds)->get();
+        
+        $errors = [];
+        $deleted = [];
+        $failed = [];
+
+        foreach ($plants as $plant) {
+            try {
+                // Check for foreign key constraints
+                $userCount = $plant->users()->count();
+                $equipmentCount = $plant->equipments()->count();
+
+                if (($userCount > 0 || $equipmentCount > 0) && !$forceDelete) {
+                    $dependencies = [];
+                    if ($userCount > 0) {
+                        $dependencies[] = "{$userCount} user(s)";
+                    }
+                    if ($equipmentCount > 0) {
+                        $dependencies[] = "{$equipmentCount} equipment item(s)";
+                    }
+                    
+                    $failed[] = [
+                        'id' => $plant->plant_id,
+                        'name' => $plant->plant_name,
+                        'reason' => 'Has ' . implode(' and ', $dependencies) . ' assigned'
+                    ];
+                    continue;
+                }
+
+                // Perform deletion
+                if ($forceDelete) {
+                    $this->forceDeletePlantWithRelations($plant);
+                } else {
+                    $plant->delete(); // Soft delete
+                }
+
+                $deleted[] = [
+                    'id' => $plant->plant_id,
+                    'name' => $plant->plant_name
+                ];
+
+            } catch (\Exception $e) {
+                $failed[] = [
+                    'id' => $plant->plant_id,
+                    'name' => $plant->plant_name,
+                    'reason' => 'Deletion failed: ' . $e->getMessage()
+                ];
+            }
+        }
+
+        $message = sprintf(
+            'Batch operation completed. %d plant(s) %s successfully.',
+            count($deleted),
+            $forceDelete ? 'deleted' : 'archived'
+        );
+
+        if (count($failed) > 0) {
+            $message .= sprintf(' %d plant(s) could not be processed.', count($failed));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'deleted_count' => count($deleted),
+            'failed_count' => count($failed),
+            'deleted' => $deleted,
+            'failed' => $failed,
+            'force_delete' => $forceDelete
+        ]);
+    }
 }

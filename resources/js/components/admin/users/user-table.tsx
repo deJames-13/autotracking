@@ -1,10 +1,11 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DataTable, DataTableColumn, DataTableFilter } from '@/components/ui/data-table';
+import { BatchDataTable, DataTableColumn, DataTableFilter } from '@/components/ui/batch-data-table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { type Department, type PaginationData, type Plant, type Role, type User } from '@/types';
 import { router } from '@inertiajs/react';
+import axios from 'axios';
 import { Download, Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import Barcode from 'react-barcode';
@@ -40,16 +41,20 @@ export function UserTable({
     const [viewingUser, setViewingUser] = useState<User | null>(null);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
-    const handleEditSuccess = () => {
-        console.log('UserTable: Edit success triggered');
-        setEditingUser(null);
-
-        // Use onRefresh callback if available, otherwise reload page
+    const handleRefresh = () => {
+        console.log('UserTable: Refresh triggered');
         if (onRefresh) {
             onRefresh();
         } else {
+            // Fallback to Inertia reload if no onRefresh provided
             router.reload({ only: ['users'] });
         }
+    };
+
+    const handleEditSuccess = () => {
+        console.log('UserTable: Edit success triggered');
+        setEditingUser(null);
+        handleRefresh();
     };
 
     const handleDelete = (user: User) => {
@@ -63,12 +68,8 @@ export function UserTable({
                 setDeletingUser(null);
                 toast.success('User archived successfully');
 
-                // Use onRefresh callback if available, otherwise reload page
-                if (onRefresh) {
-                    onRefresh();
-                } else {
-                    router.reload({ only: ['users'] });
-                }
+                // Use the same refresh logic
+                handleRefresh();
             },
             onError: (errors) => {
                 console.error('Error archiving user:', errors);
@@ -86,6 +87,39 @@ export function UserTable({
                 toast.error('Failed to archive user. Please try again.');
             },
         });
+    };
+
+    const handleBatchDelete = async (ids: any[], force: boolean = false): Promise<void> => {
+        try {
+            const response = await axios.delete(route('admin.users.batch-destroy'), {
+                data: {
+                    ids,
+                    force: force ? 1 : 0
+                }
+            });
+
+            if (response.data.success) {
+                toast.success(`Successfully deleted ${response.data.deleted_count} user(s)`);
+
+                // Show warnings for failed deletions if any
+                if (response.data.failed_count > 0) {
+                    toast.error(`Failed to delete ${response.data.failed_count} user(s) due to dependencies. Use force delete if needed.`);
+                }
+
+                // Use the same refresh logic as single delete
+                handleRefresh();
+            } else {
+                toast.error(response.data.message || 'Failed to delete users');
+            }
+        } catch (error: any) {
+            console.error('Error in batch delete:', error);
+
+            if (error.response?.data?.message) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error('Failed to delete users. Please try again.');
+            }
+        }
     };
 
     const getRoleBadgeColor = (roleName: string) => {
@@ -349,11 +383,13 @@ export function UserTable({
 
     return (
         <>
-            <DataTable
+            <BatchDataTable
                 data={users.data}
                 columns={columns}
                 filters={filters}
                 loading={loading}
+                batchDelete={true}
+                entityName="users"
                 pagination={{
                     current_page: users.current_page,
                     last_page: users.last_page,
@@ -364,6 +400,7 @@ export function UserTable({
                 onFilter={handleFilter}
                 onPageChange={handlePageChange}
                 onPerPageChange={handlePerPageChange}
+                onBatchDelete={handleBatchDelete}
                 searchable={true}
                 filterable={true}
                 emptyMessage="No users found."

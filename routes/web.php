@@ -169,6 +169,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('plants/import', [AdminPlantController::class, 'import'])->name('plants.import');
         Route::get('plants/download-template', [AdminPlantController::class, 'downloadTemplate'])->name('plants.download-template');
         
+        // Batch delete routes
+        Route::delete('users/batch-destroy', [AdminUserController::class, 'batchDestroy'])->name('users.batch-destroy');
+        Route::delete('departments/batch-destroy', [AdminDepartmentController::class, 'batchDestroy'])->name('departments.batch-destroy');
+        Route::delete('locations/batch-destroy', [AdminLocationController::class, 'batchDestroy'])->name('locations.batch-destroy');
+        Route::delete('equipment/batch-destroy', [AdminEquipmentController::class, 'batchDestroy'])->name('equipment.batch-destroy');
+        Route::delete('plants/batch-destroy', [AdminPlantController::class, 'batchDestroy'])->name('plants.batch-destroy');
+        
         Route::resource('users', AdminUserController::class)->parameters([
             'users' => 'user:employee_id'
         ]);

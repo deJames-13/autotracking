@@ -449,4 +449,93 @@ class LocationController extends Controller
 
         return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
+
+    /**
+     * Batch delete multiple locations
+     */
+    public function batchDestroy(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:locations,location_id',
+            'force' => 'boolean'
+        ]);
+
+        $locationIds = $request->input('ids');
+        $forceDelete = $request->boolean('force', false);
+
+        $locations = Location::whereIn('location_id', $locationIds)->get();
+        
+        $errors = [];
+        $deleted = [];
+        $failed = [];
+
+        foreach ($locations as $location) {
+            try {
+                // Check for foreign key constraints
+                $trackIncomingCount = $location->trackIncoming()->count();
+                $trackOutgoingCount = $location->trackOutgoing()->count();
+                $equipmentCount = $location->equipment()->count();
+
+                if (($trackIncomingCount > 0 || $trackOutgoingCount > 0 || $equipmentCount > 0) && !$forceDelete) {
+                    $dependencies = [];
+                    if ($trackIncomingCount > 0) {
+                        $dependencies[] = "{$trackIncomingCount} incoming tracking record(s)";
+                    }
+                    if ($trackOutgoingCount > 0) {
+                        $dependencies[] = "{$trackOutgoingCount} outgoing tracking record(s)";
+                    }
+                    if ($equipmentCount > 0) {
+                        $dependencies[] = "{$equipmentCount} equipment item(s)";
+                    }
+                    
+                    $failed[] = [
+                        'id' => $location->location_id,
+                        'name' => $location->location_name,
+                        'reason' => 'Has ' . implode(', ', $dependencies)
+                    ];
+                    continue;
+                }
+
+                // Perform deletion
+                if ($forceDelete) {
+                    $this->forceDeleteLocationWithRelations($location);
+                } else {
+                    $location->delete(); // Soft delete
+                }
+
+                $deleted[] = [
+                    'id' => $location->location_id,
+                    'name' => $location->location_name
+                ];
+
+            } catch (\Exception $e) {
+                $failed[] = [
+                    'id' => $location->location_id,
+                    'name' => $location->location_name,
+                    'reason' => 'Deletion failed: ' . $e->getMessage()
+                ];
+            }
+        }
+
+        $message = sprintf(
+            'Batch operation completed. %d location(s) %s successfully.',
+            count($deleted),
+            $forceDelete ? 'deleted' : 'archived'
+        );
+
+        if (count($failed) > 0) {
+            $message .= sprintf(' %d location(s) could not be processed.', count($failed));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'deleted_count' => count($deleted),
+            'failed_count' => count($failed),
+            'deleted' => $deleted,
+            'failed' => $failed,
+            'force_delete' => $forceDelete
+        ]);
+    }
 }
