@@ -42,7 +42,6 @@ class Kernel extends HttpKernel
         'password.confirm' => \Illuminate\Auth\Middleware\EnsurePasswordIsConfirmed::class,
         'signed' => \App\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        'revoke.cookies' => \App\Http\Middleware\RevokeCookiesOnUpdate::class,
     ];
 
     /**
