@@ -20,7 +20,7 @@ php artisan view:cache
 
 echo "Restarting Inertia SSR server (if applicable)..."
 pm2 restart inertia-ssr
-
+nohup php artisan queue:work --verbose > queue.log 2>&1 &
 echo "Update complete!"
 
 
