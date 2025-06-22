@@ -40,9 +40,9 @@ class DepartmentController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(): JsonResponse
     {
-        return Inertia::render('admin/departments/create');
+        return response()->json([]);
     }
 
     public function store(DepartmentRequest $request): RedirectResponse|JsonResponse
@@ -61,25 +61,18 @@ class DepartmentController extends Controller
             ->with('success', 'Department created successfully.');
     }
 
-    public function show(Department $department, Request $request): Response|JsonResponse
+    public function show(Department $department, Request $request): JsonResponse
     {
         $department->load(['users', 'locations']);
         
-        // Return JSON only for non-Inertia AJAX requests
-        if ($request->ajax() && !$request->header('X-Inertia')) {
-            return response()->json([
-                'data' => $department
-            ]);
-        }
-        
-        return Inertia::render('admin/departments/show', [
-            'department' => $department,
+        return response()->json([
+            'data' => $department
         ]);
     }
 
-    public function edit(Department $department): Response
+    public function edit(Department $department): JsonResponse
     {
-        return Inertia::render('admin/departments/edit', [
+        return response()->json([
             'department' => $department,
         ]);
     }

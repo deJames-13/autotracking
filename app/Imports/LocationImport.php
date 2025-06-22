@@ -23,6 +23,13 @@ class LocationImport implements ToModel, WithHeadingRow, WithValidation, WithBat
             return null;
         }
 
+        $locationName = $row['location_name'] ?? $row['name'] ?? '';
+        
+        // Skip if location already exists
+        if (Location::where('location_name', $locationName)->exists()) {
+            return null;
+        }
+
         // Resolve department_id from department_name
         $departmentId = null;
         if (!empty($row['department_name'])) {
@@ -33,7 +40,7 @@ class LocationImport implements ToModel, WithHeadingRow, WithValidation, WithBat
         }
 
         return new Location([
-            'location_name' => $row['location_name'] ?? $row['name'] ?? '',
+            'location_name' => $locationName,
             'department_id' => $departmentId,
         ]);
     }

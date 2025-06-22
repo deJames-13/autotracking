@@ -82,13 +82,13 @@ class UserController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(): JsonResponse
     {
         $roles = Role::all();
         $departments = Department::all();
         $plants = Plant::all();
 
-        return Inertia::render('admin/users/create', [
+        return response()->json([
             'roles' => $roles,
             'departments' => $departments,
             'plants' => $plants,
@@ -185,29 +185,22 @@ class UserController extends Controller
             ->with('email_warnings', $emailWarnings);
     }
 
-    public function show(User $user, Request $request): Response|JsonResponse
+    public function show(User $user, Request $request): JsonResponse
     {
         $user->load(['role', 'department', 'plant', 'equipments']);
         
-        // Return JSON only for non-Inertia AJAX requests
-        if ($request->ajax() && !$request->header('X-Inertia')) {
-            return response()->json([
-                'data' => $user
-            ]);
-        }
-        
-        return Inertia::render('admin/users/show', [
-            'user' => $user,
+        return response()->json([
+            'data' => $user
         ]);
     }
 
-    public function edit(User $user): Response
+    public function edit(User $user): JsonResponse
     {
         $roles = Role::all();
         $departments = Department::all();
         $plants = Plant::all();
 
-        return Inertia::render('admin/users/edit', [
+        return response()->json([
             'user' => $user,
             'roles' => $roles,
             'departments' => $departments,

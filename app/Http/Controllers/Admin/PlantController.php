@@ -41,9 +41,9 @@ class PlantController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(): JsonResponse
     {
-        return Inertia::render('admin/plants/create');
+        return response()->json([]);
     }
 
     public function store(PlantRequest $request): RedirectResponse|JsonResponse
@@ -62,25 +62,18 @@ class PlantController extends Controller
             ->with('success', 'Plant created successfully.');
     }
 
-    public function show(Plant $plant, Request $request): Response|JsonResponse
+    public function show(Plant $plant, Request $request): JsonResponse
     {
         $plant->load(['users']);
         
-        // Return JSON only for non-Inertia AJAX requests
-        if ($request->ajax() && !$request->header('X-Inertia')) {
-            return response()->json([
-                'data' => $plant
-            ]);
-        }
-        
-        return Inertia::render('admin/plants/show', [
-            'plant' => $plant,
+        return response()->json([
+            'data' => $plant
         ]);
     }
 
-    public function edit(Plant $plant): Response
+    public function edit(Plant $plant): JsonResponse
     {
-        return Inertia::render('admin/plants/edit', [
+        return response()->json([
             'plant' => $plant,
         ]);
     }

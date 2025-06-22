@@ -111,7 +111,7 @@ class EquipmentController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(): JsonResponse
     {
         $users = User::with(['role', 'department'])
             ->orderBy('first_name')
@@ -121,7 +121,7 @@ class EquipmentController extends Controller
         $departments = Department::orderBy('department_name')->get();
         $locations = Location::with('department')->orderBy('location_name')->get();
 
-        return Inertia::render('admin/equipment/create', [
+        return response()->json([
             'users' => $users,
             'plants' => $plants,
             'departments' => $departments,
@@ -137,23 +137,16 @@ class EquipmentController extends Controller
             ->with('success', 'Equipment created successfully.');
     }
 
-    public function show(Equipment $equipment, Request $request): Response|JsonResponse
+    public function show(Equipment $equipment, Request $request): JsonResponse
     {
         $equipment->load(['user.role', 'user.department', 'plant', 'department', 'location', 'trackIncoming']);
         
-        // Return JSON only for non-Inertia AJAX requests
-        if ($request->ajax() && !$request->header('X-Inertia')) {
-            return response()->json([
-                'data' => $equipment
-            ]);
-        }
-        
-        return Inertia::render('admin/equipment/show', [
-            'equipment' => $equipment,
+        return response()->json([
+            'data' => $equipment
         ]);
     }
 
-    public function edit(Equipment $equipment): Response
+    public function edit(Equipment $equipment): JsonResponse
     {
         $users = User::with(['role', 'department'])
             ->orderBy('first_name')
@@ -163,7 +156,7 @@ class EquipmentController extends Controller
         $departments = Department::orderBy('department_name')->get();
         $locations = Location::with('department')->orderBy('location_name')->get();
 
-        return Inertia::render('admin/equipment/edit', [
+        return response()->json([
             'equipment' => $equipment,
             'users' => $users,
             'plants' => $plants,

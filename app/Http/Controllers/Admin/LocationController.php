@@ -50,11 +50,11 @@ class LocationController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(): JsonResponse
     {
         $departments = Department::all();
 
-        return Inertia::render('admin/locations/create', [
+        return response()->json([
             'departments' => $departments,
         ]);
     }
@@ -83,27 +83,20 @@ class LocationController extends Controller
             ->with('success', 'Location created successfully.');
     }
 
-    public function show(Location $location, Request $request): Response|JsonResponse
+    public function show(Location $location, Request $request): JsonResponse
     {
         $location->load(['department']);
         
-        // Return JSON only for non-Inertia AJAX requests
-        if ($request->ajax() && !$request->header('X-Inertia')) {
-            return response()->json([
-                'data' => $location
-            ]);
-        }
-        
-        return Inertia::render('admin/locations/show', [
-            'location' => $location,
+        return response()->json([
+            'data' => $location
         ]);
     }
 
-    public function edit(Location $location): Response
+    public function edit(Location $location): JsonResponse
     {
         $departments = Department::all();
 
-        return Inertia::render('admin/locations/edit', [
+        return response()->json([
             'location' => $location,
             'departments' => $departments,
         ]);

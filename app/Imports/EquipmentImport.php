@@ -23,6 +23,17 @@ class EquipmentImport implements ToModel, WithHeadingRow, WithValidation, WithBa
             return null;
         }
 
+        $recallNumber = $row['recall_number'] ?? null;
+        $serialNumber = $row['serial_number'] ?? null;
+
+        // Skip if equipment with same recall number or serial number already exists
+        if ($recallNumber && Equipment::where('recall_number', $recallNumber)->exists()) {
+            return null;
+        }
+        if ($serialNumber && Equipment::where('serial_number', $serialNumber)->exists()) {
+            return null;
+        }
+
         // Resolve employee_id from employee name
         $employeeId = null;
         if (!empty($row['employee_name'])) {
@@ -63,8 +74,8 @@ class EquipmentImport implements ToModel, WithHeadingRow, WithValidation, WithBa
         }
 
         return new Equipment([
-            'recall_number' => $row['recall_number'] ?? null,
-            'serial_number' => $row['serial_number'] ?? null,
+            'recall_number' => $recallNumber,
+            'serial_number' => $serialNumber,
             'description' => $row['description'] ?? '',
             'model' => $row['model'] ?? null,
             'manufacturer' => $row['manufacturer'] ?? null,

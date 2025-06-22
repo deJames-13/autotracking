@@ -23,8 +23,15 @@ class DepartmentImport implements ToModel, WithHeadingRow, WithValidation, WithB
             return null;
         }
 
+        $departmentName = $row['department_name'] ?? $row['name'] ?? '';
+        
+        // Skip if department already exists
+        if (Department::where('department_name', $departmentName)->exists()) {
+            return null;
+        }
+
         return new Department([
-            'department_name' => $row['department_name'] ?? $row['name'] ?? '',
+            'department_name' => $departmentName,
         ]);
     }
 
@@ -34,7 +41,7 @@ class DepartmentImport implements ToModel, WithHeadingRow, WithValidation, WithB
     public function rules(): array
     {
         return [
-            'department_name' => 'required|string|max:255|unique:departments,department_name',
+            'department_name' => 'required|string|max:255',
         ];
     }
 
@@ -45,7 +52,6 @@ class DepartmentImport implements ToModel, WithHeadingRow, WithValidation, WithB
     {
         return [
             'department_name.required' => 'Department name is required',
-            'department_name.unique' => 'Department name already exists',
         ];
     }
 

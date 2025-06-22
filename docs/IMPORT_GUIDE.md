@@ -20,6 +20,17 @@ Instead of using numeric IDs, you can use human-readable names for relationships
 - **Equipment**: Use `employee_name`, `plant_name`, `department_name`, `location_name` instead of IDs
 - **Locations**: Use `department_name` instead of `department_id`
 
+### Duplicate Handling
+The import system automatically handles duplicates by skipping existing records:
+
+- **Users**: Skips if email already exists
+- **Equipment**: Skips if recall_number or serial_number already exists
+- **Departments**: Skips if department_name already exists
+- **Locations**: Skips if location_name already exists
+- **Plants**: Skips if plant_name already exists
+
+This allows you to safely re-import files without creating duplicates.
+
 ### Template Download
 Each entity page has a "Download Template" button that provides:
 - Correct column headers using name fields
@@ -122,9 +133,11 @@ Each entity page has a "Download Template" button that provides:
 - Empty rows are automatically skipped
 - Required fields must have values
 - Names used for relationships must exist in the system
+- **Duplicate records are automatically skipped** instead of causing errors
 
 ### Specific Rules
-- **Email**: Must be valid and unique (for users)
+- **Email**: Must be valid (unique constraint handled by skipping duplicates)
+- **Recall/Serial Numbers**: Duplicate equipment is skipped based on these identifiers
 - **Status**: Must be one of: active, inactive, pending_calibration, in_calibration, retired (for equipment)
 - **Dates**: Must be in valid date format (YYYY-MM-DD recommended)
 - **Names**: Must exactly match existing names in the system
@@ -143,8 +156,9 @@ If import fails:
 1. **Use Templates**: Always start with the downloaded template
 2. **Test Small Batches**: Import a few records first to verify format
 3. **Check Relationships**: Ensure referenced names (roles, departments, etc.) exist
-4. **Backup Data**: Consider backing up before large imports
-5. **Review Validation**: Check all validation messages carefully
+4. **Don't Worry About Duplicates**: The system will automatically skip existing records
+5. **Review Results**: Check the success message to see how many records were imported vs skipped
+6. **Re-import Safely**: You can re-import the same file multiple times without creating duplicates
 
 ## Fallback Support
 

@@ -24,6 +24,13 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation, WithBatchIn
             return null;
         }
 
+        $email = $row['email'] ?? null;
+        
+        // Skip if user with email already exists
+        if ($email && User::where('email', $email)->exists()) {
+            return null;
+        }
+
         // Resolve role_id from role_name
         $roleId = null;
         if (!empty($row['role_name'])) {
@@ -55,7 +62,7 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation, WithBatchIn
             'first_name' => $row['first_name'] ?? $row['firstname'] ?? null,
             'last_name' => $row['last_name'] ?? $row['lastname'] ?? null,
             'middle_name' => $row['middle_name'] ?? $row['middlename'] ?? null,
-            'email' => $row['email'] ?? null,
+            'email' => $email,
             'password' => Hash::make($row['password'] ?? $row['pin'] ?? 'default123'),
             'role_id' => $roleId ?? 1, // Default role
             'department_id' => $departmentId,
@@ -72,7 +79,7 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation, WithBatchIn
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
-            'email' => 'nullable|email|unique:users,email',
+            'email' => 'nullable|email',
             'role_name' => 'nullable|exists:roles,role_name',
             'role_id' => 'nullable|exists:roles,role_id',
             'department_name' => 'nullable|exists:departments,department_name',
@@ -91,7 +98,6 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation, WithBatchIn
             'first_name.required' => 'First name is required',
             'last_name.required' => 'Last name is required',
             'email.email' => 'Email must be a valid email address',
-            'email.unique' => 'Email already exists',
             'role_name.exists' => 'Role name does not exist',
             'role_id.exists' => 'Role ID does not exist',
             'department_name.exists' => 'Department name does not exist',
