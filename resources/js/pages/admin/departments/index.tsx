@@ -3,11 +3,12 @@ import { DepartmentTable } from '@/components/admin/departments/department-table
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { ImportModal } from '@/components/ui/import-modal';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Department, type PaginationData } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Archive, Plus, Search } from 'lucide-react';
+import { Archive, Plus, Search, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -27,6 +28,7 @@ interface DepartmentsIndexProps {
 export default function DepartmentsIndex({ departments: initialDepartments, filters = {} }: DepartmentsIndexProps) {
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     // Use live page data instead of initial props
     const { props } = usePage<DepartmentsIndexProps>();
@@ -92,6 +94,14 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
                             <Archive className="mr-2 h-4 w-4" />
                             View Archived
                         </Button>
+
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsImportModalOpen(true)}
+                        >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Import Departments
+                        </Button>
                         
                         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                             <DialogTrigger asChild>
@@ -134,6 +144,17 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
 
                 {/* Departments Table */}
                 <DepartmentTable departments={departments} onRefresh={refreshDepartments} />
+
+                {/* Import Modal */}
+                <ImportModal
+                    isOpen={isImportModalOpen}
+                    onOpenChange={setIsImportModalOpen}
+                    title="Import Departments"
+                    description="Import departments from an Excel file. Download the template to see the required format."
+                    importEndpoint={route('admin.departments.import')}
+                    templateEndpoint={route('admin.departments.download-template')}
+                    onSuccess={refreshDepartments}
+                />
 
                 {/* Pagination Info */}
                 <div className="text-muted-foreground flex items-center justify-between text-sm">

@@ -2,12 +2,13 @@ import { UserForm } from '@/components/admin/users/user-form';
 import { UserTable } from '@/components/admin/users/user-table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ImportModal } from '@/components/ui/import-modal';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Department, type Plant, type Role, type User } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import axios from 'axios';
-import { Plus, Archive } from 'lucide-react';
+import { Plus, Archive, Upload } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -26,6 +27,7 @@ interface UsersIndexProps {
 export default function UsersIndex({ roles, departments, plants }: UsersIndexProps) {
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({
@@ -165,6 +167,15 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
                             View Archived
                         </Button>
 
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsImportModalOpen(true)}
+                            className="w-full sm:w-auto"
+                        >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Import Users
+                        </Button>
+
                         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button>
@@ -212,6 +223,17 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
                     onFilter={handleFilter}
                     onPageChange={handlePageChange}
                     onPerPageChange={handlePerPageChange}
+                />
+
+                {/* Import Modal */}
+                <ImportModal
+                    isOpen={isImportModalOpen}
+                    onOpenChange={setIsImportModalOpen}
+                    title="Import Users"
+                    description="Import users from an Excel file. Download the template to see the required format."
+                    importEndpoint={route('admin.users.import')}
+                    templateEndpoint={route('admin.users.download-template')}
+                    onSuccess={refreshUsers}
                 />
             </div>
         </AppLayout>

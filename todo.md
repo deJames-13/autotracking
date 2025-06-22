@@ -4,6 +4,16 @@
 - [x] enable manual input for recall number for requests (admin/employee) ✅ COMPLETED
 
 -- TODO
+
+- [ ] Imports
+    - [ ] batch user imports
+    - [ ] batch equipments imports
+    - [ ] batch department imports
+    - [ ] batch plant imports 
+    - [ ] batch locations imports
+
+
+
 - [x] fix Equipment crud 
 - [x] fix delete/archiving
 - [x] enable manual input for recall number for requests (admin/employee) ✅ COMPLETED
@@ -18,11 +28,6 @@
 - [ ] Refresh error on crud pages
 
 
-- [ ] Imports
-    - [ ] batch user imports
-    - [ ] batch department
-    - [ ] batch plant
-    - [ ] batch locations
 
 
 - [ ] Table paginated/filters (turn to datatable)  

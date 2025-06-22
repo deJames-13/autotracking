@@ -4,13 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PlantRequest;
+use App\Imports\PlantImport;
 use App\Models\Plant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException as ExcelValidationException;
 
 class PlantController extends Controller
 {
@@ -368,5 +372,74 @@ class PlantController extends Controller
             // 3. Finally, force delete the plant itself
             $plant->forceDelete();
         });
+    }
+
+    /**
+     * Import plants from Excel file
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+        ]);
+
+        try {
+            $import = new PlantImport();
+            Excel::import($import, $request->file('file'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Plants imported successfully!'
+            ]);
+        } catch (ExcelValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors occurred during import.',
+                'errors' => $e->failures()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Plant import failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Download sample Excel template for plant import
+     */
+    public function downloadTemplate(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $headers = ['plant_name', 'address', 'telephone'];
+
+        $sampleData = [
+            ['P1', '123 Industrial Ave, Plant 1 District, 12345', '555-001-0001'],
+            ['P2', '456 Manufacturing Blvd, Plant 2 District, 23456', '555-002-0002'],
+            ['P3', '789 Production Road, Plant 3 District, 34567', '555-003-0003']
+        ];
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Add headers
+        foreach ($headers as $key => $header) {
+            $sheet->setCellValue(chr(65 + $key) . '1', $header);
+        }
+
+        // Add sample data
+        foreach ($sampleData as $rowIndex => $row) {
+            foreach ($row as $colIndex => $value) {
+                $sheet->setCellValue(chr(65 + $colIndex) . ($rowIndex + 2), $value);
+            }
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        
+        $fileName = 'plant_import_template.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), $fileName);
+        $writer->save($tempFile);
+
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
 }

@@ -4,13 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DepartmentRequest;
+use App\Imports\DepartmentImport;
 use App\Models\Department;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException as ExcelValidationException;
 
 class DepartmentController extends Controller
 {
@@ -419,5 +423,77 @@ class DepartmentController extends Controller
                 'message' => 'Failed to create department: ' . $e->getMessage()
             ], 422);
         }
+    }
+
+    /**
+     * Import departments from Excel file
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+        ]);
+
+        try {
+            $import = new DepartmentImport();
+            Excel::import($import, $request->file('file'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Departments imported successfully!'
+            ]);
+        } catch (ExcelValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors occurred during import.',
+                'errors' => $e->failures()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Department import failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Download sample Excel template for department import
+     */
+    public function downloadTemplate(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $headers = ['department_name'];
+
+        $sampleData = [
+            ['Admin'],
+            ['Calibrations'],
+            ['Tracking'],
+            ['Constructions'],
+            ['HR'],
+            ['Electrical']
+        ];
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Add headers
+        foreach ($headers as $key => $header) {
+            $sheet->setCellValue(chr(65 + $key) . '1', $header);
+        }
+
+        // Add sample data
+        foreach ($sampleData as $rowIndex => $row) {
+            foreach ($row as $colIndex => $value) {
+                $sheet->setCellValue(chr(65 + $colIndex) . ($rowIndex + 2), $value);
+            }
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        
+        $fileName = 'department_import_template.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), $fileName);
+        $writer->save($tempFile);
+
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
 }

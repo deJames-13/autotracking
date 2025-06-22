@@ -157,6 +157,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('equipment/archived', [AdminEquipmentController::class, 'archived'])->name('equipment.archived');
         Route::get('plants/archived', [AdminPlantController::class, 'archived'])->name('plants.archived');
         
+        // Import routes
+        Route::post('users/import', [AdminUserController::class, 'import'])->name('users.import');
+        Route::get('users/download-template', [AdminUserController::class, 'downloadTemplate'])->name('users.download-template');
+        Route::post('departments/import', [AdminDepartmentController::class, 'import'])->name('departments.import');
+        Route::get('departments/download-template', [AdminDepartmentController::class, 'downloadTemplate'])->name('departments.download-template');
+        Route::post('locations/import', [AdminLocationController::class, 'import'])->name('locations.import');
+        Route::get('locations/download-template', [AdminLocationController::class, 'downloadTemplate'])->name('locations.download-template');
+        Route::post('equipment/import', [AdminEquipmentController::class, 'import'])->name('equipment.import');
+        Route::get('equipment/download-template', [AdminEquipmentController::class, 'downloadTemplate'])->name('equipment.download-template');
+        Route::post('plants/import', [AdminPlantController::class, 'import'])->name('plants.import');
+        Route::get('plants/download-template', [AdminPlantController::class, 'downloadTemplate'])->name('plants.download-template');
+        
         Route::resource('users', AdminUserController::class)->parameters([
             'users' => 'user:employee_id'
         ]);

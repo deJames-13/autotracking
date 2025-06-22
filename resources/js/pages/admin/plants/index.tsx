@@ -3,11 +3,12 @@ import { PlantTable } from '@/components/admin/plants/plant-table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { ImportModal } from '@/components/ui/import-modal';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type PaginationData, type Plant } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Archive, Plus, Search } from 'lucide-react';
+import { Archive, Plus, Search, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -27,6 +28,7 @@ interface PlantsIndexProps {
 export default function PlantsIndex({ plants: initialPlants, filters = {} }: PlantsIndexProps) {
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     // Use live page data instead of initial props
     const { props } = usePage<PlantsIndexProps>();
@@ -92,6 +94,14 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
                             <Archive className="mr-2 h-4 w-4" />
                             View Archived
                         </Button>
+
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsImportModalOpen(true)}
+                        >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Import Plants
+                        </Button>
                         
                         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                             <DialogTrigger asChild>
@@ -134,6 +144,17 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
 
                 {/* Plants Table */}
                 <PlantTable plants={plants} onRefresh={refreshPlants} />
+
+                {/* Import Modal */}
+                <ImportModal
+                    isOpen={isImportModalOpen}
+                    onOpenChange={setIsImportModalOpen}
+                    title="Import Plants"
+                    description="Import plants from an Excel file. Download the template to see the required format."
+                    importEndpoint={route('admin.plants.import')}
+                    templateEndpoint={route('admin.plants.download-template')}
+                    onSuccess={refreshPlants}
+                />
 
                 {/* Pagination Info */}
                 <div className="text-muted-foreground flex items-center justify-between text-sm">

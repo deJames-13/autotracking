@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EquipmentRequest;
+use App\Imports\EquipmentImport;
 use App\Models\Equipment;
 use App\Models\User;
 use App\Models\Plant;
@@ -12,9 +13,12 @@ use App\Models\Location;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException as ExcelValidationException;
 
 class EquipmentController extends Controller
 {
@@ -375,7 +379,7 @@ class EquipmentController extends Controller
     /**
      * Force delete equipment and delete all related tracking records
      */
-    private function forceDeleteEquipmentWithRelations(Equipment $equipment): void
+    private function forceDeleteEquipmentWithRelations(Equipment $equipment)
     {
         \DB::transaction(function () use ($equipment) {
             // 1. Get all track_incoming records for this equipment
@@ -398,5 +402,135 @@ class EquipmentController extends Controller
             // 4. Finally, force delete the equipment itself
             $equipment->forceDelete();
         });
+
+        return response()->json([
+            'message' => 'Equipment permanently deleted successfully',
+            'equipment' => $equipment
+        ]);
+    }
+
+    /**
+     * Import equipment from Excel file
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+        ]);
+
+        try {
+            $import = new EquipmentImport();
+            Excel::import($import, $request->file('file'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Equipment imported successfully!'
+            ]);
+        } catch (ExcelValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors occurred during import.',
+                'errors' => $e->failures()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Equipment import failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Download sample Excel template for equipment import
+     */
+    public function downloadTemplate(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $headers = [
+            'recall_number',
+            'serial_number',
+            'description',
+            'model',
+            'manufacturer',
+            'employee_name',
+            'plant_name',
+            'department_name',
+            'location_name',
+            'status',
+            'last_calibration_date',
+            'next_calibration_due',
+            'process_req_range'
+        ];
+
+        $sampleData = [
+            [
+                'RN001',
+                'CAL-2024-001',
+                'Digital Multimeter',
+                'Fluke 87V',
+                'Fluke Corporation',
+                'Derick Espinosa',
+                'P1',
+                'Calibrations',
+                'Annex A',
+                'active',
+                '2024-01-15',
+                '2025-01-15',
+                '0-1000V DC/AC'
+            ],
+            [
+                'RN002',
+                'TRK-2024-002',
+                'Temperature Logger',
+                'TempTracker Pro',
+                'DataLogger Inc',
+                'Maria Santos',
+                'P2',
+                'Tracking',
+                'Annex B',
+                'pending_calibration',
+                '2023-12-20',
+                '2024-12-20',
+                '-40°C to 85°C'
+            ],
+            [
+                'RN003',
+                'ELE-2024-003',
+                'Oscilloscope',
+                'DSO5034A',
+                'Keysight Technologies',
+                'John Rodriguez',
+                'P3',
+                'Electrical',
+                'Building B Basement',
+                'in_calibration',
+                '2024-03-10',
+                '2025-03-10',
+                '350MHz, 4 Channels'
+            ]
+        ];
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Add headers
+        foreach ($headers as $key => $header) {
+            $sheet->setCellValue(chr(65 + $key) . '1', $header);
+        }
+
+        // Add sample data
+        foreach ($sampleData as $rowIndex => $row) {
+            foreach ($row as $colIndex => $value) {
+                $sheet->setCellValue(chr(65 + $colIndex) . ($rowIndex + 2), $value);
+            }
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        
+        $fileName = 'equipment_import_template.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), $fileName);
+        $writer->save($tempFile);
+
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
 }

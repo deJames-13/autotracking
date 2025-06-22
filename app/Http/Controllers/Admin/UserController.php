@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRequest;
+use App\Imports\UserImport;
 use App\Models\Department;
 use App\Models\Plant;
 use App\Models\Role;
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException as ExcelValidationException;
 
 class UserController extends Controller
 {
@@ -1007,5 +1010,110 @@ class UserController extends Controller
             // 4. Finally, force delete the user itself
             $user->forceDelete();
         });
+    }
+
+    /**
+     * Import users from Excel file
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+        ]);
+
+        try {
+            $import = new UserImport();
+            Excel::import($import, $request->file('file'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Users imported successfully!'
+            ]);
+        } catch (ExcelValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors occurred during import.',
+                'errors' => $e->failures()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('User import failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Download sample Excel template for user import
+     */
+    public function downloadTemplate(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $headers = [
+            'first_name',
+            'last_name', 
+            'middle_name',
+            'email',
+            'password',
+            'role_name',
+            'department_name',
+            'plant_name'
+        ];
+
+        $sampleData = [
+            [
+                'Derick',
+                'Espinosa', 
+                'E',
+                'derick.espinosa@company.com',
+                'password123',
+                'admin',
+                'Admin',
+                'P1'
+            ],
+            [
+                'Maria',
+                'Santos',
+                'C',
+                'maria.santos@company.com',
+                'secure456',
+                'technician',
+                'Calibrations',
+                'P2'
+            ],
+            [
+                'John',
+                'Rodriguez',
+                'A',
+                'john.rodriguez@company.com',
+                'pass789',
+                'employee',
+                'Tracking',
+                'P3'
+            ]
+        ];
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Add headers
+        foreach ($headers as $key => $header) {
+            $sheet->setCellValue(chr(65 + $key) . '1', $header);
+        }
+
+        // Add sample data
+        foreach ($sampleData as $rowIndex => $row) {
+            foreach ($row as $colIndex => $value) {
+                $sheet->setCellValue(chr(65 + $colIndex) . ($rowIndex + 2), $value);
+            }
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        
+        $fileName = 'user_import_template.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), $fileName);
+        $writer->save($tempFile);
+
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
 }

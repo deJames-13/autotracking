@@ -3,12 +3,13 @@ import { LocationTable } from '@/components/admin/locations/location-table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { ImportModal } from '@/components/ui/import-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Department, type Location, type PaginationData } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Archive, Plus, Search } from 'lucide-react';
+import { Archive, Plus, Search, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -30,6 +31,7 @@ interface LocationsIndexProps {
 export default function LocationsIndex({ locations: initialLocations, departments, filters = {} }: LocationsIndexProps) {
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     // Use live page data instead of initial props
     const { props } = usePage<LocationsIndexProps>();
@@ -102,6 +104,14 @@ export default function LocationsIndex({ locations: initialLocations, department
                             <Archive className="mr-2 h-4 w-4" />
                             View Archived
                         </Button>
+
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsImportModalOpen(true)}
+                        >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Import Locations
+                        </Button>
                         
                         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                             <DialogTrigger asChild>
@@ -163,6 +173,17 @@ export default function LocationsIndex({ locations: initialLocations, department
 
                 {/* Locations Table */}
                 <LocationTable locations={locations} departments={departments} onRefresh={refreshLocations} />
+
+                {/* Import Modal */}
+                <ImportModal
+                    isOpen={isImportModalOpen}
+                    onOpenChange={setIsImportModalOpen}
+                    title="Import Locations"
+                    description="Import locations from an Excel file. Download the template to see the required format."
+                    importEndpoint={route('admin.locations.import')}
+                    templateEndpoint={route('admin.locations.download-template')}
+                    onSuccess={refreshLocations}
+                />
 
                 {/* Pagination Info */}
                 <div className="text-muted-foreground flex items-center justify-between text-sm">
