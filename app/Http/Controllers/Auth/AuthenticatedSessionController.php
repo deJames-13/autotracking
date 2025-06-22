@@ -30,9 +30,6 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        // Revoke any existing cookies before authentication
-        $this->revokeCookies();
-
         $request->authenticate();
 
         $request->session()->regenerate();

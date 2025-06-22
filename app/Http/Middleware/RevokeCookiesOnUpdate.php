@@ -14,20 +14,26 @@ class RevokeCookiesOnUpdate
      * Handle an incoming request.
      * 
      * This middleware checks for app version changes and revokes cookies
-     * when a new deployment is detected.
+     * when a new deployment is detected, but only on specific routes.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Check if app version has changed (indicating a deployment)
-        $currentVersion = config('app.version', '1.0.0');
-        $lastVersion = Cache::get('app_version', null);
+        // Only check version on login page visits (not on every request)
+        if ($request->is('login') && $request->isMethod('GET')) {
+            // Check if app version has changed (indicating a deployment)
+            $currentVersion = config('app.version', '1.0.0');
+            $lastVersion = Cache::get('app_version_' . $request->ip(), null);
 
-        // If version changed or no cached version exists, revoke cookies
-        if ($lastVersion !== $currentVersion) {
-            $this->revokeCookies($request);
-            Cache::put('app_version', $currentVersion, now()->addDays(30));
+            // If version changed or no cached version exists, revoke cookies
+            if ($lastVersion !== null && $lastVersion !== $currentVersion) {
+                $this->revokeCookies($request);
+                Cache::put('app_version_' . $request->ip(), $currentVersion, now()->addDays(7));
+            } elseif ($lastVersion === null) {
+                // First visit, just cache the version
+                Cache::put('app_version_' . $request->ip(), $currentVersion, now()->addDays(7));
+            }
         }
 
         return $next($request);
