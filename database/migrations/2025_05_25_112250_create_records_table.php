@@ -14,14 +14,17 @@ return new class extends Migration
         Schema::create('track_incoming', function (Blueprint $table) {
             $table->id();
             $table->string('recall_number')->nullable();
-            $table->foreignId('technician_id')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
+            $table->string('technician_id', 20)->nullable();
+            $table->foreign('technician_id')->references('employee_id')->on('users')->onDelete('set null');
             $table->text('description');
             $table->foreignId('equipment_id')->nullable()->constrained('equipments', 'equipment_id')->onDelete('set null');
             $table->foreignId('location_id')->nullable()->constrained('locations', 'location_id')->onDelete('set null');
             $table->dateTime('due_date');
             $table->dateTime('date_in');
-            $table->foreignId('employee_id_in')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
-            $table->foreignId('received_by_id')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
+            $table->string('employee_id_in', 20)->nullable();
+            $table->foreign('employee_id_in')->references('employee_id')->on('users')->onDelete('set null');
+            $table->string('received_by_id', 20)->nullable();
+            $table->foreign('received_by_id')->references('employee_id')->on('users')->onDelete('set null');
 
             $table->enum('status', ['for_confirmation', 'pending_calibration','completed'])->default('pending_calibration');
             $table->string('serial_number')->nullable();
@@ -38,8 +41,10 @@ return new class extends Migration
             $table->date('cal_date');
             $table->date('cal_due_date');
             $table->enum('status', ['for_pickup', 'completed'])->default('for_pickup');
-            $table->foreignId('employee_id_out')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
-            $table->foreignId('released_by_id')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
+            $table->string('employee_id_out', 20)->nullable();
+            $table->foreign('employee_id_out')->references('employee_id')->on('users')->onDelete('set null');
+            $table->string('released_by_id', 20)->nullable();
+            $table->foreign('released_by_id')->references('employee_id')->on('users')->onDelete('set null');
             $table->dateTime('date_out')->nullable();
 
             $table->integer('cycle_time')->nullable();

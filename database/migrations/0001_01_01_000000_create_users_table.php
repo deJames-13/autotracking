@@ -35,7 +35,7 @@ return new class extends Migration
         });
         
         Schema::create('users', function (Blueprint $table) {
-            $table->id('employee_id');
+            $table->string('employee_id', 20)->primary();
             $table->string('first_name');
             $table->string('last_name');
             $table->string('middle_name')->nullable();
@@ -61,14 +61,15 @@ return new class extends Migration
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('employee_id')->primary();
+            $table->string('employee_id', 20)->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index()->references('employee_id')->on('users')->onDelete('cascade');
+            $table->string('user_id', 20)->nullable()->index();
+            $table->foreign('user_id')->references('employee_id')->on('users')->onDelete('cascade');
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');

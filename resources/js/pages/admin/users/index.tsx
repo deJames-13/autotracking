@@ -230,7 +230,7 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
                     isOpen={isImportModalOpen}
                     onOpenChange={setIsImportModalOpen}
                     title="Import Users"
-                    description="Import users from an Excel file. Download the template to see the required format."
+                    description="Import users from an Excel file. You can specify custom employee IDs or leave blank for auto-generation. Download the template to see the required format."
                     importEndpoint={route('admin.users.import')}
                     templateEndpoint={route('admin.users.download-template')}
                     onSuccess={refreshUsers}

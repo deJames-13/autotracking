@@ -32,7 +32,7 @@ export interface SharedData {
 }
 
 export interface User {
-    employee_id: number;
+    employee_id: string;
     first_name: string;
     last_name: string;
     middle_name?: string | null;
@@ -92,7 +92,7 @@ export interface Location {
 
 export interface Equipment {
     equipment_id: number;
-    employee_id?: number | null;
+    employee_id?: string | null;
     recall_number: string;
     serial_number?: string | null;
     description: string;
@@ -125,11 +125,11 @@ export interface TrackingRecord {
     location_id: number;
     due_date: string;
     date_in: string;
-    employee_id_in: number;
+    employee_id_in: string;
     cal_date: string;
     cal_due_date: string;
     date_out?: string | null;
-    employee_id_out?: number | null;
+    employee_id_out?: string | null;
     cycle_time: number;
     created_at: string;
     updated_at: string;
@@ -149,7 +149,7 @@ export interface TrackIncoming {
     technician_id: number;
     location_id: number;
     received_by_id?: number | null;
-    employee_id_in: number;
+    employee_id_in: string;
     serial_number?: string | null;
     model?: string | null;
     manufacturer?: string | null;
@@ -174,7 +174,7 @@ export interface TrackOutgoing {
     cal_date: string;
     cal_due_date: string;
     date_out: string;
-    employee_id_out?: number | null;
+    employee_id_out?: string | null;
     released_by_id?: number | null;
     certificate_number?: string | null;
     cycle_time?: number | null;
@@ -206,7 +206,7 @@ export interface PaginationData<T> {
 
 // Form types
 export interface UserFormData {
-    employee_id?: number;
+    employee_id?: string;
     first_name: string;
     last_name: string;
     middle_name?: string;
@@ -237,7 +237,7 @@ export interface TrackingFormData {
 }
 
 export interface EquipmentFormData {
-    employee_id?: number | null;
+    employee_id?: string | null;
     recall_number: string;
     serial_number?: string;
     description: string;

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Employee technician schema - simplified since they just select a technician
 export const employeeTechnicianSchema = z.object({
-    employee_id: z.number().min(1, 'Please select a technician'),
+    employee_id: z.string().min(1, 'Please select a technician'),
     first_name: z.string().min(1, 'Technician first name is required'),
     last_name: z.string().min(1, 'Technician last name is required'),
     full_name: z.string().optional(),

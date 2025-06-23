@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('recall_number')->nullable();
             $table->string('serial_number')->nullable();
             $table->text('description');
-            $table->foreignId('employee_id')->nullable()->constrained('users', 'employee_id')->onDelete('set null');
+            $table->string('employee_id', 20)->nullable();
+            $table->foreign('employee_id')->references('employee_id')->on('users')->onDelete('set null');
             $table->string('model')->nullable();
             $table->string('manufacturer')->nullable();
             

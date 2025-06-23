@@ -276,12 +276,12 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                         <div className="flex gap-2">
                             <Input
                                 id="employee_id"
-                                type="number"
+                                type="text"
                                 value={data.employee_id || ''}
-                                onChange={(e) => setData('employee_id', e.target.value ? parseInt(e.target.value) : undefined)}
+                                onChange={(e) => setData('employee_id', e.target.value || undefined)}
                                 className={allErrors.employee_id ? 'border-destructive' : ''}
-                                placeholder="Enter employee ID (optional)"
-                                min="1"
+                                placeholder="Enter employee ID (e.g. 047667)"
+                                maxLength={20}
                                 disabled={isEditing} // Disable editing of employee ID for existing users
                             />
                             {!isEditing && (

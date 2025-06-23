@@ -325,7 +325,7 @@ class UserController extends Controller
     public function destroy(User $user, Request $request): RedirectResponse|JsonResponse
     {
         // Prevent deletion of current user
-        if (Auth::id() === $user->employee_id) {
+        if (Auth::user()->employee_id === $user->employee_id) {
             $errorMessage = 'Cannot delete your own account.';
 
             // For Inertia requests, throw validation exception
@@ -844,7 +844,7 @@ class UserController extends Controller
     /**
      * Generate a unique employee ID based on role
      */
-    private function generateEmployeeId(int $roleId): int
+    private function generateEmployeeId(int $roleId): string
     {
         // Get role name to determine prefix
         $role = Role::where('role_id', $roleId)->first();
@@ -862,22 +862,23 @@ class UserController extends Controller
 
         // Find the highest existing employee ID with this prefix
         $maxId = User::where('employee_id', 'like', $prefix . '%')
-            ->max('employee_id');
+            ->orderBy('employee_id', 'desc')
+            ->value('employee_id');
 
-        if ($maxId) {
+        if ($maxId && is_numeric($maxId)) {
             // Increment the highest existing ID
-            $nextId = $maxId + 1;
+            $nextId = (int)$maxId + 1;
         } else {
             // Start with prefix + 001
-            $nextId = intval($prefix . '001');
+            $nextId = (int)($prefix . '001');
         }
 
         // Ensure uniqueness (in case of race conditions)
-        while (User::where('employee_id', $nextId)->exists()) {
+        while (User::where('employee_id', (string)$nextId)->exists()) {
             $nextId++;
         }
 
-        return $nextId;
+        return (string)$nextId;
     }
 
     /**
@@ -1043,6 +1044,7 @@ class UserController extends Controller
     public function downloadTemplate(): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
         $headers = [
+            'employee_id',
             'first_name',
             'last_name', 
             'middle_name',
@@ -1055,6 +1057,7 @@ class UserController extends Controller
 
         $sampleData = [
             [
+                '100001', // Admin employee ID
                 'Derick',
                 'Espinosa', 
                 'E',
@@ -1065,6 +1068,7 @@ class UserController extends Controller
                 'P1'
             ],
             [
+                '', // Empty employee_id - will be auto-generated
                 'Maria',
                 'Santos',
                 'C',
@@ -1075,6 +1079,7 @@ class UserController extends Controller
                 'P2'
             ],
             [
+                '047667', // Employee ID with leading zeros
                 'John',
                 'Rodriguez',
                 'A',
@@ -1101,6 +1106,18 @@ class UserController extends Controller
             }
         }
 
+        // Add notes/instructions in additional rows
+        $notesStartRow = count($sampleData) + 4;
+        $sheet->setCellValue('A' . $notesStartRow, 'NOTES:');
+        $sheet->setCellValue('A' . ($notesStartRow + 1), '• employee_id: Optional. If provided, must be unique. If empty, will be auto-generated based on role.');
+        $sheet->setCellValue('A' . ($notesStartRow + 2), '• Admin IDs start with 100xxx, Technician IDs with 200xxx, Employee IDs with 300xxx');
+        $sheet->setCellValue('A' . ($notesStartRow + 3), '• email: Optional but recommended for password reset functionality');
+        $sheet->setCellValue('A' . ($notesStartRow + 4), '• password: Required. Users will receive this as their initial password');
+        $sheet->setCellValue('A' . ($notesStartRow + 5), '• role_name: Will be created automatically if it does not exist in the system');
+        $sheet->setCellValue('A' . ($notesStartRow + 6), '• department_name: Will be created automatically if it does not exist');
+        $sheet->setCellValue('A' . ($notesStartRow + 7), '• plant_name: Will be created automatically if it does not exist');
+        $sheet->setCellValue('A' . ($notesStartRow + 8), '• For IDs with leading zeros (e.g. 047667), format the Excel cell as Text or prefix with apostrophe');
+
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         
         $fileName = 'user_import_template.xlsx';
@@ -1117,13 +1134,13 @@ class UserController extends Controller
     {
         $request->validate([
             'ids' => 'required|array|min:1',
-            'ids.*' => 'integer|exists:users,employee_id',
+            'ids.*' => 'string|exists:users,employee_id',
             'force' => 'boolean'
         ]);
 
         $userIds = $request->input('ids');
         $forceDelete = $request->boolean('force', false);
-        $currentUserId = Auth::id();
+        $currentUserId = Auth::user()->employee_id;
 
         // Prevent deletion of current user
         if (in_array($currentUserId, $userIds)) {

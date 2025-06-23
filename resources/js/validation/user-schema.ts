@@ -8,9 +8,9 @@ export const userSchema = z
             .optional()
             .refine((val) => {
                 if (!val) return true; // Optional field
-                const num = typeof val === 'string' ? parseInt(val) : val;
-                return !isNaN(num) && num > 0;
-            }, 'Employee ID must be a positive number'),
+                const str = String(val);
+                return /^[0-9]+$/.test(str) && str.length <= 20;
+            }, 'Employee ID must contain only numeric characters and be max 20 characters'),
         first_name: z.string().min(1, 'First name is required').max(255, 'First name must be less than 255 characters'),
         last_name: z.string().min(1, 'Last name is required').max(255, 'Last name must be less than 255 characters'),
         middle_name: z.string().optional(),

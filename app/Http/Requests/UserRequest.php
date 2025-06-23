@@ -21,8 +21,9 @@ class UserRequest extends FormRequest
         return [
             'employee_id' => [
                 'nullable',
-                'integer',
-                'min:1',
+                'string',
+                'max:20',
+                'regex:/^[0-9]+$/',
                 Rule::unique('users', 'employee_id')->ignore($userId, 'employee_id')
             ],
             'first_name' => ['required', 'string', 'max:255'],

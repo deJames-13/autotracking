@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface TechnicianState {
     user_id?: number;
-    employee_id?: number;
+    employee_id?: string;
     first_name?: string;
     last_name?: string;
     full_name?: string;

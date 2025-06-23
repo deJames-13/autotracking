@@ -346,12 +346,12 @@ class TrackIncomingController extends Controller
         if ($canBypassPin) {
             // Admin/Technician only needs employee_id
             $request->validate([
-                'employee_id' => 'required|numeric',
+                'employee_id' => ['required', 'string', 'max:20', 'regex:/^[0-9]+$/'],
             ]);
         } else {
             // Regular users need both employee_id and pin
             $request->validate([
-                'employee_id' => 'required|numeric',
+                'employee_id' => ['required', 'string', 'max:20', 'regex:/^[0-9]+$/'],
                 'pin' => 'required|string|min:4',
             ]);
         }
