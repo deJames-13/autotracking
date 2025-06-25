@@ -10,6 +10,7 @@ import { equipmentFormSchema } from '@/validation/equipment-schema';
 import { useForm } from '@inertiajs/react';
 import axios from 'axios';
 import { FormEventHandler, useCallback, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import { z } from 'zod';
 
 interface EquipmentFormData {
@@ -147,7 +148,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     const loadPlantOptions = useCallback(
         async (inputValue: string): Promise<SelectOption[]> => {
             try {
-                const response = await axios.get('/admin/equipment/plants/search', {
+                const response = await axios.get(route('admin.equipment.plants.search'), {
                     params: {
                         search: inputValue,
                         limit: 10,
@@ -174,7 +175,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     const loadDepartmentOptions = useCallback(
         async (inputValue: string): Promise<SelectOption[]> => {
             try {
-                const response = await axios.get('/admin/equipment/departments/search', {
+                const response = await axios.get(route('admin.equipment.departments.search'), {
                     params: {
                         search: inputValue,
                         limit: 10,
@@ -201,7 +202,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     const loadLocationOptions = useCallback(
         async (inputValue: string): Promise<SelectOption[]> => {
             try {
-                const response = await axios.get('/admin/equipment/locations/search', {
+                const response = await axios.get(route('admin.equipment.locations.search'), {
                     params: {
                         search: inputValue,
                         department_id: data.department_id || undefined,
@@ -229,18 +230,24 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     const handleCreatePlant = useCallback(
         async (inputValue: string): Promise<SelectOption> => {
             try {
-                const response = await axios.post('/admin/equipment/plants/create', {
+                const response = await axios.post(route('admin.equipment.plants.create'), {
                     name: inputValue,
                 }, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 });
 
-                return {
-                    label: response.data.label,
-                    value: response.data.value,
-                };
-            } catch (error) {
+                toast.success(`Plant "${inputValue}" created successfully`);
+                return response.data;
+            } catch (error: any) {
                 console.error('Error creating plant:', error);
+
+                // Show specific error message if available
+                if (error.response?.data?.message) {
+                    toast.error(error.response.data.message);
+                } else {
+                    toast.error('Failed to create plant. Please try again.');
+                }
+
                 throw new Error('Failed to create plant');
             }
         },
@@ -251,18 +258,24 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     const handleCreateDepartment = useCallback(
         async (inputValue: string): Promise<SelectOption> => {
             try {
-                const response = await axios.post('/admin/equipment/departments/create', {
+                const response = await axios.post(route('admin.equipment.departments.create'), {
                     name: inputValue,
                 }, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 });
 
-                return {
-                    label: response.data.label,
-                    value: response.data.value,
-                };
-            } catch (error) {
+                toast.success(`Department "${inputValue}" created successfully`);
+                return response.data;
+            } catch (error: any) {
                 console.error('Error creating department:', error);
+
+                // Show specific error message if available
+                if (error.response?.data?.message) {
+                    toast.error(error.response.data.message);
+                } else {
+                    toast.error('Failed to create department. Please try again.');
+                }
+
                 throw new Error('Failed to create department');
             }
         },
@@ -273,19 +286,25 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     const handleCreateLocation = useCallback(
         async (inputValue: string): Promise<SelectOption> => {
             try {
-                const response = await axios.post('/admin/equipment/locations/create', {
+                const response = await axios.post(route('admin.equipment.locations.create'), {
                     name: inputValue,
                     department_id: data.department_id || null,
                 }, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 });
 
-                return {
-                    label: response.data.label,
-                    value: response.data.value,
-                };
-            } catch (error) {
+                toast.success(`Location "${inputValue}" created successfully`);
+                return response.data;
+            } catch (error: any) {
                 console.error('Error creating location:', error);
+
+                // Show specific error message if available
+                if (error.response?.data?.message) {
+                    toast.error(error.response.data.message);
+                } else {
+                    toast.error('Failed to create location. Please try again.');
+                }
+
                 throw new Error('Failed to create location');
             }
         },
