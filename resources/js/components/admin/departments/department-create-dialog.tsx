@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/modal';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { type Department } from '@/types';
 import { DepartmentForm } from './department-form';

@@ -338,17 +338,29 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
 
     // Handle changes for smart selects
     const handleSmartSelectChange = (field: keyof EquipmentFormData, value: string | number | null) => {
-        setData(field, value ? value.toString() : '');
+        const newValue = value === null ? '' : String(value);
+        // Only update if the value has actually changed
+        if (data[field] !== newValue) {
+            setData(field, newValue);
+        }
     };
 
     // Handle user selection
     const handleUserChange = (value: string | number | null) => {
-        setData('employee_id', value ? value.toString() : '');
+        const newValue = value === null ? '' : String(value);
+        // Only update if the value has actually changed
+        if (data.employee_id !== newValue) {
+            setData('employee_id', newValue);
+        }
     };
 
     // Handle regular select changes
     const handleSelectChange = (field: keyof EquipmentFormData, value: string | number | null) => {
-        setData(field, value ? value.toString() : '');
+        const newValue = value === null ? '' : String(value);
+        // Only update if the value has actually changed
+        if (data[field] !== newValue) {
+            setData(field, newValue);
+        }
     };
 
     // Handle date input changes with validation
@@ -400,7 +412,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
     };
 
     return (
-        <form onSubmit={submit} className="space-y-6">
+        <form onSubmit={submit} className="space-y-6" key={`equipment-form-${equipment?.equipment_id || 'new'}`}>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {/* Left column */}
                 <div className="space-y-6">
@@ -413,6 +425,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                             required
                             placeholder="Enter recall number"
                             className={getCombinedErrors('recall_number') ? 'border-destructive' : ''}
+                            autoFocus={false}
                         />
                         <InputError message={getCombinedErrors('recall_number')} />
                     </div>
@@ -446,6 +459,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                     <div className="space-y-2">
                         <Label htmlFor="plant_id">Plant</Label>
                         <InertiaSmartSelect
+                            key={`plant-${equipment?.equipment_id || 'new'}`}
                             name="plant_id"
                             value={data.plant_id || null}
                             onChange={(value) => handleSmartSelectChange('plant_id', value)}
@@ -464,6 +478,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                     <div className="space-y-2">
                         <Label htmlFor="department_id">Department</Label>
                         <InertiaSmartSelect
+                            key={`department-${equipment?.equipment_id || 'new'}`}
                             name="department_id"
                             value={data.department_id || null}
                             onChange={(value) => handleSmartSelectChange('department_id', value)}
@@ -502,6 +517,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                     <div className="space-y-2">
                         <Label htmlFor="location_id">Location</Label>
                         <InertiaSmartSelect
+                            key={`location-${equipment?.equipment_id || 'new'}`}
                             name="location_id"
                             value={data.location_id || null}
                             onChange={(value) => handleSmartSelectChange('location_id', value)}
@@ -519,7 +535,10 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
 
                     <div className="space-y-2">
                         <Label htmlFor="status">Status</Label>
-                        <Select value={data.status} onValueChange={(value) => handleSelectChange('status', value)}>
+                        <Select
+                            value={data.status}
+                            onValueChange={(value) => handleSelectChange('status', value)}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Select status" />
                             </SelectTrigger>
@@ -592,6 +611,7 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                     <div className="space-y-2">
                         <Label htmlFor="employee_id">Assigned User</Label>
                         <InertiaSmartSelect
+                            key={`employee-${equipment?.equipment_id || 'new'}`}
                             name="employee_id"
                             value={data.employee_id || null}
                             onChange={handleUserChange}

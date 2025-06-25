@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BatchDataTable, DataTableColumn, DataTableFilter } from '@/components/ui/batch-data-table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/modal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { type Department, type PaginationData, type Plant, type Role, type User } from '@/types';
 import { router } from '@inertiajs/react';
@@ -47,14 +47,23 @@ export function UserTable({
             onRefresh();
         } else {
             // Fallback to Inertia reload if no onRefresh provided
-            router.reload({ only: ['users'] });
+            router.reload({
+                only: ['users'],
+                preserveState: true,
+                preserveScroll: true
+            });
         }
     };
 
     const handleEditSuccess = () => {
         console.log('UserTable: Edit success triggered');
+        // Clear editing state first
         setEditingUser(null);
-        handleRefresh();
+
+        // Delay refresh to prevent race conditions
+        setTimeout(() => {
+            handleRefresh();
+        }, 100);
     };
 
     const handleDelete = (user: User) => {
@@ -68,8 +77,10 @@ export function UserTable({
                 setDeletingUser(null);
                 toast.success('User archived successfully');
 
-                // Use the same refresh logic
-                handleRefresh();
+                // Delay refresh to prevent race conditions
+                setTimeout(() => {
+                    handleRefresh();
+                }, 100);
             },
             onError: (errors) => {
                 console.error('Error archiving user:', errors);
@@ -279,21 +290,45 @@ export function UserTable({
             render: (value, row) => (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onFocus={(e) => e.stopPropagation()}
+                            onBlur={(e) => e.stopPropagation()}
+                        >
                             <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setViewingUser(row)}>
+                    <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setViewingUser(row), 0);
+                            }}
+                        >
                             <Eye className="mr-2 h-4 w-4" />
                             View
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditingUser(row)}>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setEditingUser(row), 0);
+                            }}
+                        >
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDeletingUser(row)} className="text-destructive">
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setDeletingUser(row), 0);
+                            }}
+                            className="text-destructive"
+                        >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Archive
                         </DropdownMenuItem>
@@ -407,14 +442,23 @@ export function UserTable({
                 rowKey="employee_id"
             />
 
-            {/* Edit User Dialog */}
-            <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-                <DialogContent className="flex max-h-[85vh] w-full max-w-[90vw] flex-col overflow-scroll lg:max-w-[80vw] xl:max-w-[72rem]">
-                    <DialogHeader>
-                        <DialogTitle>Edit User</DialogTitle>
-                        <DialogDescription>Update user information. Leave password blank to keep the current password.</DialogDescription>
-                    </DialogHeader>
-                    {editingUser && (
+            {/* Edit User Dialog - Conditional rendering */}
+            {editingUser && (
+                <Dialog open={!!editingUser} onOpenChange={(open) => {
+                    if (!open) {
+                        setTimeout(() => setEditingUser(null), 200);
+                    }
+                }}>
+                    <DialogContent
+                        className="flex max-h-[85vh] w-full max-w-[90vw] flex-col overflow-scroll lg:max-w-[80vw] xl:max-w-[72rem]"
+                        onInteractOutside={(e) => e.preventDefault()}
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                    >
+                        <DialogHeader>
+                            <DialogTitle>Edit User</DialogTitle>
+                            <DialogDescription>Update user information. Leave password blank to keep the current password.</DialogDescription>
+                        </DialogHeader>
                         <UserForm
                             user={editingUser}
                             roles={roles}
@@ -423,17 +467,26 @@ export function UserTable({
                             onSuccess={handleEditSuccess}
                             onCancel={() => setEditingUser(null)}
                         />
-                    )}
-                </DialogContent>
-            </Dialog>
+                    </DialogContent>
+                </Dialog>
+            )}
 
-            {/* View User Dialog */}
-            <Dialog open={!!viewingUser} onOpenChange={() => setViewingUser(null)}>
-                <DialogContent className="max-w-lg overflow-scroll">
-                    <DialogHeader>
-                        <DialogTitle>User Details</DialogTitle>
-                    </DialogHeader>
-                    {viewingUser && (
+            {/* View User Dialog - Conditional rendering */}
+            {viewingUser && (
+                <Dialog open={!!viewingUser} onOpenChange={(open) => {
+                    if (!open) {
+                        setTimeout(() => setViewingUser(null), 200);
+                    }
+                }}>
+                    <DialogContent
+                        className="max-w-lg overflow-scroll"
+                        onInteractOutside={(e) => e.preventDefault()}
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                    >
+                        <DialogHeader>
+                            <DialogTitle>User Details</DialogTitle>
+                        </DialogHeader>
                         <div className="space-y-6">
                             {/* Employee ID Barcode */}
                             {viewingUser.employee_id && (
@@ -504,20 +557,33 @@ export function UserTable({
                                 </div>
                             </div>
                         </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+                    </DialogContent>
+                </Dialog>
+            )}
 
-            {/* Archive Confirmation Dialog */}
-            <Dialog open={!!deletingUser} onOpenChange={() => setDeletingUser(null)}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Archive User</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to archive this user? The user will be hidden from the main list but can be restored later.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {deletingUser && (
+            {/* Archive Confirmation Dialog - Conditional rendering */}
+            {deletingUser && (
+                <Dialog open={!!deletingUser} onOpenChange={(open) => {
+                    if (!open) {
+                        setTimeout(() => setDeletingUser(null), 200);
+                    }
+                }}>
+                    <DialogContent
+                        className="max-w-md"
+                        onInteractOutside={(e) => e.preventDefault()}
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                        onEscapeKeyDown={(e) => {
+                            e.preventDefault();
+                            setDeletingUser(null);
+                        }}
+                    >
+                        <DialogHeader>
+                            <DialogTitle>Archive User</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to archive this user? The user will be hidden from the main list but can be restored later.
+                            </DialogDescription>
+                        </DialogHeader>
                         <div className="space-y-4">
                             <div className="bg-muted/50 rounded-lg border p-4">
                                 <div className="font-medium">{deletingUser.full_name || `${deletingUser.first_name} ${deletingUser.last_name}`}</div>
@@ -536,9 +602,9 @@ export function UserTable({
                                 </Button>
                             </div>
                         </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+                    </DialogContent>
+                </Dialog>
+            )}
         </>
     );
 }

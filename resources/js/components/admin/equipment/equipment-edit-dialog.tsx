@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/modal';
 import { type Equipment, type User } from '@/types';
 import { EquipmentForm } from './equipment-form';
 
@@ -11,22 +11,48 @@ interface EquipmentEditDialogProps {
 }
 
 export function EquipmentEditDialog({ equipment, users, open, onOpenChange, onSuccess }: EquipmentEditDialogProps) {
+    const handleManualClose = () => {
+        onOpenChange(false);
+    };
+
     const handleSuccess = () => {
         console.log('EquipmentEditDialog: Edit successful, calling onSuccess');
+        // Close dialog first, then trigger success callback
         onOpenChange(false);
-        onSuccess();
+        // Use setTimeout to prevent race conditions and allow dialog to close
+        setTimeout(() => {
+            onSuccess();
+        }, 150);
     };
 
     const handleCancel = () => {
-        onOpenChange(false);
+        handleManualClose();
     };
 
     if (!equipment) return null;
-    console.log(equipment);
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[85vh] w-full max-w-[90vw] flex-col overflow-scroll lg:max-w-[80vw] xl:max-w-[72rem]">
+        <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+            <DialogContent
+                className="flex max-h-[85vh] w-full max-w-[90vw] flex-col overflow-scroll lg:max-w-[80vw] xl:max-w-[72rem]"
+                onInteractOutside={(e) => {
+                    // Prevent dialog from closing when interacting with select dropdowns
+                    e.preventDefault();
+                }}
+                onEscapeKeyDown={(e) => {
+                    // Allow manual escape key handling
+                    e.preventDefault();
+                    handleManualClose();
+                }}
+                onOpenAutoFocus={(e) => {
+                    // Prevent automatic focus to avoid conflicts
+                    e.preventDefault();
+                }}
+                onCloseAutoFocus={(e) => {
+                    // Prevent automatic focus restoration to avoid conflicts
+                    e.preventDefault();
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle>Edit Equipment</DialogTitle>
                     <DialogDescription>Update equipment information.</DialogDescription>

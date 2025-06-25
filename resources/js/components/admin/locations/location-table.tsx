@@ -42,20 +42,34 @@ export function LocationTable({
             onRefresh();
         } else {
             // Fallback to Inertia reload if no onRefresh provided
-            router.reload({ only: ['locations'] });
+            router.reload({
+                only: ['locations'],
+                preserveState: true,
+                preserveScroll: true
+            });
         }
     };
 
     const handleEditSuccess = () => {
         console.log('LocationTable: Edit success triggered');
+        // Clear editing state first
         setEditingLocation(null);
-        handleRefresh();
+
+        // Delay refresh to prevent race conditions
+        setTimeout(() => {
+            handleRefresh();
+        }, 100);
     };
 
     const handleDeleteSuccess = () => {
         console.log('LocationTable: Delete success triggered');
+        // Clear deleting state first
         setDeletingLocation(null);
-        handleRefresh();
+
+        // Delay refresh to prevent race conditions
+        setTimeout(() => {
+            handleRefresh();
+        }, 100);
     };
 
     const handleBatchDelete = async (ids: any[], force: boolean = false): Promise<void> => {
@@ -147,21 +161,45 @@ export function LocationTable({
             render: (_, location: Location) => (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onFocus={(e) => e.stopPropagation()}
+                            onBlur={(e) => e.stopPropagation()}
+                        >
                             <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setViewingLocation(location)}>
+                    <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setViewingLocation(location), 0);
+                            }}
+                        >
                             <Eye className="mr-2 h-4 w-4" />
                             View
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditingLocation(location)}>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setEditingLocation(location), 0);
+                            }}
+                        >
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDeletingLocation(location)} className="text-destructive">
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setDeletingLocation(location), 0);
+                            }}
+                            className="text-destructive"
+                        >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                         </DropdownMenuItem>
@@ -245,23 +283,45 @@ export function LocationTable({
                 rowKey="location_id"
             />
 
-            {/* Location Dialogs */}
-            <LocationViewDialog location={viewingLocation} open={!!viewingLocation} onOpenChange={(open) => !open && setViewingLocation(null)} />
+            {/* Location Dialogs - Conditional rendering to prevent focus conflicts */}
+            {viewingLocation && (
+                <LocationViewDialog
+                    location={viewingLocation}
+                    open={!!viewingLocation}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setTimeout(() => setViewingLocation(null), 200);
+                        }
+                    }}
+                />
+            )}
 
-            <LocationEditDialog
-                location={editingLocation}
-                departments={departments}
-                open={!!editingLocation}
-                onOpenChange={(open) => !open && setEditingLocation(null)}
-                onSuccess={handleEditSuccess}
-            />
+            {editingLocation && (
+                <LocationEditDialog
+                    location={editingLocation}
+                    departments={departments}
+                    open={!!editingLocation}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setTimeout(() => setEditingLocation(null), 200);
+                        }
+                    }}
+                    onSuccess={handleEditSuccess}
+                />
+            )}
 
-            <LocationDeleteDialog
-                location={deletingLocation}
-                open={!!deletingLocation}
-                onOpenChange={(open) => !open && setDeletingLocation(null)}
-                onSuccess={handleDeleteSuccess}
-            />
+            {deletingLocation && (
+                <LocationDeleteDialog
+                    location={deletingLocation}
+                    open={!!deletingLocation}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setTimeout(() => setDeletingLocation(null), 200);
+                        }
+                    }}
+                    onSuccess={handleDeleteSuccess}
+                />
+            )}
         </>
     );
 }

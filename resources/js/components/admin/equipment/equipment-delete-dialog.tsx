@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/modal';
 import { type Equipment } from '@/types';
 import { router } from '@inertiajs/react';
 import { AlertTriangle } from 'lucide-react';
@@ -18,6 +18,10 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
     const [forceDelete, setForceDelete] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    const handleManualClose = () => {
+        onOpenChange(false);
+    };
+
     const hasRelatedRecords = equipment && (equipment.track_incoming?.length || 0) > 0;
 
     const handleDelete = () => {
@@ -34,11 +38,15 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
             preserveScroll: true,
             onSuccess: () => {
                 console.log('EquipmentDeleteDialog: Delete successful, calling onSuccess');
-                onOpenChange(false);
                 setForceDelete(false);
                 setIsDeleting(false);
                 toast.success(forceDelete ? 'Equipment and all tracking records permanently deleted' : 'Equipment archived successfully');
-                onSuccess();
+
+                // Close dialog first, then trigger success callback after a delay
+                onOpenChange(false);
+                setTimeout(() => {
+                    onSuccess();
+                }, 150); // Give dialog time to close completely
             },
             onError: (errors) => {
                 console.error('Error deleting equipment:', errors);
@@ -60,15 +68,34 @@ export function EquipmentDeleteDialog({ equipment, open, onOpenChange, onSuccess
     };
 
     const handleCancel = () => {
-        onOpenChange(false);
+        handleManualClose();
         setForceDelete(false);
     };
 
     if (!equipment) return null;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md">
+        <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+            <DialogContent
+                className="max-w-md"
+                onInteractOutside={(e) => {
+                    // Prevent accidental closes
+                    e.preventDefault();
+                }}
+                onOpenAutoFocus={(e) => {
+                    // Prevent automatic focus to avoid conflicts
+                    e.preventDefault();
+                }}
+                onCloseAutoFocus={(e) => {
+                    // Prevent automatic focus restoration to avoid conflicts
+                    e.preventDefault();
+                }}
+                onEscapeKeyDown={(e) => {
+                    e.preventDefault();
+                    handleManualClose();
+                    setForceDelete(false);
+                }}
+            >
                 <DialogHeader>
                     <DialogTitle>
                         {forceDelete ? 'Force Delete Equipment' : 'Archive Equipment'}

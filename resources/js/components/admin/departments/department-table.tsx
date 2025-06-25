@@ -40,20 +40,34 @@ export function DepartmentTable({
             onRefresh();
         } else {
             // Fallback to Inertia reload if no onRefresh provided
-            router.reload({ only: ['departments'] });
+            router.reload({
+                only: ['departments'],
+                preserveState: true,
+                preserveScroll: true
+            });
         }
     };
 
     const handleEditSuccess = () => {
         console.log('DepartmentTable: Edit success triggered');
+        // Clear editing state first
         setEditingDepartment(null);
-        handleRefresh();
+
+        // Delay refresh to prevent race conditions
+        setTimeout(() => {
+            handleRefresh();
+        }, 100);
     };
 
     const handleDeleteSuccess = () => {
         console.log('DepartmentTable: Delete success triggered');
+        // Clear deleting state first
         setDeletingDepartment(null);
-        handleRefresh();
+
+        // Delay refresh to prevent race conditions
+        setTimeout(() => {
+            handleRefresh();
+        }, 100);
     };
 
     const handleBatchDelete = async (ids: any[], force: boolean = false): Promise<void> => {
@@ -145,21 +159,45 @@ export function DepartmentTable({
             render: (_, department: Department) => (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onFocus={(e) => e.stopPropagation()}
+                            onBlur={(e) => e.stopPropagation()}
+                        >
                             <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setViewingDepartment(department)}>
+                    <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setViewingDepartment(department), 0);
+                            }}
+                        >
                             <Eye className="mr-2 h-4 w-4" />
                             View
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditingDepartment(department)}>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setEditingDepartment(department), 0);
+                            }}
+                        >
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDeletingDepartment(department)} className="text-destructive">
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setDeletingDepartment(department), 0);
+                            }}
+                            className="text-destructive"
+                        >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                         </DropdownMenuItem>
@@ -230,26 +268,44 @@ export function DepartmentTable({
                 rowKey="department_id"
             />
 
-            {/* Department Dialogs */}
-            <DepartmentViewDialog
-                department={viewingDepartment}
-                open={!!viewingDepartment}
-                onOpenChange={(open) => !open && setViewingDepartment(null)}
-            />
+            {/* Department Dialogs - Conditional rendering to prevent focus conflicts */}
+            {viewingDepartment && (
+                <DepartmentViewDialog
+                    department={viewingDepartment}
+                    open={!!viewingDepartment}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setTimeout(() => setViewingDepartment(null), 200);
+                        }
+                    }}
+                />
+            )}
 
-            <DepartmentEditDialog
-                department={editingDepartment}
-                open={!!editingDepartment}
-                onOpenChange={(open) => !open && setEditingDepartment(null)}
-                onSuccess={handleEditSuccess}
-            />
+            {editingDepartment && (
+                <DepartmentEditDialog
+                    department={editingDepartment}
+                    open={!!editingDepartment}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setTimeout(() => setEditingDepartment(null), 200);
+                        }
+                    }}
+                    onSuccess={handleEditSuccess}
+                />
+            )}
 
-            <DepartmentDeleteDialog
-                department={deletingDepartment}
-                open={!!deletingDepartment}
-                onOpenChange={(open) => !open && setDeletingDepartment(null)}
-                onSuccess={handleDeleteSuccess}
-            />
+            {deletingDepartment && (
+                <DepartmentDeleteDialog
+                    department={deletingDepartment}
+                    open={!!deletingDepartment}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setTimeout(() => setDeletingDepartment(null), 200);
+                        }
+                    }}
+                    onSuccess={handleDeleteSuccess}
+                />
+            )}
         </>
     );
 }

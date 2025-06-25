@@ -82,32 +82,12 @@ export const InertiaSmartSelect = ({
     const [selectedOption, setSelectedOption] = useState<SelectOption | SelectOption[] | null>(initialOption);
     // Track if we're loading a label for a value
     const [loadingLabel, setLoadingLabel] = useState(false);
+    // Track if initialization is in progress to prevent concurrent calls
+    const initializingRef = useRef(false);
+    // Track ongoing label fetch requests to prevent duplicates
+    const fetchingLabelsRef = useRef(new Set<string>());
 
-    // Function to load the label for a value if we don't have it cached
-    const loadLabelForValue = async (val: string | number | null) => {
-        if (val === null || val === 'none') return;
-        if (optionCache.has(val)) return;
 
-        try {
-            setLoadingLabel(true);
-            // Load all options to try to find a match
-            const options = await loadOptions('');
-            const option = options.find(opt => opt.value === val);
-
-            if (option) {
-                optionCache.set(val, option.label);
-            } else {
-                // If we can't find it, just use the value as the label
-                optionCache.set(val, String(val));
-            }
-        } catch (error) {
-            console.error('Error loading label for value:', error);
-            // Fallback to using the value as the label
-            optionCache.set(val, String(val));
-        } finally {
-            setLoadingLabel(false);
-        }
-    };
 
     // Simple async load options without any side effects
     const handleAsyncLoadOptions = async (inputValue: string): Promise<SelectOption[]> => {
@@ -220,6 +200,14 @@ export const InertiaSmartSelect = ({
             return { value: val, label: optionCache.get(cacheKey)! };
         }
 
+        // Prevent concurrent fetches for the same value
+        if (fetchingLabelsRef.current.has(cacheKey)) {
+            // Return a basic option while fetch is in progress
+            return { value: val, label: cacheKey };
+        }
+
+        fetchingLabelsRef.current.add(cacheKey);
+
         try {
             setLoadingLabel(true);
             // Try to load the label
@@ -242,15 +230,12 @@ export const InertiaSmartSelect = ({
             return { value: val, label: cacheKey };
         } finally {
             setLoadingLabel(false);
+            fetchingLabelsRef.current.delete(cacheKey);
         }
     };
 
     // Initialize selected option based on value prop or initialOption
     useEffect(() => {
-        // Skip if value hasn't changed
-        if (value === null && selectedOption === null) return;
-        if (selectedOption && value !== null && String(selectedOption.value) === String(value)) return;
-
         // Use a ref to track if this is the first run with an initialOption
         const isFirstRun = !initialized.current && initialOption;
 
@@ -261,47 +246,74 @@ export const InertiaSmartSelect = ({
             return;
         }
 
+        // Skip if value hasn't changed and we have a selected option that matches
+        if (value === null && selectedOption === null) return;
+        if (selectedOption && value !== null && String(selectedOption.value) === String(value)) {
+            // Also check if we have a label when we expect one
+            if (label && selectedOption.label === label) return;
+            if (!label && selectedOption.label) return;
+        }
+
         const initializeOption = async () => {
-            // For multi-select
-            if (isMulti && Array.isArray(value)) {
-                // Handle multi-select initialization
-                const options = await Promise.all(
-                    value.map(async (val) => {
-                        const option = await getOrFetchLabel(val);
-                        return option || { label: String(val), value: val };
-                    })
-                );
-                setSelectedOption(options);
-                return;
-            }
+            // Prevent concurrent initialization
+            if (initializingRef.current) return;
+            initializingRef.current = true;
 
-            // For single-select
-            if (!isMulti) {
-                if (value === null) {
-                    // For null/none value
-                    if (!noNoneOption) {
-                        setSelectedOption({ label: customNoneLabel, value: 'none' });
-                    } else {
-                        setSelectedOption(null);
+            try {
+                // For multi-select
+                if (isMulti && Array.isArray(value)) {
+                    // Handle multi-select initialization
+                    const options = await Promise.all(
+                        value.map(async (val) => {
+                            const option = await getOrFetchLabel(val);
+                            return option || { label: String(val), value: val };
+                        })
+                    );
+                    setSelectedOption(options);
+                    return;
+                }
+
+                // For single-select
+                if (!isMulti) {
+                    if (value === null) {
+                        // For null/none value
+                        if (!noNoneOption) {
+                            setSelectedOption({ label: customNoneLabel, value: 'none' });
+                        } else {
+                            setSelectedOption(null);
+                        }
+                        return;
                     }
-                    return;
-                }
 
-                // If label prop is provided, use it directly
-                if (label && value !== null) {
-                    setSelectedOption({ label, value });
-                    return;
-                }
+                    // If label prop is provided, use it directly
+                    if (label && value !== null) {
+                        const newOption = { label, value };
+                        // Only update if it's actually different
+                        if (!selectedOption || selectedOption.label !== label || String(selectedOption.value) !== String(value)) {
+                            setSelectedOption(newOption);
+                        }
+                        return;
+                    }
 
-                // For actual value without provided label
-                const option = await getOrFetchLabel(value);
-                setSelectedOption(option);
+                    // For actual value without provided label
+                    const option = await getOrFetchLabel(value);
+                    if (option && (!selectedOption || String(selectedOption.value) !== String(option.value))) {
+                        setSelectedOption(option);
+                    }
+                }
+            } finally {
+                initializingRef.current = false;
             }
         };
 
-        // Only run initialization if the value has changed
-        initializeOption();
-    }, [value, label]); // Add label to dependencies
+        // Only run initialization if we haven't initialized yet or the value has actually changed
+        if (!initialized.current || (value !== null && (!selectedOption || String(selectedOption.value) !== String(value)))) {
+            if (!initializingRef.current) {
+                initializeOption();
+                initialized.current = true;
+            }
+        }
+    }, [value, label]); // Keep minimal dependencies to prevent excessive re-runs
 
     if (loading) {
         return (
@@ -354,8 +366,28 @@ export const InertiaSmartSelect = ({
                     }),
                     menu: (base) => ({
                         ...base,
-                        zIndex: 999,
+                        zIndex: 9999,
+                    }),
+                    menuPortal: (base) => ({
+                        ...base,
+                        zIndex: 9999,
                     })
+                }}
+                menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+                menuShouldBlockScroll={false}
+                blurInputOnSelect={true}
+                closeMenuOnSelect={true}
+                openMenuOnFocus={false}
+                autoFocus={false}
+                tabSelectsValue={false}
+                captureMenuScroll={false}
+                onFocus={(e) => {
+                    // Prevent focus events from bubbling up to avoid focus scope conflicts
+                    e.stopPropagation();
+                }}
+                onBlur={(e) => {
+                    // Prevent blur events from bubbling up to avoid focus scope conflicts
+                    e.stopPropagation();
                 }}
             />
             {error && (

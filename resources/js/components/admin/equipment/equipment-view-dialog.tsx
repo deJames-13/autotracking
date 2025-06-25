@@ -1,9 +1,10 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/modal';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { type Equipment } from '@/types';
 import { ArrowRight, Download } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import Barcode from 'react-barcode';
 import { toast } from 'react-hot-toast';
 
@@ -14,6 +15,32 @@ interface EquipmentViewDialogProps {
 }
 
 export function EquipmentViewDialog({ equipment, open, onOpenChange }: EquipmentViewDialogProps) {
+    const openTimestamp = useRef<number>(0);
+
+    useEffect(() => {
+        if (open) {
+            openTimestamp.current = Date.now();
+        }
+    }, [open]);
+
+    const handleManualClose = () => {
+        // Simple close with timeout to prevent auto-close conflicts
+        setTimeout(() => {
+            onOpenChange(false);
+        }, 150);
+    };
+
+    const handleInteractOutside = (e: Event) => {
+        e.preventDefault();
+
+        // Ignore interactions that happen very soon after opening
+        if (Date.now() - openTimestamp.current < 200) {
+            return;
+        }
+
+        handleManualClose();
+    };
+
     if (!equipment) return null;
 
     // Handle barcode download
@@ -93,7 +120,24 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] max-w-lg">
+            <DialogContent
+                className="max-h-[85vh] max-w-lg"
+                onInteractOutside={handleInteractOutside}
+                onOpenAutoFocus={(e) => {
+                    // Prevent automatic focus to avoid conflicts
+                    e.preventDefault();
+                }}
+                onCloseAutoFocus={(e) => {
+                    // Prevent automatic focus restoration to avoid conflicts
+                    e.preventDefault();
+                }}
+                onEscapeKeyDown={(e) => {
+                    // Handle escape key with timing to prevent freezing
+                    e.preventDefault();
+                    handleManualClose();
+                }}
+                onPointerDownOutside={handleInteractOutside}
+            >
                 <DialogHeader>
                     <DialogTitle>Equipment Details</DialogTitle>
                 </DialogHeader>
@@ -109,7 +153,14 @@ export function EquipmentViewDialog({ equipment, open, onOpenChange }: Equipment
                                 </div>
                                 <div className="mt-2 flex items-center gap-2">
                                     <span className="text-muted-foreground text-xs">Recall Number Barcode</span>
-                                    <Button variant="outline" size="sm" onClick={handleDownloadBarcode} className="h-6 px-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleDownloadBarcode}
+                                        className="h-6 px-2"
+                                        onFocus={(e) => e.stopPropagation()}
+                                        onBlur={(e) => e.stopPropagation()}
+                                    >
                                         <Download className="mr-1 h-3 w-3" />
                                         Download
                                     </Button>

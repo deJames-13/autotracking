@@ -47,20 +47,34 @@ export function EquipmentTable({
             onRefresh();
         } else {
             // Fallback to Inertia reload if no onRefresh provided
-            router.reload({ only: ['equipment'] });
+            router.reload({
+                only: ['equipment'],
+                preserveState: true,
+                preserveScroll: true
+            });
         }
     };
 
     const handleEditSuccess = () => {
         console.log('EquipmentTable: Edit success triggered');
+        // Clear editing state first
         setEditingEquipment(null);
-        handleRefresh();
+
+        // Delay refresh to prevent race conditions
+        setTimeout(() => {
+            handleRefresh();
+        }, 100);
     };
 
     const handleDeleteSuccess = () => {
         console.log('EquipmentTable: Delete success triggered');
+        // Clear deleting state first
         setDeletingEquipment(null);
-        handleRefresh();
+
+        // Delay refresh to prevent race conditions
+        setTimeout(() => {
+            handleRefresh();
+        }, 100);
     };
 
     const handleBatchDelete = async (ids: any[], force: boolean = false): Promise<void> => {
@@ -201,21 +215,45 @@ export function EquipmentTable({
             render: (value, row) => (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onFocus={(e) => e.stopPropagation()}
+                            onBlur={(e) => e.stopPropagation()}
+                        >
                             <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setViewingEquipment(row)}>
+                    <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setViewingEquipment(row), 0);
+                            }}
+                        >
                             <Eye className="mr-2 h-4 w-4" />
                             View
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditingEquipment(row)}>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setEditingEquipment(row), 0);
+                            }}
+                        >
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDeletingEquipment(row)} className="text-destructive">
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setDeletingEquipment(row), 0);
+                            }}
+                            className="text-destructive"
+                        >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                         </DropdownMenuItem>
@@ -342,23 +380,48 @@ export function EquipmentTable({
                 rowKey="equipment_id"
             />
 
-            {/* Equipment Dialogs */}
-            <EquipmentViewDialog equipment={viewingEquipment} open={!!viewingEquipment} onOpenChange={(open) => !open && setViewingEquipment(null)} />
+            {/* Equipment Dialogs - Conditional rendering to prevent focus conflicts */}
+            {viewingEquipment && (
+                <EquipmentViewDialog
+                    equipment={viewingEquipment}
+                    open={!!viewingEquipment}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            // Clear state after dialog animation completes
+                            setTimeout(() => setViewingEquipment(null), 200);
+                        }
+                    }}
+                />
+            )}
 
-            <EquipmentEditDialog
-                equipment={editingEquipment}
-                users={users}
-                open={!!editingEquipment}
-                onOpenChange={(open) => !open && setEditingEquipment(null)}
-                onSuccess={handleEditSuccess}
-            />
+            {editingEquipment && (
+                <EquipmentEditDialog
+                    equipment={editingEquipment}
+                    users={users}
+                    open={!!editingEquipment}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            // Clear state after dialog animation completes
+                            setTimeout(() => setEditingEquipment(null), 200);
+                        }
+                    }}
+                    onSuccess={handleEditSuccess}
+                />
+            )}
 
-            <EquipmentDeleteDialog
-                equipment={deletingEquipment}
-                open={!!deletingEquipment}
-                onOpenChange={(open) => !open && setDeletingEquipment(null)}
-                onSuccess={handleDeleteSuccess}
-            />
+            {deletingEquipment && (
+                <EquipmentDeleteDialog
+                    equipment={deletingEquipment}
+                    open={!!deletingEquipment}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            // Clear state after dialog animation completes
+                            setTimeout(() => setDeletingEquipment(null), 200);
+                        }
+                    }}
+                    onSuccess={handleDeleteSuccess}
+                />
+            )}
         </>
     );
 }

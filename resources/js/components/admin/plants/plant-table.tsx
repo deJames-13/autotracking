@@ -40,20 +40,34 @@ export function PlantTable({
             onRefresh();
         } else {
             // Fallback to Inertia reload if no onRefresh provided
-            router.reload({ only: ['plants'] });
+            router.reload({
+                only: ['plants'],
+                preserveState: true,
+                preserveScroll: true
+            });
         }
     };
 
     const handleEditSuccess = () => {
         console.log('PlantTable: Edit success triggered');
+        // Clear editing state first
         setEditingPlant(null);
-        handleRefresh();
+
+        // Delay refresh to prevent race conditions
+        setTimeout(() => {
+            handleRefresh();
+        }, 100);
     };
 
     const handleDeleteSuccess = () => {
         console.log('PlantTable: Delete success triggered');
+        // Clear deleting state first
         setDeletingPlant(null);
-        handleRefresh();
+
+        // Delay refresh to prevent race conditions
+        setTimeout(() => {
+            handleRefresh();
+        }, 100);
     };
 
     const handleBatchDelete = async (ids: any[], force: boolean = false): Promise<void> => {
@@ -155,21 +169,45 @@ export function PlantTable({
             render: (_, plant: Plant) => (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onFocus={(e) => e.stopPropagation()}
+                            onBlur={(e) => e.stopPropagation()}
+                        >
                             <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setViewingPlant(plant)}>
+                    <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setViewingPlant(plant), 0);
+                            }}
+                        >
                             <Eye className="mr-2 h-4 w-4" />
                             View
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditingPlant(plant)}>
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setEditingPlant(plant), 0);
+                            }}
+                        >
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDeletingPlant(plant)} className="text-destructive">
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTimeout(() => setDeletingPlant(plant), 0);
+                            }}
+                            className="text-destructive"
+                        >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                         </DropdownMenuItem>
@@ -246,22 +284,44 @@ export function PlantTable({
                 rowKey="plant_id"
             />
 
-            {/* Plant Dialogs */}
-            <PlantViewDialog plant={viewingPlant} open={!!viewingPlant} onOpenChange={(open) => !open && setViewingPlant(null)} />
+            {/* Plant Dialogs - Conditional rendering to prevent focus conflicts */}
+            {viewingPlant && (
+                <PlantViewDialog
+                    plant={viewingPlant}
+                    open={!!viewingPlant}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setTimeout(() => setViewingPlant(null), 200);
+                        }
+                    }}
+                />
+            )}
 
-            <PlantEditDialog
-                plant={editingPlant}
-                open={!!editingPlant}
-                onOpenChange={(open) => !open && setEditingPlant(null)}
-                onSuccess={handleEditSuccess}
-            />
+            {editingPlant && (
+                <PlantEditDialog
+                    plant={editingPlant}
+                    open={!!editingPlant}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setTimeout(() => setEditingPlant(null), 200);
+                        }
+                    }}
+                    onSuccess={handleEditSuccess}
+                />
+            )}
 
-            <PlantDeleteDialog
-                plant={deletingPlant}
-                open={!!deletingPlant}
-                onOpenChange={(open) => !open && setDeletingPlant(null)}
-                onSuccess={handleDeleteSuccess}
-            />
+            {deletingPlant && (
+                <PlantDeleteDialog
+                    plant={deletingPlant}
+                    open={!!deletingPlant}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setTimeout(() => setDeletingPlant(null), 200);
+                        }
+                    }}
+                    onSuccess={handleDeleteSuccess}
+                />
+            )}
         </>
     );
 }
