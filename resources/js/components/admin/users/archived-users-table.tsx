@@ -4,7 +4,7 @@ import { DataTable, DataTableColumn } from '@/components/ui/data-table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { type PaginationData, type User } from '@/types';
 import { MoreHorizontal, RotateCcw } from 'lucide-react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 interface ArchivedUsersTableProps {
     archivedUsers: PaginationData<User>;
@@ -25,6 +25,7 @@ export function ArchivedUsersTable({
     onPerPageChange,
     onRefresh,
 }: ArchivedUsersTableProps) {
+    const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
     const getRoleBadge = (role: any) => {
         if (!role) return <Badge variant="secondary">No Role</Badge>;
         
@@ -102,15 +103,56 @@ export function ArchivedUsersTable({
             key: 'actions',
             label: 'Actions',
             render: (_, row) => (
-                <DropdownMenu>
+                <DropdownMenu
+                    open={openDropdownId === row.employee_id}
+                    onOpenChange={(open) => {
+                        if (open) {
+                            setOpenDropdownId(row.employee_id);
+                        } else {
+                            // Close dropdown with delay to prevent recursion
+                            setTimeout(() => setOpenDropdownId(null), 100);
+                        }
+                    }}
+                >
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onFocus={(e) => e.stopPropagation()}
+                            onBlur={(e) => e.stopPropagation()}
+                        >
                             <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onRestore(row.employee_id)}>
+                    <DropdownMenuContent
+                        align="end"
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                        onEscapeKeyDown={(e) => {
+                            e.preventDefault();
+                            setOpenDropdownId(null);
+                        }}
+                        onPointerDownOutside={(e) => {
+                            e.preventDefault();
+                            setOpenDropdownId(null);
+                        }}
+                        onInteractOutside={(e) => {
+                            e.preventDefault();
+                            setOpenDropdownId(null);
+                        }}
+                    >
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setOpenDropdownId(null);
+                                // Longer timeout to prevent recursion
+                                setTimeout(() => onRestore(row.employee_id), 150);
+                            }}
+                            onSelect={(e) => {
+                                e.preventDefault();
+                            }}
+                        >
                             <RotateCcw className="mr-2 h-4 w-4" />
                             Restore
                         </DropdownMenuItem>
