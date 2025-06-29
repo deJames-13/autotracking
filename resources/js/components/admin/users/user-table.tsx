@@ -40,7 +40,6 @@ export function UserTable({
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [viewingUser, setViewingUser] = useState<User | null>(null);
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
-    const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
     const handleRefresh = () => {
         console.log('UserTable: Refresh triggered');
@@ -289,85 +288,31 @@ export function UserTable({
             key: 'actions',
             label: 'Actions',
             render: (value, row) => (
-                <DropdownMenu
-                    open={openDropdownId === row.employee_id}
-                    onOpenChange={(open) => {
-                        if (open) {
-                            setOpenDropdownId(row.employee_id);
-                        } else {
-                            // Close dropdown with delay to prevent recursion
-                            setTimeout(() => setOpenDropdownId(null), 100);
-                        }
-                    }}
-                >
+                <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button
                             variant="ghost"
                             className="h-8 w-8 p-0"
-                            onFocus={(e) => e.stopPropagation()}
-                            onBlur={(e) => e.stopPropagation()}
                         >
                             <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        align="end"
-                        onCloseAutoFocus={(e) => e.preventDefault()}
-                        onEscapeKeyDown={(e) => {
-                            e.preventDefault();
-                            setOpenDropdownId(null);
-                        }}
-                        onPointerDownOutside={(e) => {
-                            e.preventDefault();
-                            setOpenDropdownId(null);
-                        }}
-                        onInteractOutside={(e) => {
-                            e.preventDefault();
-                            setOpenDropdownId(null);
-                        }}
-                    >
+                    <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setOpenDropdownId(null);
-                                // Longer timeout to prevent recursion
-                                setTimeout(() => setViewingUser(row), 150);
-                            }}
-                            onSelect={(e) => {
-                                e.preventDefault();
-                            }}
+                            onClick={() => setViewingUser(row)}
                         >
                             <Eye className="mr-2 h-4 w-4" />
                             View
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setOpenDropdownId(null);
-                                // Longer timeout to prevent recursion
-                                setTimeout(() => setEditingUser(row), 150);
-                            }}
-                            onSelect={(e) => {
-                                e.preventDefault();
-                            }}
+                            onClick={() => setEditingUser(row)}
                         >
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setOpenDropdownId(null);
-                                // Longer timeout to prevent recursion
-                                setTimeout(() => setDeletingUser(row), 150);
-                            }}
-                            onSelect={(e) => {
-                                e.preventDefault();
-                            }}
+                            onClick={() => setDeletingUser(row)}
                             className="text-destructive"
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -487,15 +432,11 @@ export function UserTable({
             {editingUser && (
                 <Dialog open={!!editingUser} onOpenChange={(open) => {
                     if (!open) {
-                        setOpenDropdownId(null); // Close any open dropdown
-                        setTimeout(() => setEditingUser(null), 200);
+                        setEditingUser(null);
                     }
                 }}>
                     <DialogContent
                         className="flex max-h-[85vh] w-full max-w-[90vw] flex-col overflow-scroll lg:max-w-[80vw] xl:max-w-[72rem]"
-                        onInteractOutside={(e) => e.preventDefault()}
-                        onOpenAutoFocus={(e) => e.preventDefault()}
-                        onCloseAutoFocus={(e) => e.preventDefault()}
                     >
                         <DialogHeader>
                             <DialogTitle>Edit User</DialogTitle>
@@ -517,15 +458,11 @@ export function UserTable({
             {viewingUser && (
                 <Dialog open={!!viewingUser} onOpenChange={(open) => {
                     if (!open) {
-                        setOpenDropdownId(null); // Close any open dropdown
-                        setTimeout(() => setViewingUser(null), 200);
+                        setViewingUser(null);
                     }
                 }}>
                     <DialogContent
                         className="max-w-lg overflow-scroll"
-                        onInteractOutside={(e) => e.preventDefault()}
-                        onOpenAutoFocus={(e) => e.preventDefault()}
-                        onCloseAutoFocus={(e) => e.preventDefault()}
                     >
                         <DialogHeader>
                             <DialogTitle>User Details</DialogTitle>
@@ -608,19 +545,11 @@ export function UserTable({
             {deletingUser && (
                 <Dialog open={!!deletingUser} onOpenChange={(open) => {
                     if (!open) {
-                        setOpenDropdownId(null); // Close any open dropdown
-                        setTimeout(() => setDeletingUser(null), 200);
+                        setDeletingUser(null);
                     }
                 }}>
                     <DialogContent
                         className="max-w-md"
-                        onInteractOutside={(e) => e.preventDefault()}
-                        onOpenAutoFocus={(e) => e.preventDefault()}
-                        onCloseAutoFocus={(e) => e.preventDefault()}
-                        onEscapeKeyDown={(e) => {
-                            e.preventDefault();
-                            setDeletingUser(null);
-                        }}
                     >
                         <DialogHeader>
                             <DialogTitle>Archive User</DialogTitle>

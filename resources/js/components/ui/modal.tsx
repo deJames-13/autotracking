@@ -89,14 +89,19 @@ function ModalContent({
 
     useEffect(() => {
         if (onOpenAutoFocus) {
-            const event = new Event('focus');
-            onOpenAutoFocus(event);
+            // Use setTimeout to avoid immediate focus conflicts
+            const timer = setTimeout(() => {
+                const event = new Event('focus');
+                onOpenAutoFocus(event);
+            }, 10);
+            return () => clearTimeout(timer);
         }
     }, [onOpenAutoFocus]);
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && onEscapeKeyDown) {
+                e.preventDefault();
                 onEscapeKeyDown(e);
             }
         };
@@ -231,10 +236,24 @@ interface ModalTriggerProps extends React.HTMLAttributes<HTMLElement> {
     asChild?: boolean;
 }
 
-function ModalTrigger({ className, children, asChild, ...props }: ModalTriggerProps) {
+function ModalTrigger({ className, children, asChild, onClick, ...props }: ModalTriggerProps) {
+    const { onOpenChange } = useContext(ModalContext);
+
+    const handleClick = (e: React.MouseEvent) => {
+        // Call the original onClick if provided
+        if (onClick) {
+            onClick(e);
+        }
+        // Open the modal
+        if (onOpenChange) {
+            onOpenChange(true);
+        }
+    };
+
     if (asChild) {
         return React.cloneElement(children as React.ReactElement, {
             ...props,
+            onClick: handleClick,
             className: cn(className, (children as React.ReactElement).props.className)
         });
     }
@@ -242,6 +261,7 @@ function ModalTrigger({ className, children, asChild, ...props }: ModalTriggerPr
     return (
         <button
             className={cn("cursor-pointer", className)}
+            onClick={handleClick}
             {...props}
         >
             {children}

@@ -381,13 +381,11 @@ export const InertiaSmartSelect = ({
                 autoFocus={false}
                 tabSelectsValue={false}
                 captureMenuScroll={false}
-                onFocus={(e) => {
-                    // Prevent focus events from bubbling up to avoid focus scope conflicts
-                    e.stopPropagation();
+                onFocus={() => {
+                // Simple focus handler without event manipulation
                 }}
-                onBlur={(e) => {
-                    // Prevent blur events from bubbling up to avoid focus scope conflicts
-                    e.stopPropagation();
+                onBlur={() => {
+                // Simple blur handler without event manipulation
                 }}
             />
             {error && (

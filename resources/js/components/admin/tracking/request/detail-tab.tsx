@@ -632,7 +632,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 {requestType === 'new' && <span className="text-muted-foreground ml-1 text-xs font-normal">(for new equipment)</span>}
                             </label>
                             <div className="flex w-full items-center gap-2">
-                                <div className="w-full">
+                                <div className="w-2/3">
                                     {requestType === 'routine' ? (
                                         <InertiaSmartSelect
                                             name="recallNumber"
@@ -656,14 +656,18 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     )}
                                 </div>
                                 {/* Barcode scanner button for recall number */}
-                                <div>
+                                <div className="w-1/3">
+                                    <Button
+                                        variant="outline"
+                                        className="w-full"
+                                        onClick={() => setShowRecallScanner(true)}
+                                    >
+                                        <Scan className="mr-2 h-4 w-4" />
+                                        <span className="hidden sm:inline">Scan Recall</span>
+                                        <span className="sm:hidden">Scan</span>
+                                    </Button>
+
                                     <Dialog open={showRecallScanner} onOpenChange={setShowRecallScanner}>
-                                        <DialogTrigger asChild>
-                                            <Button variant="outline" className="w-full">
-                                                <Scan className="mr-2 h-4 w-4" />
-                                                Scan Recall Barcode
-                                            </Button>
-                                        </DialogTrigger>
                                         <DialogContent className="sm:max-w-md">
                                             <DialogHeader>
                                                 <DialogTitle>Scan Recall Number Barcode</DialogTitle>
@@ -730,13 +734,16 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 Search
                             </Button>
                             <div>
+                                <Button
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={() => setShowScanner(true)}
+                                >
+                                    <Scan className="mr-2 h-4 w-4" />
+                                    Scan Barcode
+                                </Button>
+
                                 <Dialog open={showScanner} onOpenChange={setShowScanner}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="outline" className="w-full">
-                                            <Scan className="mr-2 h-4 w-4" />
-                                            Scan Barcode
-                                        </Button>
-                                    </DialogTrigger>
                                     <DialogContent className="sm:max-w-md">
                                         <DialogHeader>
                                             <DialogTitle>Scan Employee Barcode</DialogTitle>

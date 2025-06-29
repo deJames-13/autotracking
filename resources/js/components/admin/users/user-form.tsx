@@ -180,7 +180,7 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
         }, 1000);
 
         return () => clearTimeout(timer);
-    }, [data.email, user?.email, validateEmail]);
+    }, [data.email, user?.email]); // Removed validateEmail from dependencies to prevent infinite re-renders
 
     // Validate form using Zod
     const validateForm = (): boolean => {
@@ -502,6 +502,7 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                                 loading={loadingDepartments}
                                 className={allErrors.department_id ? 'border-destructive' : ''}
                                 cacheOptions={true}
+                                minSearchLength={0}
                             />
                         </div>
 
@@ -520,6 +521,7 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
                                 loading={loadingPlants}
                                 className={allErrors.plant_id ? 'border-destructive' : ''}
                                 cacheOptions={true}
+                                minSearchLength={0}
                             />
                         </div>
                     </div>

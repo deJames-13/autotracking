@@ -1,7 +1,7 @@
 import { UserForm } from '@/components/admin/users/user-form';
 import { UserTable } from '@/components/admin/users/user-table';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/modal';
 import { ImportModal } from '@/components/ui/import-modal';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
@@ -176,13 +176,12 @@ export default function UsersIndex({ roles, departments, plants }: UsersIndexPro
                             Import Users
                         </Button>
 
+                        <Button onClick={() => setIsAddDialogOpen(true)}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add User
+                        </Button>
+
                         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button>
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add User
-                                </Button>
-                            </DialogTrigger>
                             <DialogContent className="flex max-h-[85vh] w-full max-w-[90vw] flex-col overflow-hidden lg:max-w-[80vw] xl:max-w-[72rem]">
                                 <DialogHeader className="flex-shrink-0">
                                     <DialogTitle>Add New User</DialogTitle>
