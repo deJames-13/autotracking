@@ -96,12 +96,10 @@ export function ArchivedPlantsTable({
                 data={archivedPlants.data}
                 loading={loading}
                 pagination={{
-                    currentPage: archivedPlants.current_page,
-                    totalPages: archivedPlants.last_page,
-                    perPage: archivedPlants.per_page,
+                    current_page: archivedPlants.current_page,
+                    last_page: archivedPlants.last_page,
+                    per_page: archivedPlants.per_page,
                     total: archivedPlants.total,
-                    from: archivedPlants.from,
-                    to: archivedPlants.to,
                 }}
                 onSearch={handleSearch}
                 onPageChange={handlePageChange}

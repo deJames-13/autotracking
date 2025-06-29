@@ -96,12 +96,10 @@ export function ArchivedDepartmentsTable({
                 data={archivedDepartments.data}
                 loading={loading}
                 pagination={{
-                    currentPage: archivedDepartments.current_page,
-                    totalPages: archivedDepartments.last_page,
-                    perPage: archivedDepartments.per_page,
+                    current_page: archivedDepartments.current_page,
+                    last_page: archivedDepartments.last_page,
+                    per_page: archivedDepartments.per_page,
                     total: archivedDepartments.total,
-                    from: archivedDepartments.from,
-                    to: archivedDepartments.to,
                 }}
                 onSearch={handleSearch}
                 onPageChange={handlePageChange}

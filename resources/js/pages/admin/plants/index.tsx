@@ -157,14 +157,14 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
                 />
 
                 {/* Pagination Info */}
-                <div className="text-muted-foreground flex items-center justify-between text-sm">
+                {/* <div className="text-muted-foreground flex items-center justify-between text-sm">
                     <div>
                         Showing {plants.from || 0} to {plants.to || 0} of {plants.total} plants
                     </div>
                     <div>
                         Page {plants.current_page} of {plants.last_page}
                     </div>
-                </div>
+                </div> */}
             </div>
         </AppLayout>
     );

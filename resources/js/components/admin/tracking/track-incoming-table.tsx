@@ -10,7 +10,21 @@ import { useCallback, useState } from 'react';
 import { TrackIncomingDeleteDialog } from './track-incoming-delete-dialog';
 
 interface TrackIncomingTableProps {
-    trackIncoming: PaginationData<TrackIncoming>;
+    trackIncoming: PaginationData<TrackIncoming> | {
+        data: TrackIncoming[];
+        meta?: {
+            current_page: number;
+            last_page: number;
+            per_page: number;
+            total: number;
+            from?: number;
+            to?: number;
+        };
+        current_page?: number;
+        last_page?: number;
+        per_page?: number;
+        total?: number;
+    };
     loading?: boolean;
     filterOptions?: {
         statuses: Array<{ value: string; label: string }>;
@@ -276,7 +290,7 @@ export function TrackIncomingTable({
                 columns={columns}
                 filters={filters}
                 loading={loading}
-                pagination={{
+                pagination={trackIncoming.meta ? { meta: trackIncoming.meta } : {
                     current_page: trackIncoming.current_page,
                     last_page: trackIncoming.last_page,
                     per_page: trackIncoming.per_page,

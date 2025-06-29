@@ -181,12 +181,10 @@ export function ArchivedUsersTable({
                 data={archivedUsers.data}
                 loading={loading}
                 pagination={{
-                    currentPage: archivedUsers.current_page,
-                    totalPages: archivedUsers.last_page,
-                    perPage: archivedUsers.per_page,
+                    current_page: archivedUsers.current_page,
+                    last_page: archivedUsers.last_page,
+                    per_page: archivedUsers.per_page,
                     total: archivedUsers.total,
-                    from: archivedUsers.from,
-                    to: archivedUsers.to,
                 }}
                 onSearch={handleSearch}
                 onPageChange={handlePageChange}

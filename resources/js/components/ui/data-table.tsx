@@ -61,6 +61,15 @@ export interface DataTableProps<T = any> {
         last_page: number;
         per_page: number;
         total: number;
+    } | {
+        meta: {
+            current_page: number;
+            last_page: number;
+            per_page: number;
+            total: number;
+            from?: number;
+            to?: number;
+        };
     };
     onSearch?: (search: string) => void;
     onFilter?: (filters: Record<string, any>) => void;
@@ -216,12 +225,25 @@ export function DataTable<T = any>({
     const renderPagination = () => {
         if (!pagination || loading) return null;
 
+        // Handle both direct pagination and meta object pagination
+        let paginationData;
+        if ('meta' in pagination && pagination.meta) {
+            paginationData = pagination.meta;
+        } else {
+            paginationData = pagination as {
+                current_page: number;
+                last_page: number;
+                per_page: number;
+                total: number;
+            };
+        }
+
         const {
             current_page = 1,
             last_page = 1,
             per_page = 15,
             total = 0
-        } = pagination;
+        } = paginationData;
 
         // Additional safety checks
         if (!per_page || per_page <= 0 || isNaN(per_page)) {
@@ -515,62 +537,105 @@ export function DataTable<T = any>({
             {pagination && !loading && (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-2 py-4">
                     <div className="flex items-center space-x-2">
-                        <p className="text-sm text-muted-foreground">
-                            Showing {Math.max(1, (pagination.current_page - 1) * (pagination.per_page || 10) + 1)}-
-                            {Math.min(pagination.current_page * (pagination.per_page || 10), pagination.total)} of {pagination.total} results
-                        </p>
-                        <Select
-                            value={(pagination.per_page || 10).toString()}
-                            onValueChange={(value) => onPerPageChange?.(parseInt(value))}
-                        >
-                            <SelectTrigger className="w-20">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="10">10</SelectItem>
-                                <SelectItem value="25">25</SelectItem>
-                                <SelectItem value="50">50</SelectItem>
-                                <SelectItem value="100">100</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <span className="text-sm text-muted-foreground">per page</span>
+                        {(() => {
+                            // Handle both direct pagination and meta object pagination
+                            let paginationData;
+                            if ('meta' in pagination && pagination.meta) {
+                                paginationData = pagination.meta;
+                            } else {
+                                paginationData = pagination as {
+                                    current_page: number;
+                                    last_page: number;
+                                    per_page: number;
+                                    total: number;
+                                };
+                            }
+
+                            const { current_page = 1, per_page = 10, total = 0 } = paginationData;
+                            const startItem = Math.max(1, (current_page - 1) * per_page + 1);
+                            const endItem = Math.min(current_page * per_page, total);
+
+                            return (
+                                <>
+                                    <p className="text-sm text-muted-foreground">
+                                        Showing {startItem}-{endItem} of {total} results
+                                    </p>
+                                    <Select
+                                        value={per_page.toString()}
+                                        onValueChange={(value) => onPerPageChange?.(parseInt(value))}
+                                    >
+                                        <SelectTrigger className="w-20">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="10">10</SelectItem>
+                                            <SelectItem value="25">25</SelectItem>
+                                            <SelectItem value="50">50</SelectItem>
+                                            <SelectItem value="100">100</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <span className="text-sm text-muted-foreground">per page</span>
+                                </>
+                            );
+                        })()}
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onPageChange?.(1)}
-                            disabled={pagination.current_page === 1}
-                        >
-                            <ChevronsLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onPageChange?.(pagination.current_page - 1)}
-                            disabled={pagination.current_page === 1}
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm text-muted-foreground">
-                            Page {pagination.current_page} of {pagination.last_page}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onPageChange?.(pagination.current_page + 1)}
-                            disabled={pagination.current_page === pagination.last_page}
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onPageChange?.(pagination.last_page)}
-                            disabled={pagination.current_page === pagination.last_page}
-                        >
-                            <ChevronsRight className="h-4 w-4" />
-                        </Button>
+                        {(() => {
+                            // Handle both direct pagination and meta object pagination
+                            let paginationData;
+                            if ('meta' in pagination && pagination.meta) {
+                                paginationData = pagination.meta;
+                            } else {
+                                paginationData = pagination as {
+                                    current_page: number;
+                                    last_page: number;
+                                    per_page: number;
+                                    total: number;
+                                };
+                            }
+
+                            const { current_page = 1, last_page = 1 } = paginationData;
+
+                            return (
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onPageChange?.(1)}
+                                        disabled={current_page === 1}
+                                    >
+                                        <ChevronsLeft className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onPageChange?.(current_page - 1)}
+                                        disabled={current_page === 1}
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <span className="text-sm text-muted-foreground">
+                                        Page {current_page} of {last_page}
+                                    </span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onPageChange?.(current_page + 1)}
+                                        disabled={current_page === last_page}
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onPageChange?.(last_page)}
+                                        disabled={current_page === last_page}
+                                    >
+                                        <ChevronsRight className="h-4 w-4" />
+                                    </Button>
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
             )}

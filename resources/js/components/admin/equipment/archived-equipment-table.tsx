@@ -169,12 +169,10 @@ export function ArchivedEquipmentTable({
                 data={archivedEquipment.data}
                 loading={loading}
                 pagination={{
-                    currentPage: archivedEquipment.current_page,
-                    totalPages: archivedEquipment.last_page,
-                    perPage: archivedEquipment.per_page,
+                    current_page: archivedEquipment.current_page,
+                    last_page: archivedEquipment.last_page,
+                    per_page: archivedEquipment.per_page,
                     total: archivedEquipment.total,
-                    from: archivedEquipment.from,
-                    to: archivedEquipment.to,
                 }}
                 onSearch={handleSearch}
                 onPageChange={handlePageChange}

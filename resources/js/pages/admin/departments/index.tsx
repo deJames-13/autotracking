@@ -157,14 +157,14 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
                 />
 
                 {/* Pagination Info */}
-                <div className="text-muted-foreground flex items-center justify-between text-sm">
+                {/* <div className="text-muted-foreground flex items-center justify-between text-sm">
                     <div>
                         Showing {departments.from || 0} to {departments.to || 0} of {departments.total} departments
                     </div>
                     <div>
                         Page {departments.current_page} of {departments.last_page}
                     </div>
-                </div>
+                </div> */}
             </div>
         </AppLayout>
     );

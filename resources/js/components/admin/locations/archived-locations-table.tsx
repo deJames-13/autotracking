@@ -105,12 +105,10 @@ export function ArchivedLocationsTable({
                 data={archivedLocations.data}
                 loading={loading}
                 pagination={{
-                    currentPage: archivedLocations.current_page,
-                    totalPages: archivedLocations.last_page,
-                    perPage: archivedLocations.per_page,
+                    current_page: archivedLocations.current_page,
+                    last_page: archivedLocations.last_page,
+                    per_page: archivedLocations.per_page,
                     total: archivedLocations.total,
-                    from: archivedLocations.from,
-                    to: archivedLocations.to,
                 }}
                 onSearch={handleSearch}
                 onPageChange={handlePageChange}

@@ -186,14 +186,14 @@ export default function LocationsIndex({ locations: initialLocations, department
                 />
 
                 {/* Pagination Info */}
-                <div className="text-muted-foreground flex items-center justify-between text-sm">
+                {/* <div className="text-muted-foreground flex items-center justify-between text-sm">
                     <div>
                         Showing {locations.from || 0} to {locations.to || 0} of {locations.total} locations
                     </div>
                     <div>
                         Page {locations.current_page} of {locations.last_page}
                     </div>
-                </div>
+                </div> */}
             </div>
         </AppLayout>
     );
