@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/modal';
+import { SimpleModal, SimpleModalContent, SimpleModalHeader, SimpleModalTitle } from '@/components/ui/simple-modal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DepartmentModalSelect, LocationModalSelect, PlantModalSelect, UserModalSelect } from '@/components/ui/modal-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
 import { cn } from '@/lib/utils';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setReceivedBy, setScannedEmployee, updateEquipment } from '@/store/slices/trackingRequestSlice';
@@ -15,7 +15,7 @@ import { usePage } from '@inertiajs/react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { CalendarIcon, Scan, Search, User as UserIcon } from 'lucide-react';
+import { CalendarIcon, Scan, Search, User as UserIcon, Package, Loader2, Check } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
@@ -70,27 +70,29 @@ const DetailTab: React.FC<DetailTabProps> = ({
     };
 
     const [recallNumber, setRecallNumber] = useState<string>(data.recallNumber || '');
-    const [recallBarcode, setRecallBarcode] = useState('');
-    const [recallBarcodeError, setRecallBarcodeError] = useState('');
-    const [recallLoading, setRecallLoading] = useState(false);
+    const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
+    const [showEquipmentModal, setShowEquipmentModal] = useState(false);
+    const [showRecallScanner, setShowRecallScanner] = useState(false);
+
+    // Equipment search states
+    const [equipmentSearchQuery, setEquipmentSearchQuery] = useState('');
+    const [equipmentResults, setEquipmentResults] = useState<any[]>([]);
+    const [loadingEquipment, setLoadingEquipment] = useState(false);
 
     // Get scannedEmployee from Redux instead of local state
     const { scannedEmployee } = useAppSelector((state) => state.trackingRequest);
 
-    const [departments, setDepartments] = useState<SelectOption[]>([]);
-    const [locations, setLocations] = useState<SelectOption[]>([]);
-    const [plants, setPlants] = useState<SelectOption[]>([]);
-    const [loadingInitialData, setLoadingInitialData] = useState(true);
-    const [loadingLocations, setLoadingLocations] = useState(false);
     const [localDueDate, setLocalDueDate] = useState<string | null>(data.dueDate || null);
     const [employeeBarcode, setEmployeeBarcode] = useState<string>('');
     const [loadingEmployee, setLoadingEmployee] = useState(false);
-    const [showScanner, setShowScanner] = useState(false);
+    const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+    const [showEmployeeScanner, setShowEmployeeScanner] = useState(false);
     const [barcodeError, setBarcodeError] = useState<string>('');
 
-    // Recall number states
-    const [recallError, setRecallError] = useState('');
-    const [showRecallScanner, setShowRecallScanner] = useState(false);
+    // Employee search states
+    const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
+    const [employeeResults, setEmployeeResults] = useState<any[]>([]);
+    const [loadingEmployeeSearch, setLoadingEmployeeSearch] = useState(false);
 
     // Function to fetch employee by barcode
     const fetchEmployeeByBarcode = async (barcode: string) => {
@@ -123,9 +125,6 @@ const DetailTab: React.FC<DetailTabProps> = ({
 
                 if (employee.department_id) {
                     updates.department = employee.department_id;
-                    // Fetch locations for this department
-                    setLoadingLocations(true);
-                    fetchLocationsByDepartment(employee.department_id);
                 }
 
                 if (Object.keys(updates).length > 0) {
@@ -152,33 +151,40 @@ const DetailTab: React.FC<DetailTabProps> = ({
         }
     };
 
-    // Recall number: fetch equipment by recall number
+    // Fetch equipment by recall number (only called when user selects from modal or scans)
     const fetchEquipmentByRecall = async (recall: string) => {
         if (!recall) return;
-        setRecallLoading(true);
-        setRecallBarcodeError('');
+
         try {
             const response = await axios.get(route('api.equipment.search-by-recall'), {
                 params: { recall_number: recall },
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             if (response.data.success && response.data.equipment) {
+                const equipment = response.data.equipment;
+                setSelectedEquipment(equipment);
                 dispatch(
                     updateEquipment({
-                        ...response.data.equipment,
+                        ...equipment,
                         recallNumber: recall,
-                        serialNumber: response.data.equipment.serial_number || '',
-                        process_req_range: getCombinedProcessRange(response.data.equipment),
+                        serialNumber: equipment.serial_number || '',
+                        process_req_range: getCombinedProcessRange(equipment),
                         existing: true,
-                        equipment_id: response.data.equipment.equipment_id,
+                        equipment_id: equipment.equipment_id,
                     }),
                 );
                 // Auto-fill form fields including new process requirement range field
                 onChange({
-                    serialNumber: response.data.equipment.serial_number || '',
-                    process_req_range: getCombinedProcessRange(response.data.equipment),
+                    serialNumber: equipment.serial_number || '',
+                    process_req_range: getCombinedProcessRange(equipment),
+                    description: equipment.description || '',
+                    manufacturer: equipment.manufacturer || '',
+                    model: equipment.model || '',
                 });
+
+                toast.success(`Equipment found: ${equipment.description || recall}`);
             } else {
+                setSelectedEquipment(null);
                 dispatch(
                     updateEquipment({
                         recallNumber: recall,
@@ -188,66 +194,106 @@ const DetailTab: React.FC<DetailTabProps> = ({
                 );
             }
         } catch (error) {
-            setRecallBarcodeError('Error searching for equipment');
+            console.error('Error searching for equipment:', error);
+            toast.error('Error searching for equipment');
+        }
+    };
+
+    // Search equipment by recall number for modal
+    const searchEquipment = async (query: string) => {
+        if (!query || query.length < 2) {
+            setEquipmentResults([]);
+            return;
+        }
+
+        setLoadingEquipment(true);
+        try {
+            const response = await axios.get(route('api.equipment.search-by-recall'), {
+                params: { recall_number: query },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+
+            if (response.data.success && response.data.equipment) {
+                setEquipmentResults([response.data.equipment]);
+            } else {
+                setEquipmentResults([]);
+            }
+        } catch (error) {
+            console.error('Error searching equipment:', error);
+            setEquipmentResults([]);
         } finally {
-            setRecallLoading(false);
+            setLoadingEquipment(false);
         }
     };
 
-    // Handle recall number select/search
-    const handleRecallNumberChange = (value: string | number | null) => {
-        const recall = value ? String(value) : '';
-        setRecallNumber(recall);
-        // Always update Redux state with recallNumber
-        dispatch(updateEquipment({ recallNumber: recall }));
-        if (recall) fetchEquipmentByRecall(recall);
-        else dispatch(updateEquipment({ existing: false, equipment_id: null }));
-    };
+    // Search employees for modal
+    const searchEmployees = async (query: string) => {
+        if (!query || query.length < 2) {
+            setEmployeeResults([]);
+            return;
+        }
 
-    // Handle recall barcode input
-    const handleRecallBarcodeChange = (value: string) => {
-        setRecallBarcode(value);
-        setRecallBarcodeError('');
-        if (value.length > 0) {
-            handleRecallNumberChange(value);
+        setLoadingEmployeeSearch(true);
+        try {
+            const response = await axios.get('/admin/users', {
+                params: {
+                    search: query,
+                    limit: 10,
+                },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+
+            if (response.data?.data?.data) {
+                setEmployeeResults(response.data.data.data);
+            } else {
+                setEmployeeResults([]);
+            }
+        } catch (error) {
+            console.error('Error searching employees:', error);
+            setEmployeeResults([]);
+        } finally {
+            setLoadingEmployeeSearch(false);
         }
     };
 
-    // Handle recall barcode scan
+    // Handle manual recall number input change (no auto-search)
+    const handleRecallInputChange = (value: string) => {
+        setRecallNumber(value);
+        dispatch(updateEquipment({ recallNumber: value }));
+        if (!value) {
+            setSelectedEquipment(null);
+        }
+    };
+
+    // Handle equipment selection from modal
+    const handleEquipmentSelect = (equipment: any) => {
+        setRecallNumber(equipment.recall_number);
+        setShowEquipmentModal(false);
+        setEquipmentSearchQuery('');
+        setEquipmentResults([]);
+        fetchEquipmentByRecall(equipment.recall_number);
+    };
+
+    // Handle recall barcode scan - this scans recall numbers
     const handleRecallScan = (detectedCodes: any[]) => {
         if (detectedCodes && detectedCodes.length > 0) {
             const scannedText = detectedCodes[0].rawValue;
-            setRecallBarcode(scannedText);
-            handleRecallNumberChange(scannedText);
+            setShowRecallScanner(false);
+            setRecallNumber(scannedText);
+            fetchEquipmentByRecall(scannedText);
         }
     };
 
-    // SmartSelect load options for recall number
-    const loadRecallOptions = async (inputValue: string) => {
-        if (!inputValue || inputValue.length < 1) return [];
-        try {
-            const response = await axios.get(route('api.equipment.search-by-recall'), {
-                params: { recall_number: inputValue },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            });
-            if (response.data.success && response.data.equipment) {
-                // Use recall_number from backend
-                return [{ label: response.data.equipment.recall_number, value: response.data.equipment.recall_number }];
-            }
-            return [{ label: inputValue, value: inputValue }];
-        } catch {
-            return [{ label: inputValue, value: inputValue }];
-        }
-    };
-
-    // Handle barcode input change (no automatic search)
+    // Handle manual employee barcode input change (no automatic search)
     const handleBarcodeChange = (value: string) => {
         setEmployeeBarcode(value);
         setBarcodeError(''); // Clear error when user starts typing
         // Clear previous results when input changes
-        dispatch(setScannedEmployee(null));
-        if (onScannedEmployeeChange) {
-            onScannedEmployeeChange(null);
+        if (!value) {
+            dispatch(setScannedEmployee(null));
+            if (onScannedEmployeeChange) {
+                onScannedEmployeeChange(null);
+            }
         }
     };
 
@@ -260,12 +306,21 @@ const DetailTab: React.FC<DetailTabProps> = ({
         fetchEmployeeByBarcode(employeeBarcode.trim());
     };
 
-    // Handle barcode scan
-    const handleScan = (detectedCodes: any[]) => {
+    // Handle employee selection from modal
+    const handleEmployeeSelect = (employee: any) => {
+        setEmployeeBarcode(employee.employee_id);
+        setShowEmployeeModal(false);
+        setEmployeeSearchQuery('');
+        setEmployeeResults([]);
+        fetchEmployeeByBarcode(employee.employee_id);
+    };
+
+    // Handle employee barcode scan - this scans employee IDs
+    const handleEmployeeScan = (detectedCodes: any[]) => {
         if (detectedCodes && detectedCodes.length > 0) {
             const scannedText = detectedCodes[0].rawValue;
             setEmployeeBarcode(scannedText);
-            setShowScanner(false);
+            setShowEmployeeScanner(false);
             fetchEmployeeByBarcode(scannedText);
         }
     };
@@ -276,73 +331,6 @@ const DetailTab: React.FC<DetailTabProps> = ({
         toast.error('Error scanning barcode');
     };
 
-    // Function to fetch locations by department
-    const fetchLocationsByDepartment = async (departmentId: number) => {
-        try {
-            const response = await axios.get(route('admin.locations.search-locations'), {
-                params: {
-                    // department_id: departmentId,
-                    limit: 10,
-                },
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            });
-            const departmentLocations = response.data.map((location: any) => ({
-                label: location.label,
-                value: location.value,
-            }));
-
-            setLocations(departmentLocations);
-
-            // Auto-select first location if user doesn't have a location selected and we have locations
-            if (departmentLocations.length > 0 && (!data.location || data.location === '' || data.location === null)) {
-                onChange({ location: departmentLocations[0].value });
-            }
-        } catch (error) {
-            console.error('Error fetching locations for department:', error);
-        } finally {
-            setLoadingLocations(false);
-        }
-    };
-
-    // Fetch initial data for dropdowns when component mounts
-    useEffect(() => {
-        const fetchInitialData = async () => {
-            setLoadingInitialData(true);
-            try {
-                // Fetch departments
-                const deptResponse = await axios.get(route('admin.departments.search-departments'), {
-                    params: { search: '', limit: 10 },
-                });
-                setDepartments(deptResponse.data);
-
-                // Fetch plants
-                const plantResponse = await axios.get(route('admin.plants.search-plants'), {
-                    params: { search: '', limit: 10 },
-                });
-                setPlants(plantResponse.data);
-
-                // Fetch locations without department filter
-                const locResponse = await axios.get('/admin/locations', {
-                    params: { limit: 10 },
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                });
-
-                setLocations(
-                    locResponse.data.data.data.map((location: any) => ({
-                        label: location.location_name,
-                        value: location.location_id,
-                    })),
-                );
-            } catch (error) {
-                console.error('Error fetching initial data:', error);
-            } finally {
-                setLoadingInitialData(false);
-            }
-        };
-
-        fetchInitialData();
-    }, []);
-
     // Sync employeeBarcode with Redux scannedEmployee state
     useEffect(() => {
         if (scannedEmployee?.employee_id) {
@@ -351,6 +339,28 @@ const DetailTab: React.FC<DetailTabProps> = ({
             setEmployeeBarcode('');
         }
     }, [scannedEmployee]);
+
+    // Debounced search for equipment
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (equipmentSearchQuery) {
+                searchEquipment(equipmentSearchQuery);
+            }
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [equipmentSearchQuery]);
+
+    // Debounced search for employees
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (employeeSearchQuery) {
+                searchEmployees(employeeSearchQuery);
+            }
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [employeeSearchQuery]);
 
     const handleChange = (field: keyof EquipmentSchema, value: string | number | null) => {
         // Special handling for dueDate to maintain local state
@@ -379,11 +389,6 @@ const DetailTab: React.FC<DetailTabProps> = ({
             return;
         }
 
-        // If changing department, we might need to update locations
-        if (field === 'department' && value) {
-            setLoadingLocations(true);
-            fetchLocationsByDepartment(value as number);
-        }
         // Special handling for receivedBy field
         if (field === 'receivedBy' && value) {
             // When receivedBy changes, we need to update both the equipment state and Redux receivedBy state
@@ -409,120 +414,6 @@ const DetailTab: React.FC<DetailTabProps> = ({
         onChange(updatedData);
     };
 
-    // Load department options for SmartSelect
-    const loadDepartmentOptions = async (inputValue: string): Promise<SelectOption[]> => {
-        try {
-            // If we already have pre-loaded departments and input is empty, return them
-            if (inputValue === '' && departments.length > 0) {
-                return departments;
-            }
-
-            // Otherwise load from API
-            const response = await axios.get(route('admin.departments.search-departments'), {
-                params: { search: inputValue, limit: 10 },
-            });
-            return response.data;
-        } catch (error) {
-            console.error('Error loading departments:', error);
-            return [];
-        }
-    };
-
-    // Load plant options for SmartSelect
-    const loadPlantOptions = async (inputValue: string): Promise<SelectOption[]> => {
-        try {
-            // If we already have pre-loaded plants and input is empty, return them
-            if (inputValue === '' && plants.length > 0) {
-                return plants;
-            }
-
-            // Otherwise load from API
-            const response = await axios.get(route('admin.plants.search-plants'), {
-                params: { search: inputValue, limit: 10 },
-            });
-            return response.data;
-        } catch (error) {
-            console.error('Error loading plants:', error);
-            return [];
-        }
-    };
-
-    // Load location options for SmartSelect - don't filter by department
-    const loadLocationOptions = async (inputValue: string): Promise<SelectOption[]> => {
-        try {
-            // If we already have pre-loaded locations and input is empty, return them
-            if (inputValue === '' && locations.length > 0) {
-                return locations;
-            }
-
-            // Only include department_id as an optional filter, not a requirement
-            const params: Record<string, string> = {
-                search: inputValue,
-                limit: '10',
-            };
-
-            // Add department as an optional filter if selected
-            if (data.department) {
-                params.department_id = String(data.department);
-            }
-
-            const response = await axios.get('/admin/locations', {
-                params,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-
-            return response.data.data.data.map((location: any) => ({
-                label: location.location_name,
-                value: location.location_id,
-            }));
-        } catch (error) {
-            console.error('Error loading locations:', error);
-            return [];
-        } finally {
-            setLoadingLocations(false);
-        }
-    };
-
-    // Create location option - don't require department
-    const createLocationOption = async (inputValue: string): Promise<SelectOption> => {
-        try {
-            // Optional department association
-            const params: any = {
-                location_name: inputValue,
-            };
-
-            // Add department if available
-            if (data.department) {
-                params.department_id = data.department;
-            }
-
-            const response = await axios.post('/admin/locations', params, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-
-            toast.success(`Location "${inputValue}" created successfully`);
-
-            return {
-                label: inputValue,
-                value: response.data.data.location_id,
-            };
-        } catch (error: any) {
-            console.error('Error creating location:', error);
-
-            if (error.response?.data?.message) {
-                toast.error(error.response.data.message);
-            } else {
-                toast.error('Failed to create location. Please try again.');
-            }
-
-            throw new Error('Failed to create location');
-        }
-    };
-
     // Load user options for SmartSelect
     const loadUserOptions = async (inputValue: string): Promise<SelectOption[]> => {
         try {
@@ -534,8 +425,8 @@ const DetailTab: React.FC<DetailTabProps> = ({
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             return response.data.data.data.map((user: any) => ({
-                label: `${user.first_name} ${user.last_name}`,
-                value: user.user_id || user.employee_id,
+                label: `${user.first_name} ${user.last_name} (${user.employee_id})`,
+                value: user.employee_id || user.user_id,
                 // Store additional user data for later use
                 userData: {
                     user_id: user.user_id,
@@ -632,86 +523,69 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                 {requestType === 'new' && <span className="text-muted-foreground ml-1 text-xs font-normal">(for new equipment)</span>}
                             </label>
                             <div className="flex w-full items-center gap-2">
-                                <div className="w-2/3">
-                                    {requestType === 'routine' ? (
-                                        <InertiaSmartSelect
-                                            name="recallNumber"
-                                            value={recallNumber}
-                                            onChange={handleRecallNumberChange}
-                                            loadOptions={loadRecallOptions}
-                                            placeholder="Search or enter recall number"
-                                            isDisabled={recallLoading}
-                                            error={errors.recallNumber}
-                                            minSearchLength={1}
-                                            required
-                                        />
-                                    ) : (
-                                        <Input
-                                            id="recallNumber"
-                                            value={recallNumber}
-                                            onChange={(e) => handleRecallNumberChange(e.target.value)}
-                                            placeholder="Enter recall number for new equipment"
-                                            className={errors.recallNumber ? 'border-destructive' : ''}
-                                        />
-                                    )}
+                                <div className="flex-1">
+                                    <Input
+                                        id="recallNumber"
+                                        value={recallNumber}
+                                        onChange={(e) => handleRecallInputChange(e.target.value)}
+                                        placeholder="Enter or scan recall number"
+                                        className={errors.recallNumber ? 'border-destructive' : ''}
+                                    />
                                 </div>
-                                {/* Barcode scanner button for recall number */}
-                                <div className="w-1/3">
-                                    <Button
-                                        variant="outline"
-                                        className="w-full"
-                                        onClick={() => setShowRecallScanner(true)}
-                                    >
-                                        <Scan className="mr-2 h-4 w-4" />
-                                        <span className="hidden sm:inline">Scan Recall</span>
-                                        <span className="sm:hidden">Scan</span>
-                                    </Button>
 
-                                    <Dialog open={showRecallScanner} onOpenChange={setShowRecallScanner}>
-                                        <DialogContent className="sm:max-w-md">
-                                            <DialogHeader>
-                                                <DialogTitle>Scan Recall Number Barcode</DialogTitle>
-                                                <DialogDescription>Position the barcode within the camera frame to scan</DialogDescription>
-                                            </DialogHeader>
-                                            <div className="flex items-center justify-center p-4">
-                                                <div className="w-full max-w-sm">
-                                                    <Scanner
-                                                        onScan={handleRecallScan}
-                                                        onError={handleScanError}
-                                                        formats={['code_128', 'code_39']}
-                                                        constraints={{
-                                                            video: {
-                                                                facingMode: 'environment',
-                                                            },
-                                                        }}
-                                                        allowMultiple={false}
-                                                        scanDelay={500}
-                                                        components={{
-                                                            finder: true,
-                                                            torch: true,
-                                                            zoom: false,
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
+                                {/* Select Equipment Button - only for routine requests */}
+                                {requestType === 'routine' && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setShowEquipmentModal(true)}
+                                        className="shrink-0"
+                                    >
+                                        <Package className="mr-2 h-4 w-4" />
+                                        Select
+                                    </Button>
+                                )}
+
+                                {/* Barcode scanner button for recall number */}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowRecallScanner(true)}
+                                    className="shrink-0"
+                                >
+                                    <Scan className="mr-2 h-4 w-4" />
+                                    <span className="hidden sm:inline">Scan</span>
+                                </Button>
                             </div>
-                            {recallBarcodeError && <div className="mt-1 text-xs text-red-500">{recallBarcodeError}</div>}
+
+                            {/* Show selected equipment info */}
+                            {selectedEquipment && (
+                                <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3">
+                                    <div className="flex items-center text-blue-800">
+                                        <Package className="mr-2 h-4 w-4" />
+                                        <span className="font-medium">{selectedEquipment.description}</span>
+                                    </div>
+                                    <div className="mt-1 text-sm text-blue-600">
+                                        Serial: {selectedEquipment.serial_number || 'N/A'} |
+                                        Manufacturer: {selectedEquipment.manufacturer || 'N/A'}
+                                    </div>
+                                </div>
+                            )}
+
                             {errors.recallNumber && <div className="mt-1 text-xs text-red-500">{errors.recallNumber}</div>}
                         </div>
                     )}
+
                     {/* Employee Barcode Section */}
                     <div className="bg-muted/20 mb-6 rounded-lg border p-4">
                         <h3 className="mb-4 flex items-center text-sm font-medium">
                             <UserIcon className="mr-2 h-4 w-4" />
                             Employee Information
                         </h3>
-                        <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-5">
-                            <div className="md:col-span-3">
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1">
                                 <Label htmlFor="employeeBarcode" className={errors.employeeBarcode ? 'text-destructive' : ''}>
-                                    Employee Barcode (Employee ID) *
+                                    Employee ID *
                                 </Label>
                                 <Input
                                     id="employeeBarcode"
@@ -722,56 +596,44 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                             handleEmployeeSearch();
                                         }
                                     }}
-                                    placeholder="Scan or enter employee ID"
+                                    placeholder="Enter or scan employee ID"
                                     className={errors.employeeBarcode ? 'border-destructive' : ''}
                                     disabled={loadingEmployee}
                                 />
                                 {errors.employeeBarcode && <p className="text-destructive mt-1 text-sm">{errors.employeeBarcode}</p>}
                                 {barcodeError && <span className="mt-1 block text-sm text-red-600">{barcodeError}</span>}
                             </div>
-                            <Button onClick={handleEmployeeSearch} disabled={loadingEmployee || !employeeBarcode.trim()}>
-                                <Search className="mr-2 h-4 w-4" />
-                                Search
-                            </Button>
-                            <div>
+
+                            <div className="flex gap-2 pt-6">
                                 <Button
+                                    type="button"
                                     variant="outline"
-                                    className="w-full"
-                                    onClick={() => setShowScanner(true)}
+                                    onClick={() => setShowEmployeeModal(true)}
+                                    className="shrink-0"
                                 >
-                                    <Scan className="mr-2 h-4 w-4" />
-                                    Scan Barcode
+                                    <UserIcon className="mr-2 h-4 w-4" />
+                                    Select
                                 </Button>
 
-                                <Dialog open={showScanner} onOpenChange={setShowScanner}>
-                                    <DialogContent className="sm:max-w-md">
-                                        <DialogHeader>
-                                            <DialogTitle>Scan Employee Barcode</DialogTitle>
-                                            <DialogDescription>Position the Code 128 barcode within the camera frame to scan</DialogDescription>
-                                        </DialogHeader>
-                                        <div className="flex items-center justify-center p-4">
-                                            <div className="w-full max-w-sm">
-                                                <Scanner
-                                                    onScan={handleScan}
-                                                    onError={handleScanError}
-                                                    formats={['code_128', 'code_39']}
-                                                    constraints={{
-                                                        video: {
-                                                            facingMode: 'environment',
-                                                        },
-                                                    }}
-                                                    allowMultiple={false}
-                                                    scanDelay={500}
-                                                    components={{
-                                                        finder: true,
-                                                        torch: true,
-                                                        zoom: false,
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
+                                <Button
+                                    type="button"
+                                    onClick={handleEmployeeSearch}
+                                    disabled={loadingEmployee || !employeeBarcode.trim()}
+                                    className="shrink-0"
+                                >
+                                    <Search className="mr-2 h-4 w-4" />
+                                    Search
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowEmployeeScanner(true)}
+                                    className="shrink-0"
+                                >
+                                    <Scan className="mr-2 h-4 w-4" />
+                                    Scan
+                                </Button>
                             </div>
                         </div>
 
@@ -792,25 +654,219 @@ const DetailTab: React.FC<DetailTabProps> = ({
                         )}
                     </div>
 
+                    {/* Equipment Modal */}
+                    <SimpleModal open={showEquipmentModal} onOpenChange={setShowEquipmentModal}>
+                        <SimpleModalContent className="max-w-md">
+                            <SimpleModalHeader>
+                                <SimpleModalTitle>Select Equipment</SimpleModalTitle>
+                            </SimpleModalHeader>
+                            <div className="space-y-4">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search equipment by recall number..."
+                                        value={equipmentSearchQuery}
+                                        onChange={(e) => setEquipmentSearchQuery(e.target.value)}
+                                        className="pl-10"
+                                        autoFocus
+                                    />
+                                </div>
+
+                                <div className="max-h-60 overflow-y-auto">
+                                    {loadingEquipment ? (
+                                        <div className="flex items-center justify-center py-4">
+                                            <Loader2 className="h-6 w-6 animate-spin" />
+                                        </div>
+                                    ) : equipmentResults.length === 0 ? (
+                                        <div className="text-center py-4 text-muted-foreground">
+                                            {equipmentSearchQuery.length > 0 && equipmentSearchQuery.length < 2 ?
+                                                'Type at least 2 characters to search' :
+                                                'No equipment found'
+                                            }
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            {equipmentResults.map((equipment, index) => (
+                                                <Button
+                                                    key={`${equipment.equipment_id}-${index}`}
+                                                    type="button"
+                                                    variant="ghost"
+                                                    onClick={() => handleEquipmentSelect(equipment)}
+                                                    className="w-full justify-start h-auto p-3 text-left"
+                                                >
+                                                    <div className="flex items-center gap-2 w-full">
+                                                        <div className="flex-1">
+                                                            <div className="font-medium">
+                                                                {equipment.recall_number} - {equipment.description}
+                                                            </div>
+                                                            <div className="text-sm text-muted-foreground">
+                                                                Serial: {equipment.serial_number || 'N/A'} | {equipment.manufacturer || 'N/A'}
+                                                            </div>
+                                                        </div>
+                                                        <Check className="h-4 w-4 text-primary opacity-0" />
+                                                    </div>
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-2 border-t">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setShowEquipmentModal(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        </SimpleModalContent>
+                    </SimpleModal>
+
+                    {/* Employee Modal */}
+                    <SimpleModal open={showEmployeeModal} onOpenChange={setShowEmployeeModal}>
+                        <SimpleModalContent className="max-w-md">
+                            <SimpleModalHeader>
+                                <SimpleModalTitle>Select Employee</SimpleModalTitle>
+                            </SimpleModalHeader>
+                            <div className="space-y-4">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search employee by name or ID..."
+                                        value={employeeSearchQuery}
+                                        onChange={(e) => setEmployeeSearchQuery(e.target.value)}
+                                        className="pl-10"
+                                        autoFocus
+                                    />
+                                </div>
+
+                                <div className="max-h-60 overflow-y-auto">
+                                    {loadingEmployeeSearch ? (
+                                        <div className="flex items-center justify-center py-4">
+                                            <Loader2 className="h-6 w-6 animate-spin" />
+                                        </div>
+                                    ) : employeeResults.length === 0 ? (
+                                        <div className="text-center py-4 text-muted-foreground">
+                                            {employeeSearchQuery.length > 0 && employeeSearchQuery.length < 2 ?
+                                                'Type at least 2 characters to search' :
+                                                'No employees found'
+                                            }
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            {employeeResults.map((employee, index) => (
+                                                <Button
+                                                    key={`${employee.employee_id}-${index}`}
+                                                    type="button"
+                                                    variant="ghost"
+                                                    onClick={() => handleEmployeeSelect(employee)}
+                                                    className="w-full justify-start h-auto p-3 text-left"
+                                                >
+                                                    <div className="flex items-center gap-2 w-full">
+                                                        <div className="flex-1">
+                                                            <div className="font-medium">
+                                                                {employee.first_name} {employee.last_name}
+                                                            </div>
+                                                            <div className="text-sm text-muted-foreground">
+                                                                ID: {employee.employee_id} | {employee.department?.department_name || 'No dept'} - {employee.plant?.plant_name || 'No plant'}
+                                                            </div>
+                                                        </div>
+                                                        <Check className="h-4 w-4 text-primary opacity-0" />
+                                                    </div>
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-2 border-t">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setShowEmployeeModal(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        </SimpleModalContent>
+                    </SimpleModal>
+
+                    {/* Recall Number Scanner Modal */}
+                    <SimpleModal open={showRecallScanner} onOpenChange={setShowRecallScanner}>
+                        <SimpleModalContent className="sm:max-w-md">
+                            <SimpleModalHeader>
+                                <SimpleModalTitle>Scan Recall Number Barcode</SimpleModalTitle>
+                            </SimpleModalHeader>
+                            <div className="flex items-center justify-center p-4">
+                                <div className="w-full max-w-sm">
+                                    <Scanner
+                                        onScan={handleRecallScan}
+                                        onError={handleScanError}
+                                        formats={['code_128', 'code_39']}
+                                        constraints={{
+                                            video: {
+                                                facingMode: 'environment',
+                                            },
+                                        }}
+                                        allowMultiple={false}
+                                        scanDelay={500}
+                                        components={{
+                                            finder: true,
+                                            torch: true,
+                                            zoom: false,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </SimpleModalContent>
+                    </SimpleModal>
+
+                    {/* Employee Scanner Modal */}
+                    <SimpleModal open={showEmployeeScanner} onOpenChange={setShowEmployeeScanner}>
+                        <SimpleModalContent className="sm:max-w-md">
+                            <SimpleModalHeader>
+                                <SimpleModalTitle>Scan Employee Barcode</SimpleModalTitle>
+                            </SimpleModalHeader>
+                            <div className="flex items-center justify-center p-4">
+                                <div className="w-full max-w-sm">
+                                    <Scanner
+                                        onScan={handleEmployeeScan}
+                                        onError={handleScanError}
+                                        formats={['code_128', 'code_39']}
+                                        constraints={{
+                                            video: {
+                                                facingMode: 'environment',
+                                            },
+                                        }}
+                                        allowMultiple={false}
+                                        scanDelay={500}
+                                        components={{
+                                            finder: true,
+                                            torch: true,
+                                            zoom: false,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </SimpleModalContent>
+                    </SimpleModal>
+
                     {/* Organizational info in one row */}
                     <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div>
                             <Label htmlFor="plant" className={errors.plant ? 'text-destructive' : ''}>
                                 Plant
                             </Label>
-                            <InertiaSmartSelect
+                            <PlantModalSelect
                                 name="plant"
                                 value={data.plant}
                                 onChange={(value) => handleChange('plant', value as string)}
-                                label={scannedEmployee?.plant?.plant_name}
-                                loadOptions={loadPlantOptions}
                                 placeholder="Select plant"
                                 error={errors.plant}
-                                className={errors.plant ? 'border-destructive' : ''}
-                                loading={loadingInitialData}
-                                cacheOptions={true}
-                                defaultOptions={plants.length > 0 ? plants : true}
-                                minSearchLength={0}
+                                currentLabel={scannedEmployee?.plant?.plant_name}
                             />
                             {scannedEmployee?.plant && (
                                 <p className="text-muted-foreground mt-1 text-xs">Auto-filled from employee: {scannedEmployee.plant.plant_name}</p>
@@ -821,19 +877,13 @@ const DetailTab: React.FC<DetailTabProps> = ({
                             <Label htmlFor="department" className={errors.department ? 'text-destructive' : ''}>
                                 Department
                             </Label>
-                            <InertiaSmartSelect
+                            <DepartmentModalSelect
                                 name="department"
                                 value={data.department}
                                 onChange={(value) => handleChange('department', value as string)}
-                                loadOptions={loadDepartmentOptions}
                                 placeholder="Select department"
-                                label={scannedEmployee?.department?.department_name}
                                 error={errors.department}
-                                defaultOptions={departments.length > 0 ? departments : true}
-                                className={errors.department ? 'border-destructive' : ''}
-                                loading={loadingInitialData}
-                                cacheOptions={true}
-                                minSearchLength={0}
+                                currentLabel={scannedEmployee?.department?.department_name}
                             />
                             {scannedEmployee?.department && (
                                 <p className="text-muted-foreground mt-1 text-xs">
@@ -846,20 +896,13 @@ const DetailTab: React.FC<DetailTabProps> = ({
                             <Label htmlFor="location" className={errors.location ? 'text-destructive' : ''}>
                                 Location
                             </Label>
-                            <InertiaSmartSelect
+                            <LocationModalSelect
                                 name="location"
                                 value={data.location}
-                                label={data.location_name}
                                 onChange={(value) => handleChange('location', value as string)}
-                                loadOptions={loadLocationOptions}
-                                onCreateOption={createLocationOption}
                                 placeholder="Select or create location"
                                 error={errors.location}
-                                className={errors.location ? 'border-destructive' : ''}
-                                loading={loadingLocations || loadingInitialData}
-                                cacheOptions={false}
-                                defaultOptions={locations.length > 0 ? locations : true}
-                                minSearchLength={0}
+                                currentLabel={data.location_name}
                             />
                         </div>
                     </div>
@@ -979,18 +1022,13 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     <Label htmlFor="receivedBy" className={errors.receivedBy ? 'text-destructive' : ''}>
                                         Received By
                                     </Label>
-                                    <InertiaSmartSelect
+                                    <UserModalSelect
                                         name="receivedBy"
                                         value={receivedBy?.employee_id}
-                                        label={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : 'None'}
                                         onChange={(value) => handleChange('receivedBy', value as string)}
-                                        loadOptions={loadUserOptions}
                                         placeholder="Select user"
                                         error={errors.receivedBy}
-                                        className={errors.receivedBy ? 'border-destructive' : ''}
-                                        cacheOptions={true}
-                                        defaultOptions={true}
-                                        minSearchLength={2}
+                                        currentLabel={receivedBy ? `${receivedBy.first_name} ${receivedBy.last_name}` : undefined}
                                     />
                                     {errors.receivedBy && <p className="text-destructive mt-1 text-sm">{errors.receivedBy}</p>}
                                     {receivedBy && (

@@ -31,7 +31,9 @@ function Modal({ open, onOpenChange, children }: ModalProps) {
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && open) {
+            // Don't close modal if react-select is open
+            const isReactSelectOpen = document.body.hasAttribute('data-react-select-open');
+            if (e.key === 'Escape' && open && !isReactSelectOpen) {
                 onOpenChange(false);
             }
         };
@@ -48,7 +50,21 @@ function Modal({ open, onOpenChange, children }: ModalProps) {
                 ref={overlayRef}
                 className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm"
                 onClick={(e) => {
-                    if (e.target === overlayRef.current) {
+                    // Only close modal if clicking on the overlay itself, not on any child elements
+                    // Also check for react-select dropdown elements
+                    const target = e.target as Element;
+                    const isOverlay = e.target === overlayRef.current;
+
+                    // Comprehensive check for react-select elements
+                    const isSelectElement = target.closest && (
+                        target.closest('[class*="react-select"]') !== null ||
+                        target.closest('[class*="select__"]') !== null ||
+                        target.closest('[id*="react-select"]') !== null ||
+                        target.matches('[class*="react-select"]') ||
+                        target.matches('[class*="select__"]')
+                    );
+
+                    if (isOverlay && !isSelectElement) {
                         onOpenChange(false);
                     }
                 }}
@@ -111,7 +127,20 @@ function ModalContent({
     }, [onEscapeKeyDown]);
 
     const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-        if (contentRef.current && !contentRef.current.contains(e.target as Node)) {
+        // Check if the click is outside the modal content but exclude react-select portals
+        const target = e.target as Node;
+        const isOutsideContent = contentRef.current && !contentRef.current.contains(target);
+
+        // More comprehensive check for react-select elements
+        const isSelectElement = target && (target as Element).closest && (
+            (target as Element).closest('[class*="react-select"]') !== null ||
+            (target as Element).closest('[class*="select__"]') !== null ||
+            (target as Element).closest('[id*="react-select"]') !== null ||
+            (target as Element).matches('[class*="react-select"]') ||
+            (target as Element).matches('[class*="select__"]')
+        );
+
+        if (isOutsideContent && !isSelectElement) {
             if (onPointerDownOutside) {
                 const event = new Event('pointerdown');
                 onPointerDownOutside(event);
@@ -132,7 +161,24 @@ function ModalContent({
                 "sm:max-w-lg",
                 className
             )}
-            onPointerDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+                // Stop propagation to prevent modal from closing when clicking inside content
+                e.stopPropagation();
+            }}
+            onFocus={(e) => {
+                // Prevent focus events from bubbling when react-select is open to avoid recursion
+                const isReactSelectOpen = document.body.hasAttribute('data-react-select-open');
+                if (isReactSelectOpen) {
+                    e.stopPropagation();
+                }
+            }}
+            onBlur={(e) => {
+                // Prevent blur events from bubbling when react-select is open to avoid recursion
+                const isReactSelectOpen = document.body.hasAttribute('data-react-select-open');
+                if (isReactSelectOpen) {
+                    e.stopPropagation();
+                }
+            }}
             {...props}
         >
             {children}

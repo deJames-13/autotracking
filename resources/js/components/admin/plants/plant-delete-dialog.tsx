@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/modal';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/simple-modal';
 import { type Plant } from '@/types';
 import { router } from '@inertiajs/react';
 import { AlertTriangle } from 'lucide-react';

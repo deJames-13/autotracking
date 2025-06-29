@@ -25,7 +25,7 @@ class EmployeeTrackIncomingRequest extends FormRequest
             'data.equipment' => ['required', 'array'],
             'data.equipment.plant' => ['required', 'exists:plants,plant_id'],
             'data.equipment.department' => ['required', 'exists:departments,department_id'],
-            'data.equipment.location' => ['required', 'exists:locations,location_id'],
+            'data.equipment.location' => ['nullable', 'exists:locations,location_id'],
             'data.equipment.description' => ['required', 'string', 'max:255'],
             'data.equipment.serialNumber' => ['required', 'string', 'max:100'],
             'data.equipment.recallNumber' => ['nullable', 'string', 'max:100'],

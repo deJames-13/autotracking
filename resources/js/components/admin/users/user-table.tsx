@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BatchDataTable, DataTableColumn, DataTableFilter } from '@/components/ui/batch-data-table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/modal';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/simple-modal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { type Department, type PaginationData, type Plant, type Role, type User } from '@/types';
 import { router } from '@inertiajs/react';

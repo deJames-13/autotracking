@@ -1,7 +1,7 @@
 import { UserForm } from '@/components/admin/users/user-form';
 import { UserTable } from '@/components/admin/users/user-table';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/modal';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/simple-modal';
 import { ImportModal } from '@/components/ui/import-modal';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';

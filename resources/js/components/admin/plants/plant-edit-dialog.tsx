@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/modal';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/simple-modal';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { type Plant } from '@/types';
 import { PlantForm } from './plant-form';

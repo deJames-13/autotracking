@@ -360,9 +360,14 @@ export const InertiaSmartSelect = ({
                 getOptionValue={(option) => String(option.value)}
                 getOptionLabel={(option) => option.label}
                 styles={{
-                    control: (base) => ({
+                    control: (base, state) => ({
                         ...base,
                         minHeight: '38px',
+                        cursor: 'pointer',
+                        borderColor: state.isFocused ? '#3b82f6' : base.borderColor,
+                        '&:hover': {
+                            borderColor: '#3b82f6',
+                        },
                     }),
                     menu: (base) => ({
                         ...base,
@@ -371,22 +376,31 @@ export const InertiaSmartSelect = ({
                     menuPortal: (base) => ({
                         ...base,
                         zIndex: 9999,
-                    })
+                    }),
+                    option: (base, state) => ({
+                        ...base,
+                        cursor: 'pointer',
+                        backgroundColor: state.isSelected
+                            ? '#3b82f6'
+                            : state.isFocused
+                                ? '#e0e7ff'
+                                : 'transparent',
+                        color: state.isSelected ? 'white' : 'inherit',
+                        '&:hover': {
+                            backgroundColor: state.isSelected ? '#3b82f6' : '#e0e7ff',
+                        },
+                    }),
                 }}
                 menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                 menuShouldBlockScroll={false}
-                blurInputOnSelect={true}
-                closeMenuOnSelect={true}
+                blurInputOnSelect={!isMulti}
+                closeMenuOnSelect={!isMulti}
                 openMenuOnFocus={false}
                 autoFocus={false}
-                tabSelectsValue={false}
+                tabSelectsValue={true}
                 captureMenuScroll={false}
-                onFocus={() => {
-                // Simple focus handler without event manipulation
-                }}
-                onBlur={() => {
-                // Simple blur handler without event manipulation
-                }}
+                menuIsOpen={undefined}
+                isClearable={false}
             />
             {error && (
                 <p className="mt-1 text-sm text-red-600">{error}</p>

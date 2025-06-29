@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/modal';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/simple-modal';
 import { type Equipment, type User } from '@/types';
 import { EquipmentForm } from './equipment-form';
 

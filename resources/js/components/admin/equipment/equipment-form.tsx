@@ -2,14 +2,14 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DepartmentModalSelect, LocationModalSelect, PlantModalSelect, UserModalSelect } from '@/components/ui/modal-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
 import { Textarea } from '@/components/ui/textarea';
 import { type Department, type Equipment, type Location, type Plant, type User } from '@/types';
 import { equipmentFormSchema } from '@/validation/equipment-schema';
 import { useForm } from '@inertiajs/react';
 import axios from 'axios';
-import { FormEventHandler, useCallback, useState } from 'react';
+import { FormEventHandler, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { z } from 'zod';
 
@@ -44,7 +44,6 @@ interface EquipmentFormProps {
 
 export function EquipmentForm({ equipment, users, plants = [], departments = [], locations = [], onSuccess, onCancel }: EquipmentFormProps) {
     const isEditing = !!equipment;
-    const [loadingUsers, setLoadingUsers] = useState(false);
     const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
 
     const getCombinedProcessRange = (equipment?: Equipment): string => {
@@ -116,200 +115,6 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
         process_req_range_end: equipment?.process_req_range_end || '',
         process_req_range: getCombinedProcessRange(equipment),
     });
-
-    // Load user options for SmartSelect
-    const loadUserOptions = useCallback(
-        async (inputValue: string): Promise<SelectOption[]> => {
-            try {
-                setLoadingUsers(true);
-                // Filter users based on input value
-                const filteredUsers = users
-                    .filter(
-                        (user) =>
-                            (user.full_name || `${user.first_name} ${user.last_name}`).toLowerCase().includes(inputValue.toLowerCase()) ||
-                            user.employee_id.toString().includes(inputValue),
-                    )
-                    .map((user) => ({
-                        label: `${user.full_name || `${user.first_name} ${user.last_name}`} (${user.employee_id})`,
-                        value: user.employee_id.toString(),
-                    }));
-                return filteredUsers;
-            } catch (error) {
-                console.error('Error loading users:', error);
-                return [];
-            } finally {
-                setLoadingUsers(false);
-            }
-        },
-        [users],
-    );
-
-    // Load plant options for SmartSelect
-    const loadPlantOptions = useCallback(
-        async (inputValue: string): Promise<SelectOption[]> => {
-            try {
-                const response = await axios.get(route('admin.equipment.plants.search'), {
-                    params: {
-                        search: inputValue,
-                        limit: 10,
-                    },
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                });
-
-                return response.data.data.map((plant: Plant) => ({
-                    label: plant.plant_name,
-                    value: plant.plant_id.toString(),
-                }));
-            } catch (error) {
-                console.error('Error loading plants:', error);
-                return plants.map((plant) => ({
-                    label: plant.plant_name,
-                    value: plant.plant_id.toString(),
-                }));
-            }
-        },
-        [plants],
-    );
-
-    // Load department options for SmartSelect
-    const loadDepartmentOptions = useCallback(
-        async (inputValue: string): Promise<SelectOption[]> => {
-            try {
-                const response = await axios.get(route('admin.equipment.departments.search'), {
-                    params: {
-                        search: inputValue,
-                        limit: 10,
-                    },
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                });
-
-                return response.data.data.map((department: Department) => ({
-                    label: department.department_name,
-                    value: department.department_id.toString(),
-                }));
-            } catch (error) {
-                console.error('Error loading departments:', error);
-                return departments.map((dept) => ({
-                    label: dept.department_name,
-                    value: dept.department_id.toString(),
-                }));
-            }
-        },
-        [departments],
-    );
-
-    // Load location options for SmartSelect
-    const loadLocationOptions = useCallback(
-        async (inputValue: string): Promise<SelectOption[]> => {
-            try {
-                const response = await axios.get(route('admin.equipment.locations.search'), {
-                    params: {
-                        search: inputValue,
-                        department_id: data.department_id || undefined,
-                        limit: 10,
-                    },
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                });
-
-                return response.data.data.map((location: Location) => ({
-                    label: `${location.location_name}${location.department ? ` (${location.department.department_name})` : ''}`,
-                    value: location.location_id.toString(),
-                }));
-            } catch (error) {
-                console.error('Error loading locations:', error);
-                return locations.map((location) => ({
-                    label: `${location.location_name}${location.department ? ` (${location.department.department_name})` : ''}`,
-                    value: location.location_id.toString(),
-                }));
-            }
-        },
-        [locations, data.department_id],
-    );
-
-    // Handle create option for plants
-    const handleCreatePlant = useCallback(
-        async (inputValue: string): Promise<SelectOption> => {
-            try {
-                const response = await axios.post(route('admin.equipment.plants.create'), {
-                    name: inputValue,
-                }, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                });
-
-                toast.success(`Plant "${inputValue}" created successfully`);
-                return response.data;
-            } catch (error: any) {
-                console.error('Error creating plant:', error);
-
-                // Show specific error message if available
-                if (error.response?.data?.message) {
-                    toast.error(error.response.data.message);
-                } else {
-                    toast.error('Failed to create plant. Please try again.');
-                }
-
-                throw new Error('Failed to create plant');
-            }
-        },
-        [],
-    );
-
-    // Handle create option for departments
-    const handleCreateDepartment = useCallback(
-        async (inputValue: string): Promise<SelectOption> => {
-            try {
-                const response = await axios.post(route('admin.equipment.departments.create'), {
-                    name: inputValue,
-                }, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                });
-
-                toast.success(`Department "${inputValue}" created successfully`);
-                return response.data;
-            } catch (error: any) {
-                console.error('Error creating department:', error);
-
-                // Show specific error message if available
-                if (error.response?.data?.message) {
-                    toast.error(error.response.data.message);
-                } else {
-                    toast.error('Failed to create department. Please try again.');
-                }
-
-                throw new Error('Failed to create department');
-            }
-        },
-        [],
-    );
-
-    // Handle create option for locations
-    const handleCreateLocation = useCallback(
-        async (inputValue: string): Promise<SelectOption> => {
-            try {
-                const response = await axios.post(route('admin.equipment.locations.create'), {
-                    name: inputValue,
-                    department_id: data.department_id || null,
-                }, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                });
-
-                toast.success(`Location "${inputValue}" created successfully`);
-                return response.data;
-            } catch (error: any) {
-                console.error('Error creating location:', error);
-
-                // Show specific error message if available
-                if (error.response?.data?.message) {
-                    toast.error(error.response.data.message);
-                } else {
-                    toast.error('Failed to create location. Please try again.');
-                }
-
-                throw new Error('Failed to create location');
-            }
-        },
-        [data.department_id],
-    );
 
     // Client-side validation function
     const validateData = (formData: EquipmentFormData): boolean => {
@@ -456,43 +261,25 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                         <InputError message={getCombinedErrors('description')} />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="plant_id">Plant</Label>
-                        <InertiaSmartSelect
-                            key={`plant-${equipment?.equipment_id || 'new'}`}
-                            name="plant_id"
-                            value={data.plant_id || null}
-                            onChange={(value) => handleSmartSelectChange('plant_id', value)}
-                            loadOptions={loadPlantOptions}
-                            onCreateOption={handleCreatePlant}
-                            placeholder="Search for a plant or create new"
-                            error={errors.plant_id}
-                            customNoneLabel="No plant"
-                            cacheOptions={true}
-                            defaultOptions={true}
-                            minSearchLength={0}
-                        />
-                        <InputError message={errors.plant_id} />
-                    </div>
+                    <PlantModalSelect
+                        name="plant_id"
+                        value={data.plant_id || null}
+                        onChange={(value) => handleSmartSelectChange('plant_id', value)}
+                        label="Plant"
+                        placeholder="Search for a plant or create new"
+                        error={errors.plant_id}
+                        currentLabel={equipment?.plant?.plant_name}
+                    />
 
-                    <div className="space-y-2">
-                        <Label htmlFor="department_id">Department</Label>
-                        <InertiaSmartSelect
-                            key={`department-${equipment?.equipment_id || 'new'}`}
-                            name="department_id"
-                            value={data.department_id || null}
-                            onChange={(value) => handleSmartSelectChange('department_id', value)}
-                            loadOptions={loadDepartmentOptions}
-                            onCreateOption={handleCreateDepartment}
-                            placeholder="Search for a department or create new"
-                            error={errors.department_id}
-                            customNoneLabel="No department"
-                            cacheOptions={true}
-                            defaultOptions={true}
-                            minSearchLength={0}
-                        />
-                        <InputError message={errors.department_id} />
-                    </div>
+                    <DepartmentModalSelect
+                        name="department_id"
+                        value={data.department_id || null}
+                        onChange={(value) => handleSmartSelectChange('department_id', value)}
+                        label="Department"
+                        placeholder="Search for a department or create new"
+                        error={errors.department_id}
+                        currentLabel={equipment?.department?.department_name}
+                    />
                 </div>
 
                 {/* Right column */}
@@ -514,24 +301,15 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                         <InputError message={errors.manufacturer} />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="location_id">Location</Label>
-                        <InertiaSmartSelect
-                            key={`location-${equipment?.equipment_id || 'new'}`}
-                            name="location_id"
-                            value={data.location_id || null}
-                            onChange={(value) => handleSmartSelectChange('location_id', value)}
-                            loadOptions={loadLocationOptions}
-                            onCreateOption={handleCreateLocation}
-                            placeholder="Search for a location or create new"
-                            error={errors.location_id}
-                            customNoneLabel="No location"
-                            cacheOptions={true}
-                            defaultOptions={true}
-                            minSearchLength={0}
-                        />
-                        <InputError message={errors.location_id} />
-                    </div>
+                    <LocationModalSelect
+                        name="location_id"
+                        value={data.location_id || null}
+                        onChange={(value) => handleSmartSelectChange('location_id', value)}
+                        label="Location"
+                        placeholder="Search for a location or create new"
+                        error={errors.location_id}
+                        currentLabel={equipment?.location?.location_name}
+                    />
 
                     <div className="space-y-2">
                         <Label htmlFor="status">Status</Label>
@@ -608,24 +386,15 @@ export function EquipmentForm({ equipment, users, plants = [], departments = [],
                         </p>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="employee_id">Assigned User</Label>
-                        <InertiaSmartSelect
-                            key={`employee-${equipment?.equipment_id || 'new'}`}
-                            name="employee_id"
-                            value={data.employee_id || null}
-                            onChange={handleUserChange}
-                            loadOptions={loadUserOptions}
-                            placeholder="Search for a user"
-                            error={errors.employee_id}
-                            loading={loadingUsers}
-                            customNoneLabel="No assignment"
-                            cacheOptions={true}
-                            defaultOptions={true}
-                            minSearchLength={0}
-                        />
-                        <InputError message={errors.employee_id} />
-                    </div>
+                    <UserModalSelect
+                        name="employee_id"
+                        value={data.employee_id || null}
+                        onChange={handleUserChange}
+                        label="Assigned User"
+                        placeholder="Search for a user"
+                        error={errors.employee_id}
+                        currentLabel={equipment?.user ? `${equipment.user.first_name} ${equipment.user.last_name} (${equipment.user.employee_id})` : undefined}
+                    />
                 </div>
             </div>
 

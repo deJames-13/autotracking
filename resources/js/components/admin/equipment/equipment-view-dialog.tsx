@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/modal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/simple-modal';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { type Equipment } from '@/types';
 import { ArrowRight, Download } from 'lucide-react';

@@ -22,7 +22,7 @@ export interface TechnicianState {
 export interface EquipmentState {
     plant: string | number;
     department: string | number;
-    location: string | number;
+    location?: string | number; // Made optional
     description: string;
     serialNumber: string;
     recallNumber?: string;
@@ -63,7 +63,7 @@ const initialState: TrackingRequestState = {
     equipment: {
         plant: '',
         department: '',
-        location: '',
+        location: '', // Can be empty string as optional
         description: '',
         serialNumber: '',
         recallNumber: '',

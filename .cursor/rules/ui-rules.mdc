@@ -1,0 +1,30 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Enforce responsive design principles (mobile-first, fluid layouts).
+
+Adopt a component-based architecture:
+
+Use reusable UI components.
+
+Isolate logic and styles in each component.
+
+Implement a file-based structure:
+
+Each component gets its own folder (e.g., Button/, Navbar/, Card/).
+
+Folder includes: index.tsx, styles.module.css, config.ts (if needed).
+
+Enable easy configuration via:
+
+Global and local config files (e.g., ui.config.json).
+
+Theme and variant support through configuration.
+
+Integrate design tokens or utility-first CSS (like TailwindCSS).
+
+Encourage dynamic imports and lazy loading to improve performance.
+
+Set up linting rules and pre-commit hooks to enforce structure.

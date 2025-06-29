@@ -105,7 +105,7 @@ export const employeeEquipmentRequestSchema = z.object({
     manufacturer: z.string().max(255, 'Manufacturer must be less than 255 characters').optional().default(''),
     plant: z.string().min(1, 'Plant is required'),
     department: z.string().min(1, 'Department is required'),
-    location: z.string().min(1, 'Location is required'),
+    location: z.string().optional().nullable(),
 });
 
 // Export the types from the schemas

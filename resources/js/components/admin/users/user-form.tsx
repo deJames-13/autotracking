@@ -3,8 +3,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DepartmentModalSelect, PlantModalSelect } from '@/components/ui/modal-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { InertiaSmartSelect, SelectOption } from '@/components/ui/smart-select';
 import { type Department, type Plant, type Role, type User } from '@/types';
 import { userSchema, UserSchema } from '@/validation/user-schema';
 import { useForm } from '@inertiajs/react';
@@ -25,8 +25,6 @@ interface UserFormProps {
 export function UserForm({ user, roles, departments, plants, onSuccess, onCancel }: UserFormProps) {
     const isEditing = !!user;
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-    const [loadingDepartments, setLoadingDepartments] = useState(false);
-    const [loadingPlants, setLoadingPlants] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
     const [emailValidation, setEmailValidation] = useState<any>(null);
@@ -51,96 +49,6 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
     );
 
     const { data, setData, post, put, processing, errors, reset } = useForm<UserSchema>(initialData);
-
-    // Load department options for SmartSelect
-    const loadDepartmentOptions = useCallback(
-        async (inputValue: string): Promise<SelectOption[]> => {
-            try {
-                setLoadingDepartments(true);
-                // In a real app, this would be an API call to search departments
-                const filteredDepartments = departments
-                    .filter((dept) => dept.department_name.toLowerCase().includes(inputValue.toLowerCase()))
-                    .map((dept) => ({
-                        label: dept.department_name,
-                        value: dept.department_id,
-                    }));
-                return filteredDepartments;
-            } catch (error) {
-                console.error('Error loading departments:', error);
-                return [];
-            } finally {
-                setLoadingDepartments(false);
-            }
-        },
-        [departments],
-    );
-
-    // Create department option - similar to location form
-    const createDepartmentOption = useCallback(async (inputValue: string): Promise<SelectOption> => {
-        try {
-            const response = await axios.post(route('admin.departments.create-department'), {
-                name: inputValue,
-            });
-            toast.success(`Department "${inputValue}" created successfully`);
-            return response.data;
-        } catch (error: any) {
-            console.error('Error creating department:', error);
-
-            // Show specific error message if available
-            if (error.response?.data?.message) {
-                toast.error(error.response.data.message);
-            } else {
-                toast.error('Failed to create department. Please try again.');
-            }
-
-            throw new Error('Failed to create department');
-        }
-    }, []);
-
-    // Load plant options for SmartSelect
-    const loadPlantOptions = useCallback(
-        async (inputValue: string): Promise<SelectOption[]> => {
-            try {
-                setLoadingPlants(true);
-                // In a real app, this would be an API call to search plants
-                const filteredPlants = plants
-                    .filter((plant) => plant.plant_name.toLowerCase().includes(inputValue.toLowerCase()))
-                    .map((plant) => ({
-                        label: plant.plant_name,
-                        value: plant.plant_id,
-                    }));
-                return filteredPlants;
-            } catch (error) {
-                console.error('Error loading plants:', error);
-                return [];
-            } finally {
-                setLoadingPlants(false);
-            }
-        },
-        [plants],
-    );
-
-    // Create plant option
-    const createPlantOption = useCallback(async (inputValue: string): Promise<SelectOption> => {
-        try {
-            const response = await axios.post(route('admin.plants.create-plant'), {
-                name: inputValue,
-            });
-            toast.success(`Plant "${inputValue}" created successfully`);
-            return response.data;
-        } catch (error: any) {
-            console.error('Error creating plant:', error);
-
-            // Show specific error message if available
-            if (error.response?.data?.message) {
-                toast.error(error.response.data.message);
-            } else {
-                toast.error('Failed to create plant. Please try again.');
-            }
-
-            throw new Error('Failed to create plant');
-        }
-    }, []);
 
     // Email validation function
     const validateEmail = useCallback(async (email: string) => {
@@ -488,40 +396,26 @@ export function UserForm({ user, roles, departments, plants, onSuccess, onCancel
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="department_id" className={allErrors.department_id ? 'text-destructive' : ''}>
-                                Department
-                            </Label>
-                            <InertiaSmartSelect
+                            <DepartmentModalSelect
                                 name="department_id"
                                 value={data.department_id}
                                 onChange={handleDepartmentChange}
-                                loadOptions={loadDepartmentOptions}
-                                onCreateOption={createDepartmentOption}
+                                label="Department"
                                 placeholder="Select or create department"
                                 error={allErrors.department_id}
-                                loading={loadingDepartments}
-                                className={allErrors.department_id ? 'border-destructive' : ''}
-                                cacheOptions={true}
-                                minSearchLength={0}
+                                currentLabel={user?.department?.department_name}
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="plant_id" className={allErrors.plant_id ? 'text-destructive' : ''}>
-                                Plant
-                            </Label>
-                            <InertiaSmartSelect
+                            <PlantModalSelect
                                 name="plant_id"
                                 value={data.plant_id}
                                 onChange={handlePlantChange}
-                                loadOptions={loadPlantOptions}
-                                onCreateOption={createPlantOption}
+                                label="Plant"
                                 placeholder="Select or create plant"
                                 error={allErrors.plant_id}
-                                loading={loadingPlants}
-                                className={allErrors.plant_id ? 'border-destructive' : ''}
-                                cacheOptions={true}
-                                minSearchLength={0}
+                                currentLabel={user?.plant?.plant_name}
                             />
                         </div>
                     </div>

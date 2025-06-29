@@ -16,9 +16,7 @@ export const equipmentSchema = z.object({
     department: z.union([z.string(), z.number()]).refine((val) => val !== '' && val !== null, {
         message: 'Department is required',
     }),
-    location: z.union([z.string(), z.number()]).refine((val) => val !== '' && val !== null, {
-        message: 'Location is required',
-    }),
+    location: z.union([z.string(), z.number()]).optional().nullable(),
     description: z.string().min(1, 'Description is required'),
     serialNumber: z.string().min(1, 'Serial number is required'),
     // Recall number is optional by default, but will be validated dynamically based on request type

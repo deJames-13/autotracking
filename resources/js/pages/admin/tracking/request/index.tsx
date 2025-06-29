@@ -227,7 +227,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                 return false;
             }
         } else if (currentStep === 'details') {
-            const requiredFields = ['plant', 'department', 'location', 'description', 'serialNumber'] as const;
+            const requiredFields = ['plant', 'department', 'description', 'serialNumber'] as const;
             let isValid = true;
 
             requiredFields.forEach((field) => {
@@ -237,7 +237,7 @@ const TrackingRequestContent: React.FC<TrackingRequestIndexProps> = ({ errors: s
                     value === '' ||
                     value === null ||
                     value === undefined ||
-                    ((field === 'plant' || field === 'department' || field === 'location') && value === 0);
+                    ((field === 'plant' || field === 'department') && value === 0);
 
                 if (isEmpty) {
                     setError(
