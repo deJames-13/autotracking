@@ -141,7 +141,7 @@ export function TrackIncomingTable({
         },
         {
             key: 'employee_in',
-            label: 'Received By',
+            label: 'Employee In',
             render: (value, row) => (
                 <div className="text-sm">
                     {row.employee_in ? (
@@ -221,7 +221,7 @@ export function TrackIncomingTable({
         },
         {
             key: 'employee_id_in',
-            label: 'Received By',
+            label: 'Employee In',
             type: 'select',
             options: [{ value: 'all', label: 'All Employees' }, ...(filterOptions?.employees_in || [])],
         },
