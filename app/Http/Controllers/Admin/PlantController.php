@@ -46,6 +46,72 @@ class PlantController extends Controller
         return response()->json([]);
     }
 
+    /**
+     * Get paginated plants data for DataTable
+     */
+    public function tableData(Request $request): JsonResponse
+    {
+        $query = Plant::with(['users']);
+
+        // Apply search filters
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('plant_name', 'like', '%' . $search . '%')
+                  ->orWhere('address', 'like', '%' . $search . '%')
+                  ->orWhere('telephone', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Apply other filters
+        if ($request->filled('plant_name') && $request->get('plant_name') !== 'all') {
+            $query->where('plant_name', 'like', '%' . $request->get('plant_name') . '%');
+        }
+
+        if ($request->filled('address') && $request->get('address') !== 'all') {
+            $query->where('address', 'like', '%' . $request->get('address') . '%');
+        }
+
+        // Apply sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortDirection = $request->get('sort_direction', 'desc');
+        
+        // Map frontend sort keys to database columns
+        $sortMapping = [
+            'plant_id' => 'plant_id',
+            'plant_name' => 'plant_name',
+            'address' => 'address',
+            'telephone' => 'telephone',
+            'users' => 'plant_id', // Will be handled by relationship count
+            'created_at' => 'created_at'
+        ];
+        
+        $dbSortBy = $sortMapping[$sortBy] ?? 'created_at';
+        
+        // Special handling for relationship counts
+        if ($sortBy === 'users') {
+            $query->withCount('users')->orderBy('users_count', $sortDirection);
+        } else {
+            $query->orderBy($dbSortBy, $sortDirection);
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $plants = $query->paginate($perPage);
+
+        return response()->json([
+            'data' => $plants->items(),
+            'meta' => [
+                'current_page' => $plants->currentPage(),
+                'last_page' => $plants->lastPage(),
+                'per_page' => $plants->perPage(),
+                'total' => $plants->total(),
+                'from' => $plants->firstItem(),
+                'to' => $plants->lastItem(),
+            ],
+        ]);
+    }
+
     public function store(PlantRequest $request): RedirectResponse|JsonResponse
     {
         $plant = Plant::create($request->validated());

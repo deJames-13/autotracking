@@ -59,6 +59,76 @@ class LocationController extends Controller
         ]);
     }
 
+    /**
+     * Get paginated locations data for DataTable
+     */
+    public function tableData(Request $request): JsonResponse
+    {
+        $query = Location::with(['department', 'equipment']);
+
+        // Apply search filters
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('location_name', 'like', '%' . $search . '%')
+                  ->orWhereHas('department', function($dq) use ($search) {
+                      $dq->where('department_name', 'like', '%' . $search . '%');
+                  });
+            });
+        }
+
+        // Apply other filters
+        if ($request->filled('location_name') && $request->get('location_name') !== 'all') {
+            $query->where('location_name', 'like', '%' . $request->get('location_name') . '%');
+        }
+
+        if ($request->filled('department_id') && $request->get('department_id') !== 'all') {
+            $query->where('department_id', $request->get('department_id'));
+        }
+
+        // Apply sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortDirection = $request->get('sort_direction', 'desc');
+        
+        // Map frontend sort keys to database columns
+        $sortMapping = [
+            'location_id' => 'location_id',
+            'location_name' => 'location_name',
+            'department_name' => 'department_id', // Will be handled by join
+            'equipment' => 'location_id', // Will be handled by relationship count
+            'created_at' => 'created_at'
+        ];
+        
+        $dbSortBy = $sortMapping[$sortBy] ?? 'created_at';
+        
+        // Special handling for relationship counts and joins
+        if ($sortBy === 'equipment') {
+            $query->withCount('equipment')->orderBy('equipment_count', $sortDirection);
+        } elseif ($sortBy === 'department_name') {
+            $query->leftJoin('departments', 'locations.department_id', '=', 'departments.department_id')
+                  ->orderBy('departments.department_name', $sortDirection)
+                  ->select('locations.*');
+        } else {
+            $query->orderBy($dbSortBy, $sortDirection);
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $locations = $query->paginate($perPage);
+
+        return response()->json([
+            'data' => $locations->items(),
+            'meta' => [
+                'current_page' => $locations->currentPage(),
+                'last_page' => $locations->lastPage(),
+                'per_page' => $locations->perPage(),
+                'total' => $locations->total(),
+                'from' => $locations->firstItem(),
+                'to' => $locations->lastItem(),
+            ],
+        ]);
+    }
+
     public function store(LocationRequest $request): RedirectResponse|JsonResponse
     {
         // Make department_id optional in the request

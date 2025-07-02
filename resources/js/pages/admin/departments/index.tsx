@@ -2,14 +2,14 @@ import { DepartmentForm } from '@/components/admin/departments/department-form';
 import { DepartmentTable } from '@/components/admin/departments/department-table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { ImportModal } from '@/components/ui/import-modal';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Department, type PaginationData } from '@/types';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Archive, Plus, Search, Upload } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { Archive, Plus, Upload } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -29,45 +29,117 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-
-    // Use live page data instead of initial props
-    const { props } = usePage<DepartmentsIndexProps>();
-    const departments = props.departments;
-
-    const { data, setData, get, processing } = useForm({
-        search: filters.search || '',
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 0,
     });
+    const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
 
     // Redirect if user doesn't have permission
     useEffect(() => {
         if (!canManageUsers()) {
             router.visit('/dashboard');
         }
-    }, [canManageUsers]);
+    }, []);
 
-    const handleFilterChange = () => {
-        get(route('admin.departments.index'), {
-            preserveState: true,
-            replace: true,
-        });
-    };
+    const fetchDepartments = useCallback(async (params: Record<string, any> = {}) => {
+        setLoading(true);
+        try {
+            const queryParams = new URLSearchParams();
 
-    const refreshDepartments = () => {
-        get(route('admin.departments.index'), {
-            preserveState: true,
-            replace: true,
-        });
-    };
+            // Add parameters with proper defaults
+            queryParams.append('page', params.page?.toString() || '1');
+            queryParams.append('per_page', params.per_page?.toString() || '15');
 
-    useEffect(() => {
-        const delayedSearch = setTimeout(() => {
-            if (data.search !== filters.search) {
-                handleFilterChange();
+            // Add filters if provided
+            if (params.filters) {
+                Object.keys(params.filters).forEach((key) => {
+                    const value = params.filters[key];
+                    if (value && value !== 'all') {
+                        queryParams.append(key, value);
+                    }
+                });
             }
-        }, 500);
 
-        return () => clearTimeout(delayedSearch);
-    }, [data.search]);
+            // Add search if provided
+            if (params.search) {
+                queryParams.append('search', params.search);
+            }
+
+            // Add sorting if provided
+            if (params.sort_by) {
+                queryParams.append('sort_by', params.sort_by);
+            }
+            if (params.sort_direction) {
+                queryParams.append('sort_direction', params.sort_direction);
+            }
+
+            const response = await axios.get(`/admin/departments/table-data?${queryParams.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            const data = response.data;
+            setDepartments(data.data || []);
+            setPagination({
+                current_page: data.meta.current_page || 1,
+                last_page: data.meta.last_page || 1,
+                per_page: data.meta.per_page || 15,
+                total: data.meta.total || 0,
+            });
+        } catch (error) {
+            console.error('Error fetching departments:', error);
+            setDepartments([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // Initial fetch - only run once
+    useEffect(() => {
+        if (canManageUsers()) {
+            fetchDepartments();
+        }
+    }, []);
+
+    // Handle DataTable search
+    const handleSearch = useCallback(
+        (search: string) => {
+            fetchDepartments({ ...searchFilters, search, page: 1 });
+        },
+        [searchFilters],
+    );
+
+    // Handle DataTable filters
+    const handleFilter = useCallback((newFilters: Record<string, any>) => {
+        setSearchFilters(newFilters);
+        fetchDepartments({ filters: newFilters, page: 1 });
+    }, []);
+
+    // Handle DataTable pagination
+    const handlePageChange = useCallback(
+        (page: number) => {
+            fetchDepartments({ ...searchFilters, page });
+        },
+        [searchFilters],
+    );
+
+    const handlePerPageChange = useCallback(
+        (perPage: number) => {
+            fetchDepartments({ ...searchFilters, per_page: perPage, page: 1 });
+        },
+        [searchFilters],
+    );
+
+    // Refresh departments after actions
+    const refreshDepartments = useCallback(() => {
+        fetchDepartments({ ...searchFilters });
+    }, [searchFilters]);
 
     if (!canManageUsers()) {
         return null;
@@ -129,21 +201,22 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
                     </div>
                 </div>
 
-                {/* Filters */}
-                {/* <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                    <div className="relative flex-1">
-                        <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
-                        <Input
-                            placeholder="Search departments by name..."
-                            value={data.search}
-                            onChange={(e) => setData('search', e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-                </div> */}
-
                 {/* Departments Table */}
-                <DepartmentTable departments={departments} onRefresh={refreshDepartments} />
+                <DepartmentTable
+                    departments={{
+                        data: departments,
+                        current_page: pagination.current_page,
+                        last_page: pagination.last_page,
+                        per_page: pagination.per_page,
+                        total: pagination.total,
+                    }}
+                    loading={loading}
+                    onRefresh={refreshDepartments}
+                    onSearch={handleSearch}
+                    onFilter={handleFilter}
+                    onPageChange={handlePageChange}
+                    onPerPageChange={handlePerPageChange}
+                />
 
                 {/* Import Modal */}
                 <ImportModal
@@ -155,16 +228,6 @@ export default function DepartmentsIndex({ departments: initialDepartments, filt
                     templateEndpoint={route('admin.departments.download-template')}
                     onSuccess={refreshDepartments}
                 />
-
-                {/* Pagination Info */}
-                {/* <div className="text-muted-foreground flex items-center justify-between text-sm">
-                    <div>
-                        Showing {departments.from || 0} to {departments.to || 0} of {departments.total} departments
-                    </div>
-                    <div>
-                        Page {departments.current_page} of {departments.last_page}
-                    </div>
-                </div> */}
             </div>
         </AppLayout>
     );

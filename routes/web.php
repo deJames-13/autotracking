@@ -133,6 +133,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('email/health', [AdminUserController::class, 'checkEmailHealth'])->name('email.health');
         Route::post('email/test', [AdminUserController::class, 'testEmailSystem'])->name('email.test');
         
+        // Departments management - table data routes
+        Route::get('departments/table-data', [AdminDepartmentController::class, 'tableData'])->name('departments.table-data');
+        
+        // Plants management - table data routes
+        Route::get('plants/table-data', [AdminPlantController::class, 'tableData'])->name('plants.table-data');
+        
+        // Locations management - table data routes
+        Route::get('locations/table-data', [AdminLocationController::class, 'tableData'])->name('locations.table-data');
+        
         // Tracking table data routes
         Route::get('tracking/incoming/table-data', [AdminTrackingController::class, 'trackIncomingTableData'])->name('tracking.incoming.table-data');
         Route::get('tracking/incoming/filter-options', [AdminTrackingController::class, 'trackIncomingFilterOptions'])->name('tracking.incoming.filter-options');

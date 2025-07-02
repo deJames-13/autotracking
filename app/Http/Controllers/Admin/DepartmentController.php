@@ -45,6 +45,65 @@ class DepartmentController extends Controller
         return response()->json([]);
     }
 
+    /**
+     * Get paginated departments data for DataTable
+     */
+    public function tableData(Request $request): JsonResponse
+    {
+        $query = Department::with(['users', 'locations']);
+
+        // Apply search filters
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where('department_name', 'like', '%' . $search . '%');
+        }
+
+        // Apply other filters
+        if ($request->filled('department_name') && $request->get('department_name') !== 'all') {
+            $query->where('department_name', 'like', '%' . $request->get('department_name') . '%');
+        }
+
+        // Apply sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortDirection = $request->get('sort_direction', 'desc');
+        
+        // Map frontend sort keys to database columns
+        $sortMapping = [
+            'department_id' => 'department_id',
+            'department_name' => 'department_name',
+            'users' => 'department_id', // Will be handled by relationship count
+            'locations' => 'department_id', // Will be handled by relationship count
+            'created_at' => 'created_at'
+        ];
+        
+        $dbSortBy = $sortMapping[$sortBy] ?? 'created_at';
+        
+        // Special handling for relationship counts
+        if ($sortBy === 'users') {
+            $query->withCount('users')->orderBy('users_count', $sortDirection);
+        } elseif ($sortBy === 'locations') {
+            $query->withCount('locations')->orderBy('locations_count', $sortDirection);
+        } else {
+            $query->orderBy($dbSortBy, $sortDirection);
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $departments = $query->paginate($perPage);
+
+        return response()->json([
+            'data' => $departments->items(),
+            'meta' => [
+                'current_page' => $departments->currentPage(),
+                'last_page' => $departments->lastPage(),
+                'per_page' => $departments->perPage(),
+                'total' => $departments->total(),
+                'from' => $departments->firstItem(),
+                'to' => $departments->lastItem(),
+            ],
+        ]);
+    }
+
     public function store(DepartmentRequest $request): RedirectResponse|JsonResponse
     {
         $department = Department::create($request->validated());

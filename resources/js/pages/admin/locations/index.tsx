@@ -2,15 +2,14 @@ import { LocationForm } from '@/components/admin/locations/location-form';
 import { LocationTable } from '@/components/admin/locations/location-table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { ImportModal } from '@/components/ui/import-modal';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Department, type Location, type PaginationData } from '@/types';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Archive, Plus, Search, Upload } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { Archive, Plus, Upload } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -32,52 +31,117 @@ export default function LocationsIndex({ locations: initialLocations, department
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-
-    // Use live page data instead of initial props
-    const { props } = usePage<LocationsIndexProps>();
-    const locations = props.locations;
-
-    const { data, setData, get, processing } = useForm({
-        search: filters.search || '',
-        department_id: filters.department_id || '',
+    const [locations, setLocations] = useState<Location[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 0,
     });
+    const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
 
     // Redirect if user doesn't have permission
     useEffect(() => {
         if (!canManageUsers()) {
             router.visit('/dashboard');
         }
-    }, [canManageUsers]);
+    }, []);
 
-    const handleFilterChange = () => {
-        get(route('admin.locations.index'), {
-            preserveState: true,
-            replace: true,
-        });
-    };
+    const fetchLocations = useCallback(async (params: Record<string, any> = {}) => {
+        setLoading(true);
+        try {
+            const queryParams = new URLSearchParams();
 
-    const refreshLocations = () => {
-        get(route('admin.locations.index'), {
-            preserveState: true,
-            replace: true,
-        });
-    };
+            // Add parameters with proper defaults
+            queryParams.append('page', params.page?.toString() || '1');
+            queryParams.append('per_page', params.per_page?.toString() || '15');
 
-    useEffect(() => {
-        const delayedSearch = setTimeout(() => {
-            if (data.search !== filters.search) {
-                handleFilterChange();
+            // Add filters if provided
+            if (params.filters) {
+                Object.keys(params.filters).forEach((key) => {
+                    const value = params.filters[key];
+                    if (value && value !== 'all') {
+                        queryParams.append(key, value);
+                    }
+                });
             }
-        }, 500);
 
-        return () => clearTimeout(delayedSearch);
-    }, [data.search]);
+            // Add search if provided
+            if (params.search) {
+                queryParams.append('search', params.search);
+            }
 
-    useEffect(() => {
-        if (data.department_id !== filters.department_id) {
-            handleFilterChange();
+            // Add sorting if provided
+            if (params.sort_by) {
+                queryParams.append('sort_by', params.sort_by);
+            }
+            if (params.sort_direction) {
+                queryParams.append('sort_direction', params.sort_direction);
+            }
+
+            const response = await axios.get(`/admin/locations/table-data?${queryParams.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            const data = response.data;
+            setLocations(data.data || []);
+            setPagination({
+                current_page: data.meta.current_page || 1,
+                last_page: data.meta.last_page || 1,
+                per_page: data.meta.per_page || 15,
+                total: data.meta.total || 0,
+            });
+        } catch (error) {
+            console.error('Error fetching locations:', error);
+            setLocations([]);
+        } finally {
+            setLoading(false);
         }
-    }, [data.department_id]);
+    }, []);
+
+    // Initial fetch - only run once
+    useEffect(() => {
+        if (canManageUsers()) {
+            fetchLocations();
+        }
+    }, []);
+
+    // Handle DataTable search
+    const handleSearch = useCallback(
+        (search: string) => {
+            fetchLocations({ ...searchFilters, search, page: 1 });
+        },
+        [searchFilters],
+    );
+
+    // Handle DataTable filters
+    const handleFilter = useCallback((newFilters: Record<string, any>) => {
+        setSearchFilters(newFilters);
+        fetchLocations({ filters: newFilters, page: 1 });
+    }, []);
+
+    // Handle DataTable pagination
+    const handlePageChange = useCallback(
+        (page: number) => {
+            fetchLocations({ ...searchFilters, page });
+        },
+        [searchFilters],
+    );
+
+    const handlePerPageChange = useCallback(
+        (perPage: number) => {
+            fetchLocations({ ...searchFilters, per_page: perPage, page: 1 });
+        },
+        [searchFilters],
+    );
+
+    // Refresh locations after actions
+    const refreshLocations = useCallback(() => {
+        fetchLocations({ ...searchFilters });
+    }, [searchFilters]);
 
     if (!canManageUsers()) {
         return null;
@@ -140,39 +204,23 @@ export default function LocationsIndex({ locations: initialLocations, department
                     </div>
                 </div>
 
-                {/* Filters */}
-                <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                    {/* <div className="relative flex-1">
-                        <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
-                        <Input
-                            placeholder="Search locations by name..."
-                            value={data.search}
-                            onChange={(e) => setData('search', e.target.value)}
-                            className="pl-10"
-                        />
-                    </div> */}
-                    {/*
-                    <div className="flex gap-2">
-                        <Select
-                            value={data.department_id.toString()}
-                            onValueChange={(value) => setData('department_id', value === 'all' ? '' : value)}
-                        >
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filter by department" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {departments.map((department) => (
-                                    <SelectItem key={department.department_id} value={department.department_id.toString()}>
-                                        {department.department_name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div> */}
-                </div>
-
                 {/* Locations Table */}
-                <LocationTable locations={locations} departments={departments} onRefresh={refreshLocations} />
+                <LocationTable
+                    locations={{
+                        data: locations,
+                        current_page: pagination.current_page,
+                        last_page: pagination.last_page,
+                        per_page: pagination.per_page,
+                        total: pagination.total,
+                    }}
+                    departments={departments}
+                    loading={loading}
+                    onRefresh={refreshLocations}
+                    onSearch={handleSearch}
+                    onFilter={handleFilter}
+                    onPageChange={handlePageChange}
+                    onPerPageChange={handlePerPageChange}
+                />
 
                 {/* Import Modal */}
                 <ImportModal
@@ -184,16 +232,6 @@ export default function LocationsIndex({ locations: initialLocations, department
                     templateEndpoint={route('admin.locations.download-template')}
                     onSuccess={refreshLocations}
                 />
-
-                {/* Pagination Info */}
-                {/* <div className="text-muted-foreground flex items-center justify-between text-sm">
-                    <div>
-                        Showing {locations.from || 0} to {locations.to || 0} of {locations.total} locations
-                    </div>
-                    <div>
-                        Page {locations.current_page} of {locations.last_page}
-                    </div>
-                </div> */}
             </div>
         </AppLayout>
     );

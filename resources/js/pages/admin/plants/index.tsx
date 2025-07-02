@@ -2,14 +2,14 @@ import { PlantForm } from '@/components/admin/plants/plant-form';
 import { PlantTable } from '@/components/admin/plants/plant-table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { ImportModal } from '@/components/ui/import-modal';
 import { useRole } from '@/hooks/use-role';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type PaginationData, type Plant } from '@/types';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Archive, Plus, Search, Upload } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { Archive, Plus, Upload } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -29,45 +29,117 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
     const { canManageUsers } = useRole();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-
-    // Use live page data instead of initial props
-    const { props } = usePage<PlantsIndexProps>();
-    const plants = props.plants;
-
-    const { data, setData, get, processing } = useForm({
-        search: filters.search || '',
+    const [plants, setPlants] = useState<Plant[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 0,
     });
+    const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
 
     // Redirect if user doesn't have permission
     useEffect(() => {
         if (!canManageUsers()) {
             router.visit('/dashboard');
         }
-    }, [canManageUsers]);
+    }, []);
 
-    const handleFilterChange = () => {
-        get(route('admin.plants.index'), {
-            preserveState: true,
-            replace: true,
-        });
-    };
+    const fetchPlants = useCallback(async (params: Record<string, any> = {}) => {
+        setLoading(true);
+        try {
+            const queryParams = new URLSearchParams();
 
-    const refreshPlants = () => {
-        get(route('admin.plants.index'), {
-            preserveState: true,
-            replace: true,
-        });
-    };
+            // Add parameters with proper defaults
+            queryParams.append('page', params.page?.toString() || '1');
+            queryParams.append('per_page', params.per_page?.toString() || '15');
 
-    useEffect(() => {
-        const delayedSearch = setTimeout(() => {
-            if (data.search !== filters.search) {
-                handleFilterChange();
+            // Add filters if provided
+            if (params.filters) {
+                Object.keys(params.filters).forEach((key) => {
+                    const value = params.filters[key];
+                    if (value && value !== 'all') {
+                        queryParams.append(key, value);
+                    }
+                });
             }
-        }, 500);
 
-        return () => clearTimeout(delayedSearch);
-    }, [data.search]);
+            // Add search if provided
+            if (params.search) {
+                queryParams.append('search', params.search);
+            }
+
+            // Add sorting if provided
+            if (params.sort_by) {
+                queryParams.append('sort_by', params.sort_by);
+            }
+            if (params.sort_direction) {
+                queryParams.append('sort_direction', params.sort_direction);
+            }
+
+            const response = await axios.get(`/admin/plants/table-data?${queryParams.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            const data = response.data;
+            setPlants(data.data || []);
+            setPagination({
+                current_page: data.meta.current_page || 1,
+                last_page: data.meta.last_page || 1,
+                per_page: data.meta.per_page || 15,
+                total: data.meta.total || 0,
+            });
+        } catch (error) {
+            console.error('Error fetching plants:', error);
+            setPlants([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // Initial fetch - only run once
+    useEffect(() => {
+        if (canManageUsers()) {
+            fetchPlants();
+        }
+    }, []);
+
+    // Handle DataTable search
+    const handleSearch = useCallback(
+        (search: string) => {
+            fetchPlants({ ...searchFilters, search, page: 1 });
+        },
+        [searchFilters],
+    );
+
+    // Handle DataTable filters
+    const handleFilter = useCallback((newFilters: Record<string, any>) => {
+        setSearchFilters(newFilters);
+        fetchPlants({ filters: newFilters, page: 1 });
+    }, []);
+
+    // Handle DataTable pagination
+    const handlePageChange = useCallback(
+        (page: number) => {
+            fetchPlants({ ...searchFilters, page });
+        },
+        [searchFilters],
+    );
+
+    const handlePerPageChange = useCallback(
+        (perPage: number) => {
+            fetchPlants({ ...searchFilters, per_page: perPage, page: 1 });
+        },
+        [searchFilters],
+    );
+
+    // Refresh plants after actions
+    const refreshPlants = useCallback(() => {
+        fetchPlants({ ...searchFilters });
+    }, [searchFilters]);
 
     if (!canManageUsers()) {
         return null;
@@ -129,21 +201,22 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
                     </div>
                 </div>
 
-                {/* Filters */}
-                {/* <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                    <div className="relative flex-1">
-                        <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
-                        <Input
-                            placeholder="Search plants by name..."
-                            value={data.search}
-                            onChange={(e) => setData('search', e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-                </div> */}
-
                 {/* Plants Table */}
-                <PlantTable plants={plants} onRefresh={refreshPlants} />
+                <PlantTable
+                    plants={{
+                        data: plants,
+                        current_page: pagination.current_page,
+                        last_page: pagination.last_page,
+                        per_page: pagination.per_page,
+                        total: pagination.total,
+                    }}
+                    loading={loading}
+                    onRefresh={refreshPlants}
+                    onSearch={handleSearch}
+                    onFilter={handleFilter}
+                    onPageChange={handlePageChange}
+                    onPerPageChange={handlePerPageChange}
+                />
 
                 {/* Import Modal */}
                 <ImportModal
@@ -155,16 +228,6 @@ export default function PlantsIndex({ plants: initialPlants, filters = {} }: Pla
                     templateEndpoint={route('admin.plants.download-template')}
                     onSuccess={refreshPlants}
                 />
-
-                {/* Pagination Info */}
-                {/* <div className="text-muted-foreground flex items-center justify-between text-sm">
-                    <div>
-                        Showing {plants.from || 0} to {plants.to || 0} of {plants.total} plants
-                    </div>
-                    <div>
-                        Page {plants.current_page} of {plants.last_page}
-                    </div>
-                </div> */}
             </div>
         </AppLayout>
     );
