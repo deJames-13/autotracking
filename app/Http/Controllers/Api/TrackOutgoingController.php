@@ -39,7 +39,7 @@ class TrackOutgoingController extends Controller
         if ($request->has('search')) {
             $search = $request->get('search');
             $query->whereHas('trackIncoming', function($q) use ($search) {
-                $q->where('recall_number', 'like', "%{$search}%");
+                $q->where('track_incoming.recall_number', 'like', "%{$search}%");
             });
         }
 
@@ -352,8 +352,8 @@ class TrackOutgoingController extends Controller
         if ($request->has('search')) {
             $search = $request->get('search');
             $query->whereHas('trackIncoming', function($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                  ->orWhere('recall_number', 'like', "%{$search}%");
+                $q->where('track_incoming.description', 'like', "%{$search}%")
+                  ->orWhere('track_incoming.recall_number', 'like', "%{$search}%");
             });
         }
 

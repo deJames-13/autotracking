@@ -110,11 +110,11 @@ class TrackingController extends Controller
         if ($request->filled('search')) {
             $search = $request->get('search');
             $query->where(function($q) use ($search) {
-                $q->where('recall_number', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
+                $q->where('track_incoming.recall_number', 'like', "%{$search}%")
+                  ->orWhere('track_incoming.description', 'like', "%{$search}%")
                   ->orWhereHas('equipment', function($eq) use ($search) {
-                      $eq->where('serial_number', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%");
+                      $eq->where('equipments.serial_number', 'like', "%{$search}%")
+                        ->orWhere('equipments.description', 'like', "%{$search}%");
                   });
             });
         }
@@ -180,11 +180,13 @@ class TrackingController extends Controller
         if ($request->filled('search')) {
             $search = $request->get('search');
             $query->where(function($q) use ($search) {
-                $q->where('recall_number', 'like', "%{$search}%")
-                  ->orWhereHas('equipment', function($eq) use ($search) {
-                      $eq->where('serial_number', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%");
-                  });
+                $q->whereHas('trackIncoming', function($incoming) use ($search) {
+                    $incoming->where('track_incoming.recall_number', 'like', "%{$search}%");
+                })
+                ->orWhereHas('equipment', function($eq) use ($search) {
+                    $eq->where('equipments.serial_number', 'like', "%{$search}%")
+                      ->orWhere('equipments.description', 'like', "%{$search}%");
+                });
             });
         }
 
@@ -286,25 +288,25 @@ class TrackingController extends Controller
         if ($request->filled('search')) {
             $search = $request->get('search');
             $query->where(function($q) use ($search) {
-                $q->where('recall_number', 'like', '%' . $search . '%')
-                  ->orWhere('description', 'like', '%' . $search . '%')
-                  ->orWhere('serial_number', 'like', '%' . $search . '%')
-                  ->orWhere('model', 'like', '%' . $search . '%')
-                  ->orWhere('manufacturer', 'like', '%' . $search . '%')
-                  ->orWhere('notes', 'like', '%' . $search . '%')
+                $q->where('track_incoming.recall_number', 'like', '%' . $search . '%')
+                  ->orWhere('track_incoming.description', 'like', '%' . $search . '%')
+                  ->orWhere('track_incoming.serial_number', 'like', '%' . $search . '%')
+                  ->orWhere('track_incoming.model', 'like', '%' . $search . '%')
+                  ->orWhere('track_incoming.manufacturer', 'like', '%' . $search . '%')
+                  ->orWhere('track_incoming.notes', 'like', '%' . $search . '%')
                   ->orWhereHas('equipment', function($eq) use ($search) {
-                      $eq->where('description', 'like', '%' . $search . '%')
-                        ->orWhere('serial_number', 'like', '%' . $search . '%');
+                      $eq->where('equipments.description', 'like', '%' . $search . '%')
+                        ->orWhere('equipments.serial_number', 'like', '%' . $search . '%');
                   })
                   ->orWhereHas('employeeIn', function($emp) use ($search) {
-                      $emp->where('first_name', 'like', '%' . $search . '%')
-                          ->orWhere('last_name', 'like', '%' . $search . '%')
-                          ->orWhere('employee_id', 'like', '%' . $search . '%');
+                      $emp->where('users.first_name', 'like', '%' . $search . '%')
+                          ->orWhere('users.last_name', 'like', '%' . $search . '%')
+                          ->orWhere('users.employee_id', 'like', '%' . $search . '%');
                   })
                   ->orWhereHas('technician', function($tech) use ($search) {
-                      $tech->where('first_name', 'like', '%' . $search . '%')
-                           ->orWhere('last_name', 'like', '%' . $search . '%')
-                           ->orWhere('employee_id', 'like', '%' . $search . '%');
+                      $tech->where('users.first_name', 'like', '%' . $search . '%')
+                           ->orWhere('users.last_name', 'like', '%' . $search . '%')
+                           ->orWhere('users.employee_id', 'like', '%' . $search . '%');
                   });
             });
         }
@@ -401,23 +403,23 @@ class TrackingController extends Controller
             $search = $request->get('search');
             $query->where(function($q) use ($search) {
                 $q->whereHas('trackIncoming', function($incoming) use ($search) {
-                    $incoming->where('recall_number', 'like', '%' . $search . '%')
-                            ->orWhere('description', 'like', '%' . $search . '%')
-                            ->orWhere('serial_number', 'like', '%' . $search . '%');
+                    $incoming->where('track_incoming.recall_number', 'like', '%' . $search . '%')
+                            ->orWhere('track_incoming.description', 'like', '%' . $search . '%')
+                            ->orWhere('track_incoming.serial_number', 'like', '%' . $search . '%');
                 })
                 ->orWhereHas('equipment', function($eq) use ($search) {
-                    $eq->where('description', 'like', '%' . $search . '%')
-                      ->orWhere('serial_number', 'like', '%' . $search . '%');
+                    $eq->where('equipments.description', 'like', '%' . $search . '%')
+                      ->orWhere('equipments.serial_number', 'like', '%' . $search . '%');
                 })
                 ->orWhereHas('employeeOut', function($emp) use ($search) {
-                    $emp->where('first_name', 'like', '%' . $search . '%')
-                        ->orWhere('last_name', 'like', '%' . $search . '%')
-                        ->orWhere('employee_id', 'like', '%' . $search . '%');
+                    $emp->where('users.first_name', 'like', '%' . $search . '%')
+                        ->orWhere('users.last_name', 'like', '%' . $search . '%')
+                        ->orWhere('users.employee_id', 'like', '%' . $search . '%');
                 })
                 ->orWhereHas('technician', function($tech) use ($search) {
-                    $tech->where('first_name', 'like', '%' . $search . '%')
-                         ->orWhere('last_name', 'like', '%' . $search . '%')
-                         ->orWhere('employee_id', 'like', '%' . $search . '%');
+                    $tech->where('users.first_name', 'like', '%' . $search . '%')
+                         ->orWhere('users.last_name', 'like', '%' . $search . '%')
+                         ->orWhere('users.employee_id', 'like', '%' . $search . '%');
                 });
             });
         }
