@@ -92,7 +92,7 @@ class EquipmentController extends Controller
                           ->select('equipment.*');
                 }
             }, function ($query) {
-                $query->orderBy('created_at', 'desc');
+                $query->orderBy('updated_at', 'desc');
             })
             ->paginate($request->per_page ?? 15)
             ->withQueryString();

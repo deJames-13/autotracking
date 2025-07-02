@@ -64,7 +64,7 @@ class DepartmentController extends Controller
         }
 
         // Apply sorting
-        $sortBy = $request->get('sort_by', 'created_at');
+        $sortBy = $request->get('sort_by', 'updated_at');
         $sortDirection = $request->get('sort_direction', 'desc');
         
         // Map frontend sort keys to database columns
@@ -73,10 +73,10 @@ class DepartmentController extends Controller
             'department_name' => 'department_name',
             'users' => 'department_id', // Will be handled by relationship count
             'locations' => 'department_id', // Will be handled by relationship count
-            'created_at' => 'created_at'
+            'created_at' => 'updated_at'
         ];
         
-        $dbSortBy = $sortMapping[$sortBy] ?? 'created_at';
+        $dbSortBy = $sortMapping[$sortBy] ?? 'updated_at';
         
         // Special handling for relationship counts
         if ($sortBy === 'users') {

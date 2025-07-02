@@ -675,7 +675,7 @@ class UserController extends Controller
         }
 
         // Apply sorting
-        $sortBy = $request->get('sort_by', 'created_at');
+        $sortBy = $request->get('sort_by', 'updated_at');
         $sortDirection = $request->get('sort_direction', 'desc');
         
         // Map frontend sort keys to database columns
@@ -685,10 +685,10 @@ class UserController extends Controller
             'role' => 'role_id',
             'department' => 'department_id',
             'plant' => 'plant_id',
-            'created_at' => 'created_at'
+            'created_at' => 'updated_at'
         ];
         
-        $dbSortBy = $sortMapping[$sortBy] ?? 'created_at';
+        $dbSortBy = $sortMapping[$sortBy] ?? 'updated_at';
         $query->orderBy($dbSortBy, $sortDirection);
 
         // Pagination

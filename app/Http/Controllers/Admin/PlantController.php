@@ -73,7 +73,7 @@ class PlantController extends Controller
         }
 
         // Apply sorting
-        $sortBy = $request->get('sort_by', 'created_at');
+        $sortBy = $request->get('sort_by', 'updated_at');
         $sortDirection = $request->get('sort_direction', 'desc');
         
         // Map frontend sort keys to database columns
@@ -83,10 +83,10 @@ class PlantController extends Controller
             'address' => 'address',
             'telephone' => 'telephone',
             'users' => 'plant_id', // Will be handled by relationship count
-            'created_at' => 'created_at'
+            'created_at' => 'updated_at'
         ];
         
-        $dbSortBy = $sortMapping[$sortBy] ?? 'created_at';
+        $dbSortBy = $sortMapping[$sortBy] ?? 'updated_at';
         
         // Special handling for relationship counts
         if ($sortBy === 'users') {
