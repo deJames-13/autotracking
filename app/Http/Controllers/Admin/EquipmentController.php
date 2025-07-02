@@ -44,7 +44,7 @@ class EquipmentController extends Controller
     {
         $filters = ['search', 'employee_id', 'manufacturer', 'status', 'plant_id', 'department_id'];
         
-        $equipments = Equipment::with(['user.role', 'user.department', 'plant', 'department', 'location'])
+        $equipments = Equipment::with(['user.role', 'user.department', 'plant', 'department', 'location', 'trackIncoming'])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('recall_number', 'like', "%{$search}%")
