@@ -33,7 +33,7 @@ const EmployeeSummaryTab: React.FC<EmployeeSummaryTabProps> = ({ data, errors = 
                 });
 
                 if (response.data.success) {
-                    setRecallNumber(response.data.recall_number);
+                    // setRecallNumber(response.data.recall_number);
                 } else {
                     console.error('Failed to generate recall number:', response.data.message);
                     // Fallback to local generation if backend fails

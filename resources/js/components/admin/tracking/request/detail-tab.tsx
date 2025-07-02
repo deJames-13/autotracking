@@ -520,7 +520,8 @@ const DetailTab: React.FC<DetailTabProps> = ({
                         <div className="bg-muted/20 mb-6 rounded-lg border p-4">
                             <label className="mb-2 block w-full font-semibold">
                                 Recall Number
-                                {requestType === 'new' && <span className="text-muted-foreground ml-1 text-xs font-normal">(for new equipment)</span>}
+                                {requestType === 'new' && <span className="text-muted-foreground ml-1 text-xs font-normal">(optional - will be assigned during calibration if not provided)</span>}
+                                {requestType === 'routine' && <span className="text-muted-foreground ml-1 text-xs font-normal">(required for existing equipment)</span>}
                             </label>
                             <div className="flex w-full items-center gap-2">
                                 <div className="flex-1">
@@ -528,7 +529,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                         id="recallNumber"
                                         value={recallNumber}
                                         onChange={(e) => handleRecallInputChange(e.target.value)}
-                                        placeholder="Enter or scan recall number"
+                                        placeholder={requestType === 'routine' ? "Enter or scan recall number" : "Enter or scan recall number (optional)"}
                                         className={errors.recallNumber ? 'border-destructive' : ''}
                                     />
                                 </div>

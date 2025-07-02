@@ -64,7 +64,7 @@ class LocationController extends Controller
      */
     public function tableData(Request $request): JsonResponse
     {
-        $query = Location::with(['department', 'equipment']);
+        $query = Location::with(['department']);
 
         // Apply search filters
         if ($request->filled('search')) {

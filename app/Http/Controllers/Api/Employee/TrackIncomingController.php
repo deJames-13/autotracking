@@ -206,11 +206,14 @@ class TrackIncomingController extends Controller
             
         
             // Create mode - existing logic
-            // Generate unique recall number if not provided
-            $recallNumber = $requestData['equipment']['recallNumber'] ?? TrackIncoming::generateUniqueRecallNumber();
+            // Handle recall number - DO NOT auto-generate, just use what's provided (can be null)
+            $recallNumber = $requestData['equipment']['recallNumber'] ?? null;
             
             // Check if equipment with this recall number already exists
-            $equipment = Equipment::where('recall_number', $recallNumber)->first();
+            $equipment = null;
+            if ($recallNumber) {
+                $equipment = Equipment::where('recall_number', $recallNumber)->first();
+            }
                     
             if (!$equipment) {
                 // Handle process requirement range fields with helper
@@ -219,7 +222,7 @@ class TrackIncomingController extends Controller
                 // Create new equipment record
                 $equipment = Equipment::create([
                     'employee_id' => $requestData['technician']['employee_id'],
-                    'recall_number' => $recallNumber,
+                    'recall_number' => $recallNumber, // This can be null for new requests
                     'serial_number' => $requestData['equipment']['serialNumber'],
                     'description' => $requestData['equipment']['description'],
                     'model' => $requestData['equipment']['model'],
@@ -260,7 +263,7 @@ class TrackIncomingController extends Controller
             // Create the TrackIncoming record
             // Create track incoming record
             $trackIncoming = TrackIncoming::create([
-                'recall_number' => $recallNumber,
+                'recall_number' => $recallNumber, // This can be null for new requests
                 'technician_id' => $technicianId,
                 'description' => $requestData['equipment']['description'],
                 'equipment_id' => $equipment->equipment_id,
@@ -278,8 +281,12 @@ class TrackIncomingController extends Controller
             
             $trackIncoming->load(['equipment', 'technician', 'location', 'employeeIn', 'receivedBy']);
 
+            $message = $recallNumber 
+                ? 'Tracking request submitted successfully with recall number: ' . $recallNumber . '. Awaiting admin confirmation.'
+                : 'Tracking request submitted successfully. Recall number will be assigned during calibration. Awaiting admin confirmation.';
+
             return response()->json([
-                'message' => 'Tracking request submitted successfully. Awaiting admin confirmation.',
+                'message' => $message,
                 'data' => new TrackIncomingResource($trackIncoming)
             ], 201);
             
