@@ -59,92 +59,154 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({ requests,
         }
     };
 
-    // DataTable event handlers
+    // DataTable event handlers - refactored to prevent infinite requests
     const handleSearch = useCallback(
         async (search: string) => {
             setLoading(true);
-            const params = { ...currentFilters, search };
-            setCurrentFilters(params);
+            setCurrentFilters(prevFilters => {
+                const params = { ...prevFilters, search };
 
-            try {
-                const response = await axios.get(route('admin.tracking.incoming.table-data'), { params });
-                setTrackIncoming(response.data);
-            } catch (error) {
-                toast.error('Failed to search data');
-                console.error('Search error:', error);
-            } finally {
-                setLoading(false);
-            }
+                // Make API call with the new params
+                axios.get(route('admin.tracking.incoming.table-data'), { params })
+                    .then(response => {
+                        setTrackIncoming(response.data);
+                    })
+                    .catch(error => {
+                        toast.error('Failed to search data');
+                        console.error('Search error:', error);
+                    })
+                    .finally(() => {
+                        setLoading(false);
+                    });
+
+                return params;
+            });
         },
-        [currentFilters],
+        [],
     );
 
     const handleFilter = useCallback(async (filters: Record<string, any>) => {
         setLoading(true);
-        setCurrentFilters(filters);
+        setCurrentFilters(prevFilters => {
+            // Merge with existing non-filter params (like pagination) 
+            const params = {
+                ...prevFilters,
+                ...filters,
+                page: 1 // Reset to first page when filtering
+            };
 
-        try {
-            const response = await axios.get(route('admin.tracking.incoming.table-data'), { params: filters });
-            setTrackIncoming(response.data);
-        } catch (error) {
-            toast.error('Failed to filter data');
-            console.error('Filter error:', error);
-        } finally {
-            setLoading(false);
-        }
+            axios.get(route('admin.tracking.incoming.table-data'), { params })
+                .then(response => {
+                    setTrackIncoming(response.data);
+                })
+                .catch(error => {
+                    toast.error('Failed to filter data');
+                    console.error('Filter error:', error);
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
+
+            return params;
+        });
+    }, []);
+
+    const handleSort = useCallback(async (column: string, direction: 'asc' | 'desc') => {
+        setLoading(true);
+        setCurrentFilters(prevFilters => {
+            const params = {
+                ...prevFilters,
+                sort_by: column,
+                sort_direction: direction
+            };
+
+            axios.get(route('admin.tracking.incoming.table-data'), { params })
+                .then(response => {
+                    setTrackIncoming(response.data);
+                })
+                .catch(error => {
+                    toast.error('Failed to sort data');
+                    console.error('Sort error:', error);
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
+
+            return params;
+        });
     }, []);
 
     const handlePageChange = useCallback(
         async (page: number) => {
             setLoading(true);
-            const params = { ...currentFilters, page };
+            setCurrentFilters(prevFilters => {
+                const params = { ...prevFilters, page };
 
-            try {
-                const response = await axios.get(route('admin.tracking.incoming.table-data'), { params });
-                setTrackIncoming(response.data);
-            } catch (error) {
-                toast.error('Failed to change page');
-                console.error('Page change error:', error);
-            } finally {
-                setLoading(false);
-            }
+                axios.get(route('admin.tracking.incoming.table-data'), { params })
+                    .then(response => {
+                        setTrackIncoming(response.data);
+                    })
+                    .catch(error => {
+                        toast.error('Failed to change page');
+                        console.error('Page change error:', error);
+                    })
+                    .finally(() => {
+                        setLoading(false);
+                    });
+
+                return params; // Update with new page
+            });
         },
-        [currentFilters],
+        [],
     );
 
     const handlePerPageChange = useCallback(
         async (perPage: number) => {
             setLoading(true);
-            const params = { ...currentFilters, per_page: perPage, page: 1 };
-            setCurrentFilters(params);
+            setCurrentFilters(prevFilters => {
+                const params = {
+                    ...prevFilters,
+                    per_page: perPage,
+                    page: 1 // Reset to first page when changing per page
+                };
 
-            try {
-                const response = await axios.get(route('admin.tracking.incoming.table-data'), { params });
-                setTrackIncoming(response.data);
-            } catch (error) {
-                toast.error('Failed to change page size');
-                console.error('Per page change error:', error);
-            } finally {
-                setLoading(false);
-            }
+                axios.get(route('admin.tracking.incoming.table-data'), { params })
+                    .then(response => {
+                        setTrackIncoming(response.data);
+                    })
+                    .catch(error => {
+                        toast.error('Failed to change page size');
+                        console.error('Per page change error:', error);
+                    })
+                    .finally(() => {
+                        setLoading(false);
+                    });
+
+                return params;
+            });
         },
-        [currentFilters],
+        [],
     );
 
     const handleRefresh = useCallback(async () => {
         setLoading(true);
+        setCurrentFilters(prevFilters => {
+            axios.get(route('admin.tracking.incoming.table-data'), { params: prevFilters })
+                .then(response => {
+                    setTrackIncoming(response.data);
+                    toast.success('Data refreshed');
+                })
+                .catch(error => {
+                    toast.error('Failed to refresh data');
+                    console.error('Refresh error:', error);
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
 
-        try {
-            const response = await axios.get(route('admin.tracking.incoming.table-data'), { params: currentFilters });
-            setTrackIncoming(response.data);
-            toast.success('Data refreshed');
-        } catch (error) {
-            toast.error('Failed to refresh data');
-            console.error('Refresh error:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [currentFilters]);
+            return prevFilters; // Don't change filters on refresh
+        });
+    }, []);
 
     if (!canManageRequestIncoming()) {
         return null;
@@ -173,6 +235,7 @@ const TrackingIncomingIndex: React.FC<TrackingIncomingIndexProps> = ({ requests,
                     onRefresh={handleRefresh}
                     onSearch={handleSearch}
                     onFilter={handleFilter}
+                    onSort={handleSort}
                     onPageChange={handlePageChange}
                     onPerPageChange={handlePerPageChange}
                 />

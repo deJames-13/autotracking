@@ -352,6 +352,7 @@ class TrackingController extends Controller
         // Map frontend sort keys to database columns
         $sortMapping = [
             'recall_number' => 'recall_number',
+            'equipment' => 'description', // Equipment column maps to description
             'description' => 'description',
             'status' => 'status',
             'date_in' => 'date_in',
@@ -475,6 +476,8 @@ class TrackingController extends Controller
         // Map frontend sort keys to database columns
         $sortMapping = [
             'recall_number' => 'incoming_id', // Sort by relation
+            'equipment' => 'incoming_id', // Equipment info comes from trackIncoming relation
+            'technician' => 'technician_id',
             'status' => 'status',
             'date_out' => 'date_out',
             'cal_date' => 'cal_date',

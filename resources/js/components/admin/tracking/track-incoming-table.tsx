@@ -35,6 +35,7 @@ interface TrackIncomingTableProps {
     onRefresh?: () => void;
     onSearch?: (search: string) => void;
     onFilter?: (filters: Record<string, any>) => void;
+    onSort?: (column: string, direction: 'asc' | 'desc') => void;
     onPageChange?: (page: number) => void;
     onPerPageChange?: (perPage: number) => void;
 }
@@ -46,6 +47,7 @@ export function TrackIncomingTable({
     onRefresh,
     onSearch,
     onFilter,
+    onSort,
     onPageChange,
     onPerPageChange,
 }: TrackIncomingTableProps) {
@@ -239,11 +241,11 @@ export function TrackIncomingTable({
             type: 'select',
             options: [{ value: 'all', label: 'All Employees' }, ...(filterOptions?.employees_in || [])],
         },
-        {
-            key: 'date_range',
-            label: 'Date Range',
-            type: 'date-range',
-        },
+        // {
+        //     key: 'date_range',
+        //     label: 'Date Range',
+        //     type: 'date-range',
+        // },
     ];
 
     // Handle DataTable events
@@ -263,6 +265,15 @@ export function TrackIncomingTable({
             }
         },
         [onFilter],
+    );
+
+    const handleSort = useCallback(
+        (column: string, direction: 'asc' | 'desc') => {
+            if (onSort) {
+                onSort(column, direction);
+            }
+        },
+        [onSort],
     );
 
     const handlePageChange = useCallback(
@@ -298,6 +309,7 @@ export function TrackIncomingTable({
                 }}
                 onSearch={handleSearch}
                 onFilter={handleFilter}
+                onSort={handleSort}
                 onPageChange={handlePageChange}
                 onPerPageChange={handlePerPageChange}
                 searchPlaceholder="Search by recall number, equipment, serial number..."

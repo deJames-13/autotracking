@@ -119,6 +119,7 @@ export function DataTable<T = any>({
         key: 'selection'
     });
     const isFirstRender = useRef(true);
+    const previousFiltersRef = useRef<string>('');
 
     // Debounced search with better dependency management
     useEffect(() => {
@@ -131,35 +132,50 @@ export function DataTable<T = any>({
         return () => clearTimeout(timer);
     }, [searchTerm, searchDebounceMs]); // Removed onSearch from dependencies
 
-    // Handle filter changes with useCallback to prevent infinite loops
-    const handleFilterUpdate = useMemo(() => {
-        // Filter out "all" values from activeFilters
-        const cleanFilters = Object.entries(activeFilters).reduce((acc, [key, value]) => {
-            if (value !== 'all' && value !== '') {
-                acc[key] = value;
-            }
-            return acc;
-        }, {} as Record<string, any>);
-
-        const filterData = { ...cleanFilters };
-        if (dateRange?.startDate && dateRange?.endDate) {
-            filterData.date_from = formatDate(dateRange.startDate, 'yyyy-MM-dd');
-            filterData.date_to = formatDate(dateRange.endDate, 'yyyy-MM-dd');
-        }
-        return filterData;
-    }, [activeFilters, dateRange]);
-
     useEffect(() => {
-        // Only call onFilter if we have meaningful filters (excluding "all" values)
+        // Skip on first render
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        // Only call onFilter if we have the function and meaningful filters
+        if (!onFilter) return;
+
         const hasMeaningfulFilters = Object.values(activeFilters).some(value => value !== 'all' && value !== '');
         const hasDateRange = dateRange?.startDate && dateRange?.endDate &&
             (dateRange.startDate.getTime() !== dateRange.endDate.getTime());
 
-        if (onFilter && !isFirstRender.current && (hasMeaningfulFilters || hasDateRange)) {
-            onFilter(handleFilterUpdate);
+        if (hasMeaningfulFilters || hasDateRange) {
+            // Compute filter data inline to avoid dependency issues
+            const cleanFilters = Object.entries(activeFilters).reduce((acc, [key, value]) => {
+                if (value !== 'all' && value !== '') {
+                    acc[key] = value;
+                }
+                return acc;
+            }, {} as Record<string, any>);
+
+            const filterData = { ...cleanFilters };
+            if (dateRange?.startDate && dateRange?.endDate) {
+                filterData.date_from = formatDate(dateRange.startDate, 'yyyy-MM-dd');
+                filterData.date_to = formatDate(dateRange.endDate, 'yyyy-MM-dd');
+            }
+
+            // Check if filters actually changed to prevent unnecessary calls
+            const currentFiltersString = JSON.stringify(filterData);
+            if (currentFiltersString !== previousFiltersRef.current) {
+                previousFiltersRef.current = currentFiltersString;
+                onFilter(filterData);
+            }
+        } else if (!hasMeaningfulFilters && !hasDateRange) {
+            // If no meaningful filters, call onFilter with empty object only if it changed
+            const emptyFiltersString = JSON.stringify({});
+            if (emptyFiltersString !== previousFiltersRef.current) {
+                previousFiltersRef.current = emptyFiltersString;
+                onFilter({});
+            }
         }
-        isFirstRender.current = false;
-    }, [handleFilterUpdate, onFilter]);
+    }, [activeFilters, dateRange]); // Removed onFilter from dependencies to prevent function reference issues
 
     const handleSort = (column: string) => {
         const newDirection = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';

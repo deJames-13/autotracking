@@ -4,8 +4,11 @@
 - [x] enable manual input for recall number for requests (admin/employee) ✅ COMPLETED
 
 -- TODO
+- [ ] Locations to technicians
+
 - [ ] ui revisions
     - [ ] date filtering
+        - [ ] fix recurion
     - [x] PIC
     - [x] "from" deparment
 

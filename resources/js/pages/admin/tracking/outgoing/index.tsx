@@ -27,18 +27,26 @@ export default function TrackOutgoingIndex(props: TrackOutgoingIndexProps) {
     const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
     const [currentFilters, setCurrentFilters] = useState<Record<string, any>>({});
     const [currentSearch, setCurrentSearch] = useState('');
+    const [currentSort, setCurrentSort] = useState<{ column: string, direction: 'asc' | 'desc' } | null>(null);
 
     // Fetch table data
-    const fetchTableData = async (page = 1, perPage = 10, search = '', filters = {}) => {
+    const fetchTableData = async (page = 1, perPage = 10, search = '', filters = {}, sortColumn?: string, sortDirection?: 'asc' | 'desc') => {
         try {
             setLoading(true);
+            const params: any = {
+                page,
+                per_page: perPage,
+                search,
+                ...filters,
+            };
+
+            if (sortColumn && sortDirection) {
+                params.sort_by = sortColumn;
+                params.sort_direction = sortDirection;
+            }
+
             const response = await axios.get(route('admin.tracking.outgoing.table-data'), {
-                params: {
-                    page,
-                    per_page: perPage,
-                    search,
-                    ...filters,
-                },
+                params,
             });
             setTrackOutgoing(response.data);
         } catch (error) {
@@ -69,28 +77,34 @@ export default function TrackOutgoingIndex(props: TrackOutgoingIndexProps) {
     // Handle search
     const handleSearch = (search: string) => {
         setCurrentSearch(search);
-        fetchTableData(1, trackOutgoing?.per_page || 10, search, currentFilters);
+        fetchTableData(1, trackOutgoing?.per_page || 10, search, currentFilters, currentSort?.column, currentSort?.direction);
     };
 
     // Handle filter
     const handleFilter = (filters: Record<string, any>) => {
         setCurrentFilters(filters);
-        fetchTableData(1, trackOutgoing?.per_page || 10, currentSearch, filters);
+        fetchTableData(1, trackOutgoing?.per_page || 10, currentSearch, filters, currentSort?.column, currentSort?.direction);
+    };
+
+    // Handle sort
+    const handleSort = (column: string, direction: 'asc' | 'desc') => {
+        setCurrentSort({ column, direction });
+        fetchTableData(trackOutgoing?.current_page || 1, trackOutgoing?.per_page || 10, currentSearch, currentFilters, column, direction);
     };
 
     // Handle page change
     const handlePageChange = (page: number) => {
-        fetchTableData(page, trackOutgoing?.per_page || 10, currentSearch, currentFilters);
+        fetchTableData(page, trackOutgoing?.per_page || 10, currentSearch, currentFilters, currentSort?.column, currentSort?.direction);
     };
 
     // Handle per page change
     const handlePerPageChange = (perPage: number) => {
-        fetchTableData(1, perPage, currentSearch, currentFilters);
+        fetchTableData(1, perPage, currentSearch, currentFilters, currentSort?.column, currentSort?.direction);
     };
 
     // Handle refresh
     const handleRefresh = () => {
-        fetchTableData(trackOutgoing?.current_page || 1, trackOutgoing?.per_page || 10, currentSearch, currentFilters);
+        fetchTableData(trackOutgoing?.current_page || 1, trackOutgoing?.per_page || 10, currentSearch, currentFilters, currentSort?.column, currentSort?.direction);
     };
 
     return (
@@ -124,6 +138,7 @@ export default function TrackOutgoingIndex(props: TrackOutgoingIndexProps) {
                         onRefresh={handleRefresh}
                         onSearch={handleSearch}
                         onFilter={handleFilter}
+                        onSort={handleSort}
                         onPageChange={handlePageChange}
                         onPerPageChange={handlePerPageChange}
                     />

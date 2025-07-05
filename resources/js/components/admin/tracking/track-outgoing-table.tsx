@@ -21,6 +21,7 @@ interface TrackOutgoingTableProps {
     onRefresh?: () => void;
     onSearch?: (search: string) => void;
     onFilter?: (filters: Record<string, any>) => void;
+    onSort?: (column: string, direction: 'asc' | 'desc') => void;
     onPageChange?: (page: number) => void;
     onPerPageChange?: (perPage: number) => void;
 }
@@ -32,6 +33,7 @@ export function TrackOutgoingTable({
     onRefresh,
     onSearch,
     onFilter,
+    onSort,
     onPageChange,
     onPerPageChange,
 }: TrackOutgoingTableProps) {
@@ -293,6 +295,15 @@ export function TrackOutgoingTable({
         [onFilter],
     );
 
+    const handleSort = useCallback(
+        (column: string, direction: 'asc' | 'desc') => {
+            if (onSort) {
+                onSort(column, direction);
+            }
+        },
+        [onSort],
+    );
+
     const handlePageChange = useCallback(
         (page: number) => {
             if (onPageChange) {
@@ -326,6 +337,7 @@ export function TrackOutgoingTable({
                 }}
                 onSearch={handleSearch}
                 onFilter={handleFilter}
+                onSort={handleSort}
                 onPageChange={handlePageChange}
                 onPerPageChange={handlePerPageChange}
                 searchPlaceholder="Search by recall number, equipment, serial number..."
