@@ -104,7 +104,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
 
         // Check if departments match
         if (employeeOutDeptId !== employeeInDeptId) {
-            const message = `Department mismatch: Employee is from ${employeeOutDeptName} but equipment was received by ${employeeInDeptName} department. Only employees from the same department can complete calibrations.`;
+            const message = `Department mismatch: Employee is from ${employeeOutDeptName} but equipment was received from ${employeeInDeptName} department. Only employees from the same department can complete calibrations.`;
             setDepartmentValidation({
                 isValid: false,
                 message,
@@ -773,7 +773,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                             )}
                             {trackOutgoing.released_by && (
                                 <div>
-                                    <Label className="text-sm font-medium">Released By (Operator)</Label>
+                                    <Label className="text-sm font-medium">Released By (PIC)</Label>
                                     <p className="text-muted-foreground text-sm">
                                         {trackOutgoing.released_by.first_name} {trackOutgoing.released_by.last_name}
                                     </p>

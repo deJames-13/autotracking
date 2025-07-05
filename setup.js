@@ -12,6 +12,7 @@ import { execSync, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import process from 'process';
 import { fileURLToPath } from 'url';
 
 // ES module compatibility

@@ -4,13 +4,26 @@
 - [x] enable manual input for recall number for requests (admin/employee) ✅ COMPLETED
 
 -- TODO
+- [ ] ui revisions
+    - [ ] date filtering
+    - [x] PIC
+    - [x] "from" deparment
 
-- [ ] Imports
-    - [ ] batch user imports
-    - [ ] batch equipments imports
-    - [ ] batch department imports
-    - [ ] batch plant imports 
-    - [ ] batch locations imports
+- [ ] form and reports
+    - Commit ETC - Date format
+    - Actual ETC - Date Format
+
+
+
+
+
+
+- [x] Imports
+    - [x] batch user imports
+    - [x] batch equipments imports
+    - [x] batch department imports
+    - [x] batch plant imports 
+    - [x] batch locations imports
 
 
 
@@ -18,19 +31,19 @@
 - [x] fix delete/archiving
 - [x] enable manual input for recall number for requests (admin/employee) ✅ COMPLETED
 
-- [ ] Scan in ougoing show not working
-- [ ] Scan not working on equipment
-- [ ] Barcode format on employee, equipment, recall show incoming - outgoing
+- [x] Scan in ougoing show not working
+- [x] Scan not working on equipment
+- [x] Barcode format on employee, equipment, recall show incoming - outgoing
 
 
-- [ ] Latest modified on top
-- [ ] Update email notification
-- [ ] Refresh error on crud pages
+- [x] Latest modified on top
+- [x] Update email notification
+- [x] Refresh error on crud pages
 
 
 
 
-- [ ] Table paginated/filters (turn to datatable)  
+- [x] Table paginated/filters (turn to datatable)  
     - [x] user
     - [x] equipment
 

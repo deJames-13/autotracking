@@ -356,7 +356,7 @@ const TrackingOutgoingEdit: React.FC<TrackingOutgoingEditProps> = ({ trackOutgoi
 
                                 {trackOutgoing.released_by && (
                                     <div>
-                                        <Label className="text-sm font-medium">Released By (Operator)</Label>
+                                        <Label className="text-sm font-medium">Released By (PIC)</Label>
                                         <p className="text-muted-foreground text-sm">
                                             {trackOutgoing.released_by.first_name} {trackOutgoing.released_by.last_name}
                                         </p>
