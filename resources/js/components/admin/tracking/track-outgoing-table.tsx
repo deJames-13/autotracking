@@ -264,16 +264,16 @@ export function TrackOutgoingTable({
             type: 'select',
             options: [{ value: 'all', label: 'All Users' }, ...(filterOptions?.released_by || [])],
         },
-        {
-            key: 'cal_date_range',
-            label: 'Cal Date Range',
-            type: 'date-range',
-        },
-        {
-            key: 'cal_due_date_range',
-            label: 'Cal Due Date Range',
-            type: 'date-range',
-        },
+        // {
+        //     key: 'cal_date_range',
+        //     label: 'Cal Date Range',
+        //     type: 'date-range',
+        // },
+        // {
+        //     key: 'cal_due_date_range',
+        //     label: 'Cal Due Date Range',
+        //     type: 'date-range',
+        // },
     ];
 
     // Handle DataTable events
