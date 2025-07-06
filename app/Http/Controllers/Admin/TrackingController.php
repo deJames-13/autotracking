@@ -225,7 +225,7 @@ class TrackingController extends Controller
         ]);
         
         return Inertia::render('admin/tracking/outgoing/show', [
-            'trackOutgoing' => $trackOutgoing
+            'trackOutgoing' => new \App\Http\Resources\TrackOutgoingResource($trackOutgoing)
         ]);
     }
 
@@ -247,7 +247,7 @@ class TrackingController extends Controller
         ]);
         
         return Inertia::render('admin/tracking/outgoing/edit', [
-            'trackOutgoing' => $trackOutgoing
+            'trackOutgoing' => new \App\Http\Resources\TrackOutgoingResource($trackOutgoing)
         ]);
     }
 

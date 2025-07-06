@@ -184,6 +184,20 @@ const EmployeeTrackingOutgoingShow: React.FC<EmployeeTrackingOutgoingShowProps> 
                                     <p className="text-muted-foreground text-sm">{trackOutgoing.cycle_time} days</p>
                                 </div>
                             )}
+
+                            {trackOutgoing.commit_etc && (
+                                <div>
+                                    <Label className="text-sm font-medium">Committed Date</Label>
+                                    <p className="text-muted-foreground text-sm">{format(new Date(trackOutgoing.commit_etc), 'MMMM dd, yyyy')}</p>
+                                </div>
+                            )}
+
+                            {trackOutgoing.actual_etc && (
+                                <div>
+                                    <Label className="text-sm font-medium">Actual Completion Date</Label>
+                                    <p className="text-muted-foreground text-sm">{format(new Date(trackOutgoing.actual_etc), 'MMMM dd, yyyy')}</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 

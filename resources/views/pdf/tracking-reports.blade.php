@@ -177,12 +177,12 @@
                     </td>
                     <td class="data-cell">
                         @if($report->trackOutgoing)
-                            {{ $report->trackOutgoing->commit_etc }}
+                            {{ $report->trackOutgoing->commit_etc?->format('m/d/Y') }}
                         @endif
                     </td>
                     <td class="data-cell">
                         @if($report->trackOutgoing)
-                            {{ $report->trackOutgoing->actual_etc }}
+                            {{ $report->trackOutgoing->actual_etc?->format('m/d/Y') }}
                         @endif
                     </td>
                     <td class="data-cell">

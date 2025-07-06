@@ -22,8 +22,8 @@ class TrackOutgoingRequest extends FormRequest
             'released_by_id' => ['nullable', 'exists:users,employee_id'], 
             'cycle_time' => ['required', 'integer', 'min:0'],
             'ct_reqd' => ['nullable', 'integer', 'min:0'],
-            'commit_etc' => ['nullable', 'integer', 'min:0'],
-            'actual_etc' => ['nullable', 'integer', 'min:0'],
+            'commit_etc' => ['nullable', 'date'],
+            'actual_etc' => ['nullable', 'date'],
             'overdue' => ['nullable', function ($attribute, $value, $fail) {
                 // Accept integer values (0/1) for database compatibility
                 if (is_int($value) && in_array($value, [0, 1])) {

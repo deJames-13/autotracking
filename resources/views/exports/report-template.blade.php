@@ -126,12 +126,12 @@
                 </td>
                 <td style="vertical-align: center; text-align: center; width: 30px; font-family: 'Arial'; font-size: 8px">
                     @if($report->trackOutgoing)
-                        {{ $report->trackOutgoing->commit_etc }}
+                        {{ $report->trackOutgoing->commit_etc?->format('m/d/Y') }}
                     @endif
                 </td>
                 <td style="vertical-align: center; text-align: center; width: 30px; font-family: 'Arial'; font-size: 8px">
                     @if($report->trackOutgoing)
-                        {{ $report->trackOutgoing->actual_etc }}
+                        {{ $report->trackOutgoing->actual_etc?->format('m/d/Y') }}
                     @endif
                 </td>
                 <td style="vertical-align: center; text-align: center; width: 30px; font-family: 'Arial'; font-size: 8px">

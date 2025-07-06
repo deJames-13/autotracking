@@ -1,15 +1,18 @@
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/simple-modal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrackIncoming } from '@/types';
 import { router, useForm } from '@inertiajs/react';
 import axios from 'axios';
 import { addYears, format } from 'date-fns';
-import { Search } from 'lucide-react';
+import { CalendarIcon, Search } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { cn } from '@/lib/utils';
 
 interface OutgoingCalibrationModalProps {
     incomingRecord: TrackIncoming | null;
@@ -27,8 +30,8 @@ interface OutgoingFormData {
     employee_id_out: string;
     cycle_time: number;
     ct_reqd: number | null;
-    commit_etc: number | null;
-    actual_etc: number | null;
+    commit_etc: string | null; // Date field
+    actual_etc: string | null; // Date field
     overdue: string; // Changed to string for "yes"/"no"
     confirmation_pin: string;
 }
@@ -549,27 +552,57 @@ export function OutgoingCalibrationModal({ incomingRecord, open, onOpenChange, o
                                 onChange={(e) => setData('ct_reqd', e.target.value ? parseInt(e.target.value) : null)}
                             />
                         </div>
-                        {/* Commit ETC (manual input, days) */}
+                        {/* Commit ETC (date input) */}
                         <div className="space-y-2">
-                            <Label htmlFor="commit_etc">Commit ETC (days)</Label>
-                            <Input
-                                id="commit_etc"
-                                type="number"
-                                value={data.commit_etc ?? ''}
-                                min={0}
-                                onChange={(e) => setData('commit_etc', e.target.value ? parseInt(e.target.value) : null)}
-                            />
+                            <Label htmlFor="commit_etc">Commit ETC Date</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            'w-full justify-start text-left font-normal',
+                                            !commitEtc && 'text-muted-foreground'
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {commitEtc ? format(commitEtc, 'PPP') : <span>Pick a date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={commitEtc}
+                                        onSelect={handleCommitEtcChange}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
                         </div>
-                        {/* Actual ETC (manual input, days) */}
+                        {/* Actual ETC (date input) */}
                         <div className="space-y-2">
-                            <Label htmlFor="actual_etc">Actual ETC (days)</Label>
-                            <Input
-                                id="actual_etc"
-                                type="number"
-                                value={data.actual_etc ?? ''}
-                                min={0}
-                                onChange={(e) => setData('actual_etc', e.target.value ? parseInt(e.target.value) : null)}
-                            />
+                            <Label htmlFor="actual_etc">Actual ETC Date</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            'w-full justify-start text-left font-normal',
+                                            !actualEtc && 'text-muted-foreground'
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {actualEtc ? format(actualEtc, 'PPP') : <span>Pick a date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={actualEtc}
+                                        onSelect={handleActualEtcChange}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
                         </div>
                         {/* Actual No. of Cycle Time (editable) */}
                         <div className="space-y-2">

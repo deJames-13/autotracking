@@ -193,11 +193,23 @@
                         @endif
                     </td>
                     
-                    <!-- CYCLE TIME Section (all empty for now) -->
+                    <!-- CYCLE TIME Section -->
                     <td class="data-cell"></td> <!-- Queuing Time -->
-                    <td class="data-cell"></td> <!-- CT Required -->
-                    <td class="data-cell"></td> <!-- Commit ETC -->
-                    <td class="data-cell"></td> <!-- Actual ETC -->
+                    <td class="data-cell">
+                        @if($report->trackOutgoing)
+                            {{ $report->trackOutgoing->ct_reqd }}
+                        @endif
+                    </td> <!-- CT Required -->
+                    <td class="data-cell">
+                        @if($report->trackOutgoing)
+                            {{ $report->trackOutgoing->commit_etc?->format('m/d/Y') }}
+                        @endif
+                    </td> <!-- Commit ETC -->
+                    <td class="data-cell">
+                        @if($report->trackOutgoing)
+                            {{ $report->trackOutgoing->actual_etc?->format('m/d/Y') }}
+                        @endif
+                    </td> <!-- Actual ETC -->
                     <td class="data-cell"></td> <!-- Actual # of CT -->
                     <td class="data-cell"></td> <!-- Overdue ETC -->
                 </tr>

@@ -28,7 +28,9 @@ class TrackOutgoing extends Model
     protected $casts = [
         'cal_date' => 'date',
         'cal_due_date' => 'date',
-        'date_out' => 'datetime'
+        'date_out' => 'datetime',
+        'commit_etc' => 'date',
+        'actual_etc' => 'date'
     ];
     
     // Relationships

@@ -49,8 +49,8 @@ return new class extends Migration
 
             $table->integer('cycle_time')->nullable();
             $table->integer('ct_reqd')->nullable();
-            $table->integer('commit_etc')->nullable();
-            $table->integer('actual_etc')->nullable();
+            $table->date('commit_etc')->nullable();
+            $table->date('actual_etc')->nullable();
             $table->integer('overdue')->nullable();
             $table->softDeletes();
             $table->timestamps();

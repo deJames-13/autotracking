@@ -617,11 +617,15 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                             </div>
                             <div>
                                 <Label className="text-sm font-medium">Commit ETC</Label>
-                                <p className="text-muted-foreground text-sm">{trackOutgoing.commit_etc ? `${trackOutgoing.commit_etc} days` : '—'}</p>
+                                <p className="text-muted-foreground text-sm">
+                                    {trackOutgoing.commit_etc ? format(new Date(trackOutgoing.commit_etc), 'MMM dd, yyyy') : '—'}
+                                </p>
                             </div>
                             <div>
                                 <Label className="text-sm font-medium">Actual ETC</Label>
-                                <p className="text-muted-foreground text-sm">{trackOutgoing.actual_etc ? `${trackOutgoing.actual_etc} days` : '—'}</p>
+                                <p className="text-muted-foreground text-sm">
+                                    {trackOutgoing.actual_etc ? format(new Date(trackOutgoing.actual_etc), 'MMM dd, yyyy') : '—'}
+                                </p>
                             </div>
                             <div>
                                 <Label className="text-sm font-medium">Overdue</Label>

@@ -179,8 +179,8 @@ export interface TrackOutgoing {
     certificate_number?: string | null;
     cycle_time?: number | null;
     ct_reqd?: number | null;
-    commit_etc?: number | null;
-    actual_etc?: number | null;
+    commit_etc?: string | null; // Date field
+    actual_etc?: string | null; // Date field
     overdue?: number | null; // 0 = No, 1 = Yes
     status: 'for_pickup' | 'completed';
     notes?: string | null;

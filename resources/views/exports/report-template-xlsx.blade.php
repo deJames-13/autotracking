@@ -108,12 +108,12 @@
                 </td> <!-- CT Required -->
                 <td style="vertical-align: center; text-align: center;">
                     @if($report->trackOutgoing)
-                        {{ $report->trackOutgoing->commit_etc }}
+                        {{ $report->trackOutgoing->commit_etc?->format('m/d/Y') }}
                     @endif
                 </td> <!-- Commit ETC -->
                 <td style="vertical-align: center; text-align: center;">
                     @if($report->trackOutgoing)
-                        {{ $report->trackOutgoing->actual_etc }}
+                        {{ $report->trackOutgoing->actual_etc?->format('m/d/Y') }}
                     @endif
                 </td> <!-- Actual ETC -->
                 <td style="vertical-align: center; text-align: center;">
