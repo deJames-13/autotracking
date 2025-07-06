@@ -50,6 +50,18 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
                     // Location might not be in scannedEmployee, so we'll fetch it separately
                 }
 
+                // Only fetch additional data if we don't already have it from scannedEmployee
+                const needsFetch =
+                    (!names.plant && data.equipment.plant) ||
+                    (!names.department && data.equipment.department) ||
+                    data.equipment.location;
+
+                if (!needsFetch) {
+                    setLocationNames(names);
+                    setLoading(false);
+                    return;
+                }
+
                 // Fetch plant name if not available from scannedEmployee
                 if (!names.plant && data.equipment.plant) {
                     try {
@@ -103,8 +115,18 @@ const ConfirmEmployeeTab: React.FC<ConfirmEmployeeTabProps> = ({ data, onChange,
             }
         };
 
-        fetchLocationNames();
-    }, [data.equipment.plant, data.equipment.department, data.equipment.location, data.scannedEmployee]);
+        // Only run if we have equipment data
+        if (data.equipment) {
+            fetchLocationNames();
+        }
+    }, [
+        data.equipment?.plant,
+        data.equipment?.department,
+        data.equipment?.location,
+        data.scannedEmployee?.employee_id, // Use specific property instead of whole object
+        data.scannedEmployee?.plant?.plant_name,
+        data.scannedEmployee?.department?.department_name
+    ]);
 
     // Get location names with loading state
     const getLocationName = (type: 'plant' | 'department' | 'location') => {

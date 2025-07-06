@@ -18,10 +18,13 @@ import Barcode from 'react-barcode';
 import { toast } from 'react-hot-toast';
 
 interface TrackingOutgoingShowProps {
-    trackOutgoing: TrackOutgoing;
+    trackOutgoing: TrackOutgoing | { data: TrackOutgoing };
 }
 
 const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoing }) => {
+    // Handle both direct model and resource-wrapped data
+    const outgoingData = trackOutgoing.data || trackOutgoing;
+
     const { canManageRequestIncoming, isAdmin, isTechnician } = useRole();
 
     // Determine if PIN input should be shown (not for Admin or Technician)
@@ -58,8 +61,8 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
             href: '/admin/tracking/outgoing',
         },
         {
-            title: trackOutgoing.track_incoming.recall_number,
-            href: `/admin/tracking/outgoing/${trackOutgoing.id}`,
+            title: outgoingData.track_incoming?.recall_number || outgoingData.id,
+            href: `/admin/tracking/outgoing/${outgoingData.id}`,
         },
     ];
 
@@ -68,19 +71,19 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
     }
 
     const getStatusBadge = () => {
-        return <OutgoingStatusBadge status={trackOutgoing.status as any} />;
+        return <OutgoingStatusBadge status={outgoingData.status as any} />;
     };
 
     // Function to validate department match
     const validateDepartment = (employee: any) => {
-        if (!employee || !trackOutgoing.track_incoming?.employee_in) {
+        if (!employee || !outgoingData.track_incoming?.employee_in) {
             setDepartmentValidation({ isValid: true, message: '' });
             return;
         }
-        console.log(trackOutgoing.track_incoming);
+        console.log(outgoingData.track_incoming);
 
         // Get employee_in with fallback for different property names
-        const employeeIn = trackOutgoing.track_incoming.employee_in || trackOutgoing.track_incoming.employeeIn;
+        const employeeIn = outgoingData.track_incoming.employee_in || outgoingData.track_incoming.employeeIn;
         if (!employeeIn) {
             setDepartmentValidation({ isValid: true, message: '' });
             return;
@@ -172,7 +175,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                 requestData.confirmation_pin = confirmationPin;
             }
 
-            const response = await axios.post(route('api.track-outgoing.confirm-pickup', trackOutgoing.id), requestData);
+            const response = await axios.post(route('api.track-outgoing.confirm-pickup', outgoingData.id), requestData);
 
             if (response.data.success) {
                 const message = response.data.bypassed_pin
@@ -312,7 +315,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = `barcode-${trackOutgoing.track_incoming?.recall_number || 'unknown'}.png`;
+                    link.download = `barcode-${outgoingData.track_incoming?.recall_number || 'unknown'}.png`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -338,7 +341,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
     // Handle mark as returned
     const handleReturn = async () => {
         try {
-            const response = await axios.post(route('api.track-outgoing.mark-returned', trackOutgoing.id));
+            const response = await axios.post(route('api.track-outgoing.mark-returned', outgoingData.id));
             if (response.data.success) {
                 toast.success('Equipment marked as returned successfully');
                 router.reload();
@@ -357,7 +360,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
     // Handle mark as received
     const handleReceive = async () => {
         try {
-            const response = await axios.post(route('api.track-outgoing.mark-received', trackOutgoing.id));
+            const response = await axios.post(route('api.track-outgoing.mark-received', outgoingData.id));
             if (response.data.success) {
                 toast.success('Equipment marked as received successfully');
                 router.reload();
@@ -375,7 +378,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Outgoing Completion: ${trackOutgoing.track_incoming?.recall_number}`} />
+            <Head title={`Outgoing Completion: ${outgoingData.track_incoming?.recall_number}`} />
 
             <div className="space-y-6 p-2">
                 <Button variant="outline" size="sm" asChild>
@@ -388,26 +391,26 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                         <h1 className="text-2xl md:text-3xl font-bold tracking-tight break-words max-w-full">
-                            Outgoing: {trackOutgoing.recall_number}
+                            Outgoing: {outgoingData.track_incoming?.recall_number || outgoingData.id}
                         </h1>
                         <p className="text-muted-foreground text-sm md:text-base">Outgoing calibration details</p>
                     </div>
                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
                         <div className="flex flex-row flex-wrap gap-2 md:gap-2 md:flex-nowrap">
-                            {getStatusBadge(trackOutgoing.status)}
-                            {trackOutgoing.status === 'for_pickup' && (
+                            {getStatusBadge()}
+                            {outgoingData.status === 'for_pickup' && (
                                 <Button onClick={() => setShowPickupForm(true)} size="sm" className="ml-0 md:ml-2 w-full md:w-auto">
                                     <CheckCircle className="mr-2 h-4 w-4" />
                                     Confirm Pickup
                                 </Button>
                             )}
-                            {trackOutgoing.status === 'for_return' && (
+                            {outgoingData.status === 'for_return' && (
                                 <Button onClick={handleReturn} size="sm" className="ml-0 md:ml-2 w-full md:w-auto">
                                     <CheckCircle className="mr-2 h-4 w-4" />
                                     Mark as Returned
                                 </Button>
                             )}
-                            {trackOutgoing.status === 'for_receipt' && (
+                            {outgoingData.status === 'for_receipt' && (
                                 <Button onClick={handleReceive} size="sm" className="ml-0 md:ml-2 w-full md:w-auto">
                                     <CheckCircle className="mr-2 h-4 w-4" />
                                     Mark as Received
@@ -418,7 +421,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                 </div>
 
                 {/* Pickup Confirmation Form - Only show if status is for_pickup */}
-                {trackOutgoing.status === 'for_pickup' && showPickupForm && (
+                {outgoingData.status === 'for_pickup' && showPickupForm && (
                     <>
                         {/* Information about pickup policy */}
                         <Card className="border-blue-200 bg-blue-50">
@@ -438,7 +441,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                                         <div className="mt-2 text-sm text-blue-700">
                                             <p>
                                                 Any employee from the{' '}
-                                                <strong>{trackOutgoing.track_incoming?.employee_in?.department?.department_name || 'same'}</strong>{' '}
+                                                <strong>{outgoingData.track_incoming?.employee_in?.department?.department_name || 'same'}</strong>{' '}
                                                 department can pick up this equipment.
                                             </p>
                                             <p className="mt-1">
@@ -594,42 +597,42 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                         <CardContent className="space-y-4">
                             <div>
                                 <Label className="text-sm font-medium">Calibration Date</Label>
-                                <p className="text-muted-foreground text-sm">{format(new Date(trackOutgoing.cal_date), 'MMMM dd, yyyy')}</p>
+                                <p className="text-muted-foreground text-sm">{format(new Date(outgoingData.cal_date), 'MMMM dd, yyyy')}</p>
                             </div>
 
                             <div>
                                 <Label className="text-sm font-medium">Next Due Date</Label>
-                                <p className="text-muted-foreground text-sm">{format(new Date(trackOutgoing.cal_due_date), 'MMMM dd, yyyy')}</p>
+                                <p className="text-muted-foreground text-sm">{format(new Date(outgoingData.cal_due_date), 'MMMM dd, yyyy')}</p>
                             </div>
 
                             <div>
                                 <Label className="text-sm font-medium">Date Out</Label>
-                                <p className="text-muted-foreground text-sm">{format(new Date(trackOutgoing.date_out), 'MMMM dd, yyyy HH:mm')}</p>
+                                <p className="text-muted-foreground text-sm">{format(new Date(outgoingData.date_out), 'MMMM dd, yyyy HH:mm')}</p>
                             </div>
 
                             <div>
                                 <Label className="text-sm font-medium">Cycle Time</Label>
-                                <p className="text-muted-foreground text-sm">{trackOutgoing.cycle_time} days</p>
+                                <p className="text-muted-foreground text-sm">{outgoingData.cycle_time} days</p>
                             </div>
                             <div>
                                 <Label className="text-sm font-medium">CT Reqd</Label>
-                                <p className="text-muted-foreground text-sm">{trackOutgoing.ct_reqd ?? '—'} days</p>
+                                <p className="text-muted-foreground text-sm">{outgoingData.ct_reqd ?? '—'} days</p>
                             </div>
                             <div>
                                 <Label className="text-sm font-medium">Commit ETC</Label>
                                 <p className="text-muted-foreground text-sm">
-                                    {trackOutgoing.commit_etc ? format(new Date(trackOutgoing.commit_etc), 'MMM dd, yyyy') : '—'}
+                                    {outgoingData.commit_etc ? format(new Date(outgoingData.commit_etc), 'MMM dd, yyyy') : '—'}
                                 </p>
                             </div>
                             <div>
                                 <Label className="text-sm font-medium">Actual ETC</Label>
                                 <p className="text-muted-foreground text-sm">
-                                    {trackOutgoing.actual_etc ? format(new Date(trackOutgoing.actual_etc), 'MMM dd, yyyy') : '—'}
+                                    {outgoingData.actual_etc ? format(new Date(outgoingData.actual_etc), 'MMM dd, yyyy') : '—'}
                                 </p>
                             </div>
                             <div>
                                 <Label className="text-sm font-medium">Overdue</Label>
-                                <p className="text-muted-foreground text-sm">{trackOutgoing.overdue === 1 ? 'Yes' : 'No'}</p>
+                                <p className="text-muted-foreground text-sm">{outgoingData.overdue === 1 ? 'Yes' : 'No'}</p>
                             </div>
                             <div>
                                 <Label className="text-sm font-medium">Status</Label>
@@ -648,12 +651,12 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {/* Barcode for Recall Number */}
-                            {trackOutgoing.track_incoming?.recall_number && (
+                            {outgoingData.equipment?.recall_number && (
                                 <div className="mb-4 flex flex-col items-center">
                                     <div className="barcode-container mb-2">
                                         <Barcode
                                             format='CODE128'
-                                            value={trackOutgoing.track_incoming?.recall_number}
+                                            value={outgoingData.equipment?.recall_number}
                                             width={2}
                                             height={60}
                                             displayValue={true}
@@ -671,31 +674,31 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                                 </div>
                             )}
 
-                            {trackOutgoing.track_incoming && (
+                            {outgoingData.equipment && (
                                 <>
                                     <div>
                                         <Label className="text-sm font-medium">Description</Label>
-                                        <p className="text-muted-foreground text-sm">{trackOutgoing.track_incoming.description}</p>
+                                        <p className="text-muted-foreground text-sm">{outgoingData.equipment.description}</p>
                                     </div>
 
-                                    {trackOutgoing.track_incoming.serial_number && (
+                                    {outgoingData.equipment.serial_number && (
                                         <div>
                                             <Label className="text-sm font-medium">Serial Number</Label>
-                                            <p className="text-muted-foreground text-sm">{trackOutgoing.track_incoming.serial_number}</p>
+                                            <p className="text-muted-foreground text-sm">{outgoingData.equipment.serial_number}</p>
                                         </div>
                                     )}
 
-                                    {trackOutgoing.track_incoming.manufacturer && (
+                                    {outgoingData.equipment.manufacturer && (
                                         <div>
                                             <Label className="text-sm font-medium">Manufacturer</Label>
-                                            <p className="text-muted-foreground text-sm">{trackOutgoing.track_incoming.manufacturer}</p>
+                                            <p className="text-muted-foreground text-sm">{outgoingData.equipment.manufacturer}</p>
                                         </div>
                                     )}
 
-                                    {trackOutgoing.track_incoming.model && (
+                                    {outgoingData.equipment.model && (
                                         <div>
                                             <Label className="text-sm font-medium">Model</Label>
-                                            <p className="text-muted-foreground text-sm">{trackOutgoing.track_incoming.model}</p>
+                                            <p className="text-muted-foreground text-sm">{outgoingData.equipment.model}</p>
                                         </div>
                                     )}
                                 </>
@@ -712,14 +715,14 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {trackOutgoing.technician && (
+                            {outgoingData.technician && (
                                 <div>
                                     <Label className="text-sm font-medium">Technician</Label>
                                     <p className="text-muted-foreground text-sm">
-                                        {trackOutgoing.technician.first_name} {trackOutgoing.technician.last_name}
+                                        {outgoingData.technician.first_name} {outgoingData.technician.last_name}
                                     </p>
-                                    {trackOutgoing.technician.email && (
-                                        <p className="text-muted-foreground text-xs">{trackOutgoing.technician.email}</p>
+                                    {outgoingData.technician.email && (
+                                        <p className="text-muted-foreground text-xs">{outgoingData.technician.email}</p>
                                     )}
                                 </div>
                             )}
@@ -756,36 +759,36 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                                 </div>
                             )} */}
 
-                            {trackOutgoing.employee_out && (
+                            {outgoingData.employee_out && (
                                 <div>
                                     <Label className="text-sm font-medium">Employee Outgoing</Label>
                                     <p className="text-muted-foreground text-sm">
-                                        {trackOutgoing.employee_out.first_name} {trackOutgoing.employee_out.last_name}
+                                        {outgoingData.employee_out.first_name} {outgoingData.employee_out.last_name}
                                     </p>
-                                    {trackOutgoing.employee_out.email && (
-                                        <p className="text-muted-foreground text-xs">{trackOutgoing.employee_out.email}</p>
+                                    {outgoingData.employee_out.email && (
+                                        <p className="text-muted-foreground text-xs">{outgoingData.employee_out.email}</p>
                                     )}
-                                    {trackOutgoing.employee_out.employee_id && (
-                                        <p className="text-muted-foreground text-xs">Employee ID: {trackOutgoing.employee_out.employee_id}</p>
+                                    {outgoingData.employee_out.employee_id && (
+                                        <p className="text-muted-foreground text-xs">Employee ID: {outgoingData.employee_out.employee_id}</p>
                                     )}
-                                    {trackOutgoing.employee_out.department && (
+                                    {outgoingData.employee_out.department && (
                                         <p className="text-muted-foreground text-xs">
-                                            Department: {trackOutgoing.employee_out.department.department_name}
+                                            Department: {outgoingData.employee_out.department.department_name}
                                         </p>
                                     )}
                                 </div>
                             )}
-                            {trackOutgoing.released_by && (
+                            {outgoingData.released_by && (
                                 <div>
                                     <Label className="text-sm font-medium">Released By (PIC)</Label>
                                     <p className="text-muted-foreground text-sm">
-                                        {trackOutgoing.released_by.first_name} {trackOutgoing.released_by.last_name}
+                                        {outgoingData.released_by.first_name} {outgoingData.released_by.last_name}
                                     </p>
-                                    {trackOutgoing.released_by.email && (
-                                        <p className="text-muted-foreground text-xs">{trackOutgoing.released_by.email}</p>
+                                    {outgoingData.released_by.email && (
+                                        <p className="text-muted-foreground text-xs">{outgoingData.released_by.email}</p>
                                     )}
-                                    {trackOutgoing.released_by.employee_id && (
-                                        <p className="text-muted-foreground text-xs">Employee ID: {trackOutgoing.released_by.employee_id}</p>
+                                    {outgoingData.released_by.employee_id && (
+                                        <p className="text-muted-foreground text-xs">Employee ID: {outgoingData.released_by.employee_id}</p>
                                     )}
                                 </div>
                             )}
@@ -801,19 +804,19 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {trackOutgoing.track_incoming && (
+                            {outgoingData.track_incoming && (
                                 <>
                                     <div>
                                         <Label className="text-sm font-medium">Request Received</Label>
                                         <p className="text-muted-foreground text-sm">
-                                            {format(new Date(trackOutgoing.track_incoming.date_in), 'MMMM dd, yyyy HH:mm')}
+                                            {format(new Date(outgoingData.track_incoming.date_in), 'MMMM dd, yyyy HH:mm')}
                                         </p>
                                     </div>
 
                                     <div>
                                         <Label className="text-sm font-medium">Original Due Date</Label>
                                         <p className="text-muted-foreground text-sm">
-                                            {format(new Date(trackOutgoing.track_incoming.due_date), 'MMMM dd, yyyy')}
+                                            {format(new Date(outgoingData.track_incoming.due_date), 'MMMM dd, yyyy')}
                                         </p>
                                     </div>
                                 </>
@@ -821,19 +824,19 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
 
                             <div>
                                 <Label className="text-sm font-medium">Calibration Completed</Label>
-                                <p className="text-muted-foreground text-sm">{format(new Date(trackOutgoing.cal_date), 'MMMM dd, yyyy')}</p>
+                                <p className="text-muted-foreground text-sm">{format(new Date(outgoingData.cal_date), 'MMMM dd, yyyy')}</p>
                             </div>
 
                             <div>
                                 <Label className="text-sm font-medium">Released for Pickup</Label>
-                                <p className="text-muted-foreground text-sm">{format(new Date(trackOutgoing.date_out), 'MMMM dd, yyyy HH:mm')}</p>
+                                <p className="text-muted-foreground text-sm">{format(new Date(outgoingData.date_out), 'MMMM dd, yyyy HH:mm')}</p>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
                 {/* Original Request Information */}
-                {trackOutgoing.track_incoming && (
+                {outgoingData.track_incoming && (
                     <Card>
                         <CardHeader>
                             <CardTitle>Related Request</CardTitle>
@@ -842,11 +845,11 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                         <CardContent>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="font-medium">Incoming Request: {trackOutgoing.track_incoming.recall_number}</p>
-                                    <p className="text-muted-foreground text-sm">Status: {trackOutgoing.track_incoming.status}</p>
+                                    <p className="font-medium">Incoming Request: {outgoingData.track_incoming.recall_number}</p>
+                                    <p className="text-muted-foreground text-sm">Status: {outgoingData.track_incoming.status}</p>
                                 </div>
                                 <Button variant="outline" asChild>
-                                    <Link href={route('admin.tracking.incoming.show', trackOutgoing.track_incoming.id)}>View Request Details</Link>
+                                    <Link href={route('admin.tracking.incoming.show', outgoingData.track_incoming.id)}>View Request Details</Link>
                                 </Button>
                             </div>
                         </CardContent>
