@@ -167,7 +167,7 @@
                                 $dateOut = \Carbon\Carbon::parse($report->trackOutgoing->date_out);
                                 $queueingTime = (int) $dateIn->diffInDays($dateOut);
                             @endphp
-                            {{ $queueingTime }}
+                            {{ $report->trackOutgoing->cycle_time ?? $queueingTime }}
                         @endif
                     </td>
                     <td class="data-cell">
