@@ -1,14 +1,14 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BatchDataTable, DataTableColumn, DataTableFilter } from '@/components/ui/batch-data-table';
+import { CodeDisplay } from '@/components/ui/code-display';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/simple-modal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { type Department, type PaginationData, type Plant, type Role, type User } from '@/types';
 import { router } from '@inertiajs/react';
 import axios from 'axios';
-import { Download, Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import Barcode from 'react-barcode';
 import { toast } from 'react-hot-toast';
 import { UserForm } from './user-form';
 
@@ -150,80 +150,7 @@ export function UserTable({
         return roleName.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
     };
 
-    // Handle barcode download
-    const handleDownloadBarcode = () => {
-        try {
-            // Find the barcode SVG element
-            const barcodeSvg = document.querySelector('.user-barcode-container svg') as SVGSVGElement;
-            if (!barcodeSvg) {
-                toast.error('Barcode not found');
-                return;
-            }
-
-            // Get SVG dimensions
-            const svgRect = barcodeSvg.getBoundingClientRect();
-            const svgWidth = svgRect.width || 300;
-            const svgHeight = svgRect.height || 100;
-
-            // Create a canvas to convert SVG to PNG
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                toast.error('Could not create download canvas');
-                return;
-            }
-
-            // Set canvas size with some padding
-            canvas.width = svgWidth + 20;
-            canvas.height = svgHeight + 20;
-
-            // Fill with white background
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Convert SVG to data URL
-            const svgData = new XMLSerializer().serializeToString(barcodeSvg);
-            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-            const svgUrl = URL.createObjectURL(svgBlob);
-
-            // Create an image element to load the SVG
-            const img = new Image();
-            img.onload = () => {
-                // Draw the SVG image onto the canvas with padding
-                ctx.drawImage(img, 10, 10, svgWidth, svgHeight);
-
-                // Convert canvas to blob and download
-                canvas.toBlob((blob) => {
-                    if (!blob) {
-                        toast.error('Could not generate barcode image');
-                        return;
-                    }
-
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `user-barcode-${viewingUser?.employee_id || 'unknown'}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                    URL.revokeObjectURL(svgUrl);
-
-                    toast.success('Barcode downloaded successfully');
-                }, 'image/png');
-            };
-
-            img.onerror = () => {
-                toast.error('Failed to load barcode for download');
-                URL.revokeObjectURL(svgUrl);
-            };
-
-            img.src = svgUrl;
-        } catch (error) {
-            console.error('Error downloading barcode:', error);
-            toast.error('Failed to download barcode');
-        }
-    };
+    // Remove the old barcode download handler since it's now handled by CodeDisplay component
 
     // Define DataTable columns
     const columns: DataTableColumn<User>[] = [
@@ -468,28 +395,21 @@ export function UserTable({
                             <DialogTitle>User Details</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-6">
-                            {/* Employee ID Barcode */}
+                            {/* Employee ID QR Code / Barcode */}
                             {viewingUser.employee_id && (
-                                <div className="mb-4 flex flex-col items-center">
-                                    <div className="user-barcode-container">
-                                        <Barcode
-                                            format='CODE128'
-                                            value={String(viewingUser.employee_id)}
-                                            width={2}
-                                            height={60}
-                                            displayValue={true}
-                                            fontSize={16}
-                                            margin={8}
-                                        />
-                                    </div>
-                                    <div className="mt-2 flex items-center gap-2">
-                                        <span className="text-muted-foreground text-xs">Employee ID Barcode</span>
-                                        <Button variant="outline" size="sm" onClick={handleDownloadBarcode} className="h-6 px-2">
-                                            <Download className="mr-1 h-3 w-3" />
-                                            Download
-                                        </Button>
-                                    </div>
-                                </div>
+                                <CodeDisplay
+                                    value={String(viewingUser.employee_id)}
+                                    label="Employee ID"
+                                    filename={String(viewingUser.employee_id)}
+                                    containerClassName="user-code-container"
+                                    showDownload={true}
+                                    format="CODE128"
+                                    width={2}
+                                    height={60}
+                                    fontSize={16}
+                                    margin={8}
+                                    qrSize={128}
+                                />
                             )}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">

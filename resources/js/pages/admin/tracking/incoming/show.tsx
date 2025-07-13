@@ -2,6 +2,7 @@ import { OutgoingCalibrationModal } from '@/components/admin/tracking/outgoing/o
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CodeDisplay } from '@/components/ui/code-display';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useRole } from '@/hooks/use-role';
@@ -22,7 +23,6 @@ import { Head, Link, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { ArrowLeft, ArrowRight, Calendar, CheckCircle, Edit, FileText, MapPin, Package, User } from 'lucide-react';
 import { useState } from 'react';
-import Barcode from 'react-barcode';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 
@@ -199,14 +199,21 @@ const TrackingIncomingShowContent: React.FC<TrackingIncomingShowProps> = ({ trac
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {/* Barcode for Recall Number */}
+                            {/* QR Code / Barcode for Recall Number */}
                             {trackIncoming.recall_number && (
-                                <div className="mb-4 flex flex-col items-center">
-                                    <Barcode
-                                        format='CODE128'
-                                        value={trackIncoming.recall_number} width={2} height={60} displayValue={true} fontSize={16} margin={8} />
-                                    <span className="text-muted-foreground mt-1 text-xs">Recall Number Barcode</span>
-                                </div>
+                                <CodeDisplay
+                                    value={trackIncoming.recall_number}
+                                    label="Recall Number"
+                                    filename={trackIncoming.recall_number}
+                                    containerClassName="recall-number-code-container"
+                                    showDownload={true}
+                                    format="CODE128"
+                                    width={2}
+                                    height={60}
+                                    fontSize={16}
+                                    margin={8}
+                                    qrSize={128}
+                                />
                             )}
                             <div>
                                 <Label className="text-sm font-medium">Description</Label>

@@ -1,6 +1,7 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CodeDisplay } from '@/components/ui/code-display';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,9 +13,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { ArrowLeft, Calendar, CheckCircle, Clock, Download, Edit, Info, Package, Scan, Search, User } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, Info, Package, Scan, Search, User } from 'lucide-react';
 import { useRef, useState } from 'react';
-import Barcode from 'react-barcode';
 import { toast } from 'react-hot-toast';
 
 interface TrackingOutgoingShowProps {
@@ -263,80 +263,7 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
         }
     };
 
-    // Handle barcode download
-    const handleDownloadBarcode = () => {
-        try {
-            // Find the barcode SVG element
-            const barcodeSvg = document.querySelector('.barcode-container svg') as SVGSVGElement;
-            if (!barcodeSvg) {
-                toast.error('Barcode not found');
-                return;
-            }
-
-            // Get SVG dimensions
-            const svgRect = barcodeSvg.getBoundingClientRect();
-            const svgWidth = svgRect.width || 300;
-            const svgHeight = svgRect.height || 100;
-
-            // Create a canvas to convert SVG to PNG
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                toast.error('Could not create download canvas');
-                return;
-            }
-
-            // Set canvas size with some padding
-            canvas.width = svgWidth + 20;
-            canvas.height = svgHeight + 20;
-
-            // Fill with white background
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Convert SVG to data URL
-            const svgData = new XMLSerializer().serializeToString(barcodeSvg);
-            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-            const svgUrl = URL.createObjectURL(svgBlob);
-
-            // Create an image element to load the SVG
-            const img = new Image();
-            img.onload = () => {
-                // Draw the SVG image onto the canvas with padding
-                ctx.drawImage(img, 10, 10, svgWidth, svgHeight);
-
-                // Convert canvas to blob and download
-                canvas.toBlob((blob) => {
-                    if (!blob) {
-                        toast.error('Could not generate barcode image');
-                        return;
-                    }
-
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `barcode-${outgoingData.track_incoming?.recall_number || 'unknown'}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                    URL.revokeObjectURL(svgUrl);
-
-                    toast.success('Barcode downloaded successfully');
-                }, 'image/png');
-            };
-
-            img.onerror = () => {
-                toast.error('Failed to load barcode for download');
-                URL.revokeObjectURL(svgUrl);
-            };
-
-            img.src = svgUrl;
-        } catch (error) {
-            console.error('Error downloading barcode:', error);
-            toast.error('Failed to download barcode');
-        }
-    };
+    // Remove the old barcode download handler since it's now handled by CodeDisplay component
 
     // Handle mark as returned
     const handleReturn = async () => {
@@ -650,28 +577,21 @@ const TrackingOutgoingShow: React.FC<TrackingOutgoingShowProps> = ({ trackOutgoi
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {/* Barcode for Recall Number */}
+                            {/* QR Code / Barcode for Recall Number */}
                             {outgoingData.equipment?.recall_number && (
-                                <div className="mb-4 flex flex-col items-center">
-                                    <div className="barcode-container mb-2">
-                                        <Barcode
-                                            format='CODE128'
-                                            value={outgoingData.equipment?.recall_number}
-                                            width={2}
-                                            height={60}
-                                            displayValue={true}
-                                            fontSize={16}
-                                            margin={8}
-                                        />
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-muted-foreground text-xs">Recall Number Barcode</span>
-                                        <Button variant="outline" size="sm" onClick={handleDownloadBarcode} className="h-6 px-2 text-xs">
-                                            <Download className="mr-1 h-3 w-3" />
-                                            Download
-                                        </Button>
-                                    </div>
-                                </div>
+                                <CodeDisplay
+                                    value={outgoingData.equipment?.recall_number}
+                                    label="Recall Number"
+                                    filename={outgoingData.equipment?.recall_number}
+                                    containerClassName="outgoing-recall-code-container"
+                                    showDownload={true}
+                                    format="CODE128"
+                                    width={2}
+                                    height={60}
+                                    fontSize={16}
+                                    margin={8}
+                                    qrSize={128}
+                                />
                             )}
 
                             {outgoingData.equipment && (
