@@ -27,14 +27,8 @@ class ReportTableController extends Controller
             'trackOutgoing.employeeOut'
         ]);
 
-        // Role-based filtering for technicians
-        $user = Auth::user();
-        if ($user->role->role_name === 'technician') {
-            $query->where(function($q) use ($user) {
-                $q->where('technician_id', $user->employee_id)
-                  ->orWhere('received_by_id', $user->employee_id);
-            });
-        }
+        // Apply role-based filtering
+        $this->applyRoleBasedFiltering($query);
 
         // Apply search filters
         if ($request->filled('search')) {
@@ -60,24 +54,30 @@ class ReportTableController extends Controller
         if ($request->filled('status') || $request->filled('status_filter')) {
             $status = $request->get('status') ?: $request->get('status_filter');
             
-            // Check if it's an incoming or outgoing status
-            $incomingOnlyStatuses = ['for_confirmation', 'pending_calibration'];
-            $outgoingStatuses = ['for_pickup', 'completed'];
-            
-            if (in_array($status, $incomingOnlyStatuses)) {
-                // Filter by track_incoming status only
-                $query->where('status', $status);
-            } elseif (in_array($status, $outgoingStatuses)) {
-                // Filter by track_outgoing status only
-                $query->whereHas('trackOutgoing', function($outgoing) use ($status) {
-                    $outgoing->where('status', $status);
-                });
+            // Don't filter if the value is 'all'
+            if ($status !== 'all') {
+                // Check if it's an incoming or outgoing status
+                $incomingOnlyStatuses = ['for_confirmation', 'pending_calibration'];
+                $outgoingStatuses = ['for_pickup', 'completed'];
+                
+                if (in_array($status, $incomingOnlyStatuses)) {
+                    // Filter by track_incoming status only
+                    $query->where('status', $status);
+                } elseif (in_array($status, $outgoingStatuses)) {
+                    // Filter by track_outgoing status only
+                    $query->whereHas('trackOutgoing', function($outgoing) use ($status) {
+                        $outgoing->where('status', $status);
+                    });
+                }
             }
         }
 
         if ($request->filled('location_id') || $request->filled('location_filter')) {
             $locationId = $request->get('location_id') ?: $request->get('location_filter');
-            $query->where('location_id', $locationId);
+            // Don't filter if the value is 'all'
+            if ($locationId !== 'all') {
+                $query->where('location_id', $locationId);
+            }
         }
 
         // Date range filters
@@ -233,6 +233,7 @@ class ReportTableController extends Controller
         ]);
         
         // Apply same filters as in export (unless print all mode)
+        $this->applyRoleBasedFiltering($query);
         if (!$printAll) {
             $this->applyFilters($query, $filters);
         }
@@ -271,6 +272,7 @@ class ReportTableController extends Controller
         ]);
         
         // Apply same filters as in export (unless print all mode)
+        $this->applyRoleBasedFiltering($query);
         if (!$printAll) {
             $this->applyFilters($query, $filters);
         }
@@ -342,14 +344,8 @@ class ReportTableController extends Controller
      */
     private function applyFilters($query, array $filters)
     {
-        // Role-based filtering for technicians
-        $user = Auth::user();
-        if ($user->role->role_name === 'technician') {
-            $query->where(function($q) use ($user) {
-                $q->where('technician_id', $user->employee_id)
-                  ->orWhere('received_by_id', $user->employee_id);
-            });
-        }
+        // Note: Role-based filtering is applied separately in applyRoleBasedFiltering method
+        // Do not apply role-based filtering here to avoid duplication
 
         if (!empty($filters['search'])) {
             $search = $filters['search'];
@@ -373,24 +369,30 @@ class ReportTableController extends Controller
         if (!empty($filters['status']) || !empty($filters['status_filter'])) {
             $status = $filters['status'] ?? $filters['status_filter'];
             
-            // Check if it's an incoming or outgoing status
-            $incomingStatuses = ['for_confirmation', 'pending_calibration', 'completed'];
-            $outgoingStatuses = ['for_pickup'];
-            
-            if (in_array($status, $incomingStatuses)) {
-                // Filter by track_incoming status
-                $query->where('status', $status);
-            } elseif (in_array($status, $outgoingStatuses)) {
-                // Filter by track_outgoing status
-                $query->whereHas('trackOutgoing', function($outgoing) use ($status) {
-                    $outgoing->where('status', $status);
-                });
+            // Don't filter if the value is 'all'
+            if ($status !== 'all') {
+                // Check if it's an incoming or outgoing status
+                $incomingStatuses = ['for_confirmation', 'pending_calibration'];
+                $outgoingStatuses = ['for_pickup', 'completed'];
+                
+                if (in_array($status, $incomingStatuses)) {
+                    // Filter by track_incoming status
+                    $query->where('status', $status);
+                } elseif (in_array($status, $outgoingStatuses)) {
+                    // Filter by track_outgoing status
+                    $query->whereHas('trackOutgoing', function($outgoing) use ($status) {
+                        $outgoing->where('status', $status);
+                    });
+                }
             }
         }
 
         if (!empty($filters['location_id']) || !empty($filters['location_filter'])) {
             $locationId = $filters['location_id'] ?? $filters['location_filter'];
-            $query->where('location_id', $locationId);
+            // Don't filter if the value is 'all'
+            if ($locationId !== 'all') {
+                $query->where('location_id', $locationId);
+            }
         }
 
         if (!empty($filters['date_from'])) {

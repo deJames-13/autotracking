@@ -536,6 +536,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
     );
 
     const handleFilter = useCallback((newFilters: Record<string, any>) => {
+        console.log(newFilters);    
         setFilters(newFilters);
         fetchData({ filters: newFilters, page: 1 });
     }, []);
@@ -570,12 +571,32 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
                 // Check if "Export All Data" is enabled
                 const isPrintAll = exportAllData;
 
-                // Add filters as query parameters (except print_all which goes in the URL path)
-                Object.keys(exportFilters).forEach((key) => {
-                    if (key !== 'print_all' && exportFilters[key] !== null && exportFilters[key] !== undefined && exportFilters[key] !== '') {
-                        queryParams.append(key, String(exportFilters[key]));
+                // Use the parent component's filters state instead of exportFilters from DataTable
+                // This ensures we're using the current filters that are actually applied to the data
+                const currentFilters = isPrintAll ? {} : filters;
+
+                console.log('Current filters for export:', currentFilters);
+                console.log('Export filters from DataTable:', exportFilters);
+
+                // Add current filters as query parameters (except print_all which goes in the URL path)
+                Object.keys(currentFilters).forEach((key) => {
+                    if (key !== 'print_all' && currentFilters[key] !== null && currentFilters[key] !== undefined && currentFilters[key] !== '') {
+                        queryParams.append(key, String(currentFilters[key]));
                     }
                 });
+
+                // Also include search term from exportFilters if it exists
+                if (exportFilters.search && !isPrintAll) {
+                    queryParams.append('search', String(exportFilters.search));
+                }
+
+                // Add date range filters from exportFilters if they exist
+                if (exportFilters.date_from && !isPrintAll) {
+                    queryParams.append('date_from', String(exportFilters.date_from));
+                }
+                if (exportFilters.date_to && !isPrintAll) {
+                    queryParams.append('date_to', String(exportFilters.date_to));
+                }
 
                 // Add print_all parameter if needed
                 if (isPrintAll) {
@@ -584,6 +605,8 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
 
                 // Build the URL with format in path and filters as query params
                 const url = `/api/reports/table/export/${exportFormat}?${queryParams.toString()}`;
+
+                console.log('Export URL:', url);
 
                 // For PDF format, open in new window for preview
                 if (exportFormat === 'pdf') {
@@ -622,7 +645,7 @@ export const ReportsTable: React.FC<ReportsTableProps> = ({ className }) => {
                 console.error('Export failed:', error);
             }
         },
-        [exportAllData],
+        [exportAllData, filters],
     );
 
     return (

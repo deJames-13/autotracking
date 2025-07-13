@@ -141,25 +141,31 @@ class TrackingReportExport implements FromView, ShouldAutoSize, WithEvents
         if (!empty($this->filters['status']) || !empty($this->filters['status_filter'])) {
             $status = $this->filters['status'] ?? $this->filters['status_filter'];
             
-            // Check if it's an incoming or outgoing status
-            $incomingOnlyStatuses = ['for_confirmation', 'pending_calibration'];
-            $outgoingStatuses = ['for_pickup', 'completed'];
-            
-            if (in_array($status, $incomingOnlyStatuses)) {
-                // Filter by track_incoming status only
-                $query->where('status', $status);
-            } elseif (in_array($status, $outgoingStatuses)) {
-                // Filter by track_outgoing status only
-                $query->whereHas('trackOutgoing', function($outgoing) use ($status) {
-                    $outgoing->where('status', $status);
-                });
+            // Don't filter if the value is 'all'
+            if ($status !== 'all') {
+                // Check if it's an incoming or outgoing status
+                $incomingOnlyStatuses = ['for_confirmation', 'pending_calibration'];
+                $outgoingStatuses = ['for_pickup', 'completed'];
+                
+                if (in_array($status, $incomingOnlyStatuses)) {
+                    // Filter by track_incoming status only
+                    $query->where('status', $status);
+                } elseif (in_array($status, $outgoingStatuses)) {
+                    // Filter by track_outgoing status only
+                    $query->whereHas('trackOutgoing', function($outgoing) use ($status) {
+                        $outgoing->where('status', $status);
+                    });
+                }
             }
         }
 
         // Handle both old and new parameter names for location filter
         if (!empty($this->filters['location_id']) || !empty($this->filters['location_filter'])) {
             $locationId = $this->filters['location_id'] ?? $this->filters['location_filter'];
-            $query->where('location_id', $locationId);
+            // Don't filter if the value is 'all'
+            if ($locationId !== 'all') {
+                $query->where('location_id', $locationId);
+            }
         }
 
         // Date range filters
