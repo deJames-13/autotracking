@@ -806,7 +806,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     <Scanner
                                         onScan={handleRecallScan}
                                         onError={handleScanError}
-                                        formats={['code_128', 'code_39']}
+                                        formats={['code_128', 'code_39', 'qr_code']}
                                         constraints={{
                                             video: {
                                                 facingMode: 'environment',
@@ -836,7 +836,7 @@ const DetailTab: React.FC<DetailTabProps> = ({
                                     <Scanner
                                         onScan={handleEmployeeScan}
                                         onError={handleScanError}
-                                        formats={['code_128', 'code_39']}
+                                        formats={['code_128', 'code_39', 'qr_code']}
                                         constraints={{
                                             video: {
                                                 facingMode: 'environment',
