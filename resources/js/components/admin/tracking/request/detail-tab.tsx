@@ -520,60 +520,76 @@ const DetailTab: React.FC<DetailTabProps> = ({
                         <div className="bg-muted/20 mb-6 rounded-lg border p-4">
                             <label className="mb-2 block w-full font-semibold">
                                 Recall Number
-                                {requestType === 'new' && <span className="text-muted-foreground ml-1 text-xs font-normal">(optional - will be assigned during calibration if not provided)</span>}
-                                {requestType === 'routine' && <span className="text-muted-foreground ml-1 text-xs font-normal">(required for existing equipment)</span>}
-                            </label>
-                            <div className="flex w-full items-center gap-2">
-                                <div className="flex-1">
-                                    <Input
-                                        id="recallNumber"
-                                        value={recallNumber}
-                                        onChange={(e) => handleRecallInputChange(e.target.value)}
-                                        placeholder={requestType === 'routine' ? "Enter or scan recall number" : "Enter or scan recall number (optional)"}
-                                        className={errors.recallNumber ? 'border-destructive' : ''}
-                                    />
-                                </div>
-
-                                {/* Select Equipment Button - only for routine requests */}
-                                {requestType === 'routine' && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setShowEquipmentModal(true)}
-                                        className="shrink-0"
-                                    >
-                                        <Package className="mr-2 h-4 w-4" />
-                                        Select
-                                    </Button>
+                                {requestType === 'new' && (
+                                    <span className="text-muted-foreground ml-1 block text-xs font-normal sm:inline">
+                                        (optional - will be assigned during calibration if not provided)
+                                    </span>
                                 )}
+                                {requestType === 'routine' && (
+                                    <span className="text-muted-foreground ml-1 block text-xs font-normal sm:inline">
+                                        (required for existing equipment)
+                                    </span>
+                                )}
+                            </label>
+                            <div className="space-y-4">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-2">
+                                    <div className="flex-1">
+                                        <Input
+                                            id="recallNumber"
+                                            value={recallNumber}
+                                            onChange={(e) => handleRecallInputChange(e.target.value)}
+                                            placeholder={requestType === 'routine' ? "Enter or scan recall number" : "Enter or scan recall number (optional)"}
+                                            className={errors.recallNumber ? 'border-destructive' : ''}
+                                        />
+                                        {errors.recallNumber && <div className="mt-1 text-xs text-red-500">{errors.recallNumber}</div>}
+                                    </div>
 
-                                {/* Barcode scanner button for recall number */}
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setShowRecallScanner(true)}
-                                    className="shrink-0"
-                                >
-                                    <Scan className="mr-2 h-4 w-4" />
-                                    <span className="hidden sm:inline">Scan</span>
-                                </Button>
+                                    <div className="flex flex-col gap-2 sm:flex-row">
+                                        {/* Select Equipment Button - only for routine requests */}
+                                        {requestType === 'routine' && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setShowEquipmentModal(true)}
+                                                className="w-full shrink-0 sm:w-auto"
+                                            >
+                                                <Package className="mr-2 h-4 w-4" />
+                                                <span className="sm:hidden">Select Equipment</span>
+                                                <span className="hidden sm:inline">Select</span>
+                                            </Button>
+                                        )}
+
+                                        {/* Barcode scanner button for recall number */}
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setShowRecallScanner(true)}
+                                            className="w-full shrink-0 sm:w-auto"
+                                        >
+                                            <Scan className="mr-2 h-4 w-4" />
+                                            <span className="sm:hidden">Scan Barcode</span>
+                                            <span className="hidden sm:inline">Scan</span>
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Show selected equipment info */}
                             {selectedEquipment && (
-                                <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 p-3">
-                                    <div className="flex items-center text-blue-800">
-                                        <Package className="mr-2 h-4 w-4" />
-                                        <span className="font-medium">{selectedEquipment.description}</span>
-                                    </div>
-                                    <div className="mt-1 text-sm text-blue-600">
-                                        Serial: {selectedEquipment.serial_number || 'N/A'} |
-                                        Manufacturer: {selectedEquipment.manufacturer || 'N/A'}
+                                <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-0">
+                                        <div className="flex items-center text-blue-800">
+                                            <Package className="mr-2 h-4 w-4 shrink-0" />
+                                            <span className="font-medium">{selectedEquipment.description}</span>
+                                        </div>
+                                        <div className="text-sm text-blue-600 sm:ml-auto">
+                                            <span className="block sm:inline">Serial: {selectedEquipment.serial_number || 'N/A'}</span>
+                                            <span className="hidden sm:inline"> | </span>
+                                            <span className="block sm:inline">Manufacturer: {selectedEquipment.manufacturer || 'N/A'}</span>
+                                        </div>
                                     </div>
                                 </div>
                             )}
-
-                            {errors.recallNumber && <div className="mt-1 text-xs text-red-500">{errors.recallNumber}</div>}
                         </div>
                     )}
 
@@ -583,73 +599,83 @@ const DetailTab: React.FC<DetailTabProps> = ({
                             <UserIcon className="mr-2 h-4 w-4" />
                             Employee Information
                         </h3>
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1">
-                                <Label htmlFor="employeeBarcode" className={errors.employeeBarcode ? 'text-destructive' : ''}>
-                                    Employee ID *
-                                </Label>
-                                <Input
-                                    id="employeeBarcode"
-                                    value={employeeBarcode}
-                                    onChange={(e) => handleBarcodeChange(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && employeeBarcode.trim()) {
-                                            handleEmployeeSearch();
-                                        }
-                                    }}
-                                    placeholder="Enter or scan employee ID"
-                                    className={errors.employeeBarcode ? 'border-destructive' : ''}
-                                    disabled={loadingEmployee}
-                                />
-                                {errors.employeeBarcode && <p className="text-destructive mt-1 text-sm">{errors.employeeBarcode}</p>}
-                                {barcodeError && <span className="mt-1 block text-sm text-red-600">{barcodeError}</span>}
-                            </div>
+                        <div className="space-y-4">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:gap-2">
+                                <div className="flex-1">
+                                    <Label htmlFor="employeeBarcode" className={errors.employeeBarcode ? 'text-destructive' : ''}>
+                                        Employee ID *
+                                    </Label>
+                                    <Input
+                                        id="employeeBarcode"
+                                        value={employeeBarcode}
+                                        onChange={(e) => handleBarcodeChange(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && employeeBarcode.trim()) {
+                                                handleEmployeeSearch();
+                                            }
+                                        }}
+                                        placeholder="Enter or scan employee ID"
+                                        className={errors.employeeBarcode ? 'border-destructive' : ''}
+                                        disabled={loadingEmployee}
+                                    />
+                                    {errors.employeeBarcode && <p className="text-destructive mt-1 text-sm">{errors.employeeBarcode}</p>}
+                                    {barcodeError && <span className="mt-1 block text-sm text-red-600">{barcodeError}</span>}
+                                </div>
 
-                            <div className="flex gap-2 pt-6">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setShowEmployeeModal(true)}
-                                    className="shrink-0"
-                                >
-                                    <UserIcon className="mr-2 h-4 w-4" />
-                                    Select
-                                </Button>
+                                <div className="flex flex-col gap-2 sm:flex-row lg:pb-1">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setShowEmployeeModal(true)}
+                                        className="w-full shrink-0 sm:w-auto"
+                                    >
+                                        <UserIcon className="mr-2 h-4 w-4" />
+                                        <span className="sm:hidden">Select Employee</span>
+                                        <span className="hidden sm:inline">Select</span>
+                                    </Button>
 
-                                <Button
-                                    type="button"
-                                    onClick={handleEmployeeSearch}
-                                    disabled={loadingEmployee || !employeeBarcode.trim()}
-                                    className="shrink-0"
-                                >
-                                    <Search className="mr-2 h-4 w-4" />
-                                    Search
-                                </Button>
+                                    <Button
+                                        type="button"
+                                        onClick={handleEmployeeSearch}
+                                        disabled={loadingEmployee || !employeeBarcode.trim()}
+                                        className="w-full shrink-0 sm:w-auto"
+                                    >
+                                        <Search className="mr-2 h-4 w-4" />
+                                        <span className="sm:hidden">Search Employee</span>
+                                        <span className="hidden sm:inline">Search</span>
+                                    </Button>
 
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setShowEmployeeScanner(true)}
-                                    className="shrink-0"
-                                >
-                                    <Scan className="mr-2 h-4 w-4" />
-                                    Scan
-                                </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setShowEmployeeScanner(true)}
+                                        className="w-full shrink-0 sm:w-auto"
+                                    >
+                                        <Scan className="mr-2 h-4 w-4" />
+                                        <span className="sm:hidden">Scan Barcode</span>
+                                        <span className="hidden sm:inline">Scan</span>
+                                    </Button>
+                                </div>
                             </div>
                         </div>
 
                         {/* Employee Info Display */}
                         {scannedEmployee && (
                             <div className="mt-4 rounded-md border border-green-200 bg-green-50 p-3">
-                                <div className="flex items-center text-green-800">
-                                    <UserIcon className="mr-2 h-4 w-4" />
-                                    <span className="font-medium">
-                                        {scannedEmployee.first_name} {scannedEmployee.last_name}
-                                    </span>
-                                </div>
-                                <div className="mt-1 text-sm text-green-600">
-                                    ID: {scannedEmployee.employee_id} | {scannedEmployee.department?.department_name} -{' '}
-                                    {scannedEmployee.plant?.plant_name}
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-0">
+                                    <div className="flex items-center text-green-800">
+                                        <UserIcon className="mr-2 h-4 w-4 shrink-0" />
+                                        <span className="font-medium">
+                                            {scannedEmployee.first_name} {scannedEmployee.last_name}
+                                        </span>
+                                    </div>
+                                    <div className="text-sm text-green-600 sm:ml-auto">
+                                        <span className="block sm:inline">ID: {scannedEmployee.employee_id}</span>
+                                        <span className="hidden sm:inline"> | </span>
+                                        <span className="block sm:inline">
+                                            {scannedEmployee.department?.department_name} - {scannedEmployee.plant?.plant_name}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         )}
